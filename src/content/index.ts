@@ -2,19 +2,32 @@ import { discoverSearchResults, type SearchResultTarget } from "./searchResults"
 import {
   MESSAGE_TYPES,
   type HatenaCountsResponse,
-  isHatenaCountsResponse
+  type HatenaEntryResponse,
+  isHatenaCountsResponse,
+  isHatenaEntryResponse
 } from "../shared/messages"
 import { DATA_ATTR, buildHatenaEntryUrl } from "../shared/url"
+import type { HatenaBookmarkSummary } from "../shared/hatena"
 
 const BADGE_CLASS = "gsplus-hatebu-count"
 const BADGE_ICON_CLASS = "gsplus-hatebu-count__icon"
 const BADGE_TEXT_CLASS = "gsplus-hatebu-count__text"
+const BADGE_BOUND_ATTR = "data-gsplus-badge-bound"
 const STYLE_ELEMENT_ID = "gsplus-hatebu-style"
 const HATENA_FAVICON = "https://b.hatena.ne.jp/favicon.ico"
+const OVERLAY_CLASS = "gsplus-hatebu-overlay"
+const OVERLAY_BODY_CLASS = "gsplus-hatebu-overlay__body"
+const OVERLAY_USER_CLASS = "gsplus-hatebu-overlay__user"
+const OVERLAY_COMMENT_CLASS = "gsplus-hatebu-overlay__comment"
+const OVERLAY_EMPTY_CLASS = "gsplus-hatebu-overlay__empty"
+const OVERLAY_ID = "gsplus-hatebu-overlay"
 
 const urlTargets = new Map<string, SearchResultTarget[]>()
 const cachedCounts = new Map<string, number | null>()
 const inflightUrls = new Set<string>()
+const entryPreviewCache = new Map<string, HatenaBookmarkSummary[] | null>()
+const entryPreviewRequests = new Map<string, Promise<HatenaBookmarkSummary[] | null>>()
+let overlayActiveUrl: string | null = null
 
 function ensureStyles(): void {
   if (document.getElementById(STYLE_ELEMENT_ID)) {
@@ -43,6 +56,63 @@ function ensureStyles(): void {
 
     .${BADGE_TEXT_CLASS} {
       line-height: 1;
+    }
+    .${OVERLAY_CLASS} {
+      position: absolute;
+      z-index: 2147483647;
+      background: #fff;
+      color: #202124;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      padding: 0.75rem;
+      max-width: 320px;
+      width: max-content;
+      min-width: 220px;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      display: none;
+    }
+
+    .${OVERLAY_BODY_CLASS} {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .${OVERLAY_CLASS} ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .${OVERLAY_CLASS} li {
+      border-top: 1px solid #e0e0e0;
+      padding-top: 0.5rem;
+    }
+
+    .${OVERLAY_CLASS} li:first-child {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .${OVERLAY_USER_CLASS} {
+      font-weight: 600;
+      color: #1a73e8;
+    }
+
+    .${OVERLAY_COMMENT_CLASS} {
+      margin-top: 0.15rem;
+      color: #202124;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .${OVERLAY_EMPTY_CLASS} {
+      color: #5f6368;
+      font-style: italic;
     }
   `
   document.head.appendChild(style)
@@ -87,7 +157,176 @@ function insertBadge(target: SearchResultTarget, count: number): void {
   }
 
   text.textContent = `${count} users`
+  attachBadgeEvents(badge, target.url)
   target.container.setAttribute(DATA_ATTR, "rendered")
+}
+
+function attachBadgeEvents(badge: HTMLAnchorElement, url: string): void {
+  if (badge.getAttribute(BADGE_BOUND_ATTR) === "true") {
+    return
+  }
+
+  const enter = () => {
+    void handleBadgeHover(badge, url)
+  }
+  const leave = () => {
+    overlayActiveUrl = null
+    hideOverlay()
+  }
+
+  badge.addEventListener("mouseenter", enter)
+  badge.addEventListener("focus", enter)
+  badge.addEventListener("mouseleave", leave)
+  badge.addEventListener("blur", leave)
+
+  badge.setAttribute(BADGE_BOUND_ATTR, "true")
+}
+
+async function handleBadgeHover(badge: HTMLAnchorElement, url: string): Promise<void> {
+  overlayActiveUrl = url
+  showOverlayLoading(badge)
+
+  if (entryPreviewCache.has(url)) {
+    const cached = entryPreviewCache.get(url)
+    showOverlayWithComments(badge, cached ?? null)
+    return
+  }
+
+  let previews: HatenaBookmarkSummary[] | null = null
+  try {
+    previews = await getEntryPreviews(url)
+  } finally {
+    entryPreviewCache.set(url, previews ?? null)
+  }
+
+  if (overlayActiveUrl !== url) {
+    return
+  }
+
+  showOverlayWithComments(badge, previews)
+}
+
+async function getEntryPreviews(url: string): Promise<HatenaBookmarkSummary[] | null> {
+  let pending = entryPreviewRequests.get(url)
+  if (!pending) {
+    pending = requestEntryBookmarks(url)
+    entryPreviewRequests.set(url, pending)
+  }
+
+  const result = await pending
+  entryPreviewRequests.delete(url)
+  return result
+}
+
+function requestEntryBookmarks(url: string): Promise<HatenaBookmarkSummary[] | null> {
+  if (!chrome.runtime?.id) {
+    return Promise.resolve(null)
+  }
+
+  return new Promise((resolve) => {
+    const request = { type: MESSAGE_TYPES.ENTRY_REQUEST, url }
+    chrome.runtime.sendMessage(request, (response: HatenaEntryResponse | undefined) => {
+      if (chrome.runtime.lastError) {
+        console.error("Failed to load Hatena entry", chrome.runtime.lastError)
+        resolve(null)
+        return
+      }
+
+      if (!isHatenaEntryResponse(response)) {
+        console.warn("Unexpected entry response", response)
+        resolve(null)
+        return
+      }
+
+      resolve(response.bookmarks ?? [])
+    })
+  })
+}
+
+function ensureOverlay(): HTMLDivElement {
+  let overlay = document.getElementById(OVERLAY_ID) as HTMLDivElement | null
+  if (!overlay) {
+    overlay = document.createElement("div")
+    overlay.id = OVERLAY_ID
+    overlay.className = OVERLAY_CLASS
+    const body = document.createElement("div")
+    body.className = OVERLAY_BODY_CLASS
+    overlay.appendChild(body)
+    document.body.appendChild(overlay)
+
+    window.addEventListener("scroll", hideOverlay, true)
+    window.addEventListener("blur", hideOverlay)
+  }
+  return overlay
+}
+
+function hideOverlay(): void {
+  const overlay = document.getElementById(OVERLAY_ID)
+  if (overlay) {
+    overlay.style.display = "none"
+  }
+  overlayActiveUrl = null
+}
+
+function showOverlayLoading(badge: HTMLElement): void {
+  const overlay = ensureOverlay()
+  const body = overlay.querySelector(`.${OVERLAY_BODY_CLASS}`)
+  if (body) {
+    body.textContent = "読み込み中..."
+  }
+  positionOverlay(badge, overlay)
+  overlay.style.display = "block"
+}
+
+function showOverlayWithComments(
+  badge: HTMLElement,
+  bookmarks: HatenaBookmarkSummary[] | null
+): void {
+  const overlay = ensureOverlay()
+  const body = overlay.querySelector(`.${OVERLAY_BODY_CLASS}`)
+  if (!body) {
+    return
+  }
+
+  body.textContent = ""
+
+  if (bookmarks === null) {
+    const error = document.createElement("p")
+    error.className = OVERLAY_EMPTY_CLASS
+    error.textContent = "はてなブックマークの取得に失敗しました"
+    body.appendChild(error)
+  } else if (bookmarks.length === 0) {
+    const empty = document.createElement("p")
+    empty.className = OVERLAY_EMPTY_CLASS
+    empty.textContent = "はてなブックマークにコメントはまだありません"
+    body.appendChild(empty)
+  } else {
+    const list = document.createElement("ul")
+    bookmarks.slice(0, 3).forEach((bookmark) => {
+      const item = document.createElement("li")
+      const user = document.createElement("span")
+      user.className = OVERLAY_USER_CLASS
+      user.textContent = bookmark.user
+      const comment = document.createElement("span")
+      comment.className = OVERLAY_COMMENT_CLASS
+      comment.textContent = bookmark.comment
+      item.appendChild(user)
+      item.appendChild(comment)
+      list.appendChild(item)
+    })
+    body.appendChild(list)
+  }
+
+  positionOverlay(badge, overlay)
+  overlay.style.display = "block"
+}
+
+function positionOverlay(reference: HTMLElement, overlay: HTMLElement): void {
+  const rect = reference.getBoundingClientRect()
+  const top = window.scrollY + rect.bottom + 8
+  const left = window.scrollX + rect.left
+  overlay.style.top = `${top}px`
+  overlay.style.left = `${left}px`
 }
 
 function applyCount(url: string, count: number | null | undefined): void {
@@ -122,7 +361,7 @@ function requestCounts(urls: string[]): void {
     return
   }
 
-  const request = { type: MESSAGE_TYPES.REQUEST, urls }
+  const request = { type: MESSAGE_TYPES.COUNT_REQUEST, urls }
   try {
     chrome.runtime.sendMessage(request, (response: HatenaCountsResponse | undefined) => {
       urls.forEach((url) => inflightUrls.delete(url))

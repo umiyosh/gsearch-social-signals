@@ -5,7 +5,8 @@
   "description": "Displays Hatena Bookmark counts next to Google Search results.",
   "permissions": [],
   "host_permissions": [
-    "https://bookmark.hatenaapis.com/*"
+    "https://bookmark.hatenaapis.com/*",
+    "https://b.hatena.ne.jp/*"
   ],
   "background": {
     "service_worker": "background.js",

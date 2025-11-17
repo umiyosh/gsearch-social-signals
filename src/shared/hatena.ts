@@ -1,7 +1,17 @@
+import { normalizeUrl } from "./url"
+
 export type HatenaCountMap = Record<string, number | null>
+
+export interface HatenaBookmarkSummary {
+  user: string
+  comment: string
+  timestamp?: string
+  permalink?: string
+}
 
 const API_ENDPOINT = "https://bookmark.hatenaapis.com/count/entries"
 const MAX_BATCH_SIZE = 50
+const ENTRY_ENDPOINT = "https://b.hatena.ne.jp/entry/jsonlite/"
 
 export function chunkArray<T>(values: readonly T[], size: number): T[][] {
   if (size <= 0) {
@@ -64,4 +74,42 @@ export async function fetchHatenaCounts(urls: readonly string[]): Promise<Hatena
   }
 
   return counts
+}
+
+export async function fetchHatenaEntry(url: string): Promise<HatenaBookmarkSummary[]> {
+  const normalized = normalizeUrl(url)
+  if (!normalized) {
+    return []
+  }
+
+  const endpoint = new URL(ENTRY_ENDPOINT)
+  endpoint.searchParams.set("url", normalized)
+
+  const response = await fetch(endpoint.toString(), {
+    method: "GET",
+    cache: "no-cache"
+  })
+
+  if (!response.ok) {
+    throw new Error(`Hatena entry API failed with status ${response.status}`)
+  }
+
+  const payload = (await response.json()) as {
+    bookmarks?: Array<{
+      user?: string
+      comment?: string
+      timestamp?: string
+      permalink?: string
+    }>
+  }
+
+  const bookmarks = payload.bookmarks ?? []
+  return bookmarks
+    .filter((bookmark) => typeof bookmark?.comment === "string" && bookmark.comment.trim().length > 0)
+    .map((bookmark) => ({
+      user: bookmark.user ?? "anonymous",
+      comment: bookmark.comment?.trim() ?? "",
+      timestamp: bookmark.timestamp,
+      permalink: bookmark.permalink
+    }))
 }
