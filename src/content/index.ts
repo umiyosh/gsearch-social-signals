@@ -258,10 +258,16 @@ function ensureOverlay(): HTMLDivElement {
     overlay.appendChild(body)
     document.body.appendChild(overlay)
 
-    window.addEventListener("scroll", () => {
-      overlayHover = false
-      hideOverlayImmediately()
-    }, true)
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (overlayHover) {
+          return
+        }
+        hideOverlayImmediately()
+      },
+      true
+    )
     window.addEventListener("blur", hideOverlayImmediately)
     overlay.addEventListener("mouseenter", () => {
       overlayHover = true
