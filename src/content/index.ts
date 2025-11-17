@@ -4,7 +4,7 @@ import {
   type HatenaCountsResponse,
   isHatenaCountsResponse
 } from "../shared/messages"
-import { DATA_ATTR } from "../shared/url"
+import { DATA_ATTR, buildHatenaEntryUrl } from "../shared/url"
 
 const BADGE_CLASS = "gsplus-hatebu-count"
 const BADGE_ICON_CLASS = "gsplus-hatebu-count__icon"
@@ -31,6 +31,7 @@ function ensureStyles(): void {
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
+      text-decoration: none;
     }
 
     .${BADGE_ICON_CLASS} {
@@ -53,13 +54,17 @@ function insertBadge(target: SearchResultTarget, count: number): void {
     target.anchor.closest<HTMLElement>(".yuRUbf") ??
     target.anchor.parentElement ??
     target.container
-  let badge = host.querySelector<HTMLElement>(`.${BADGE_CLASS}`)
+  let badge = host.querySelector<HTMLAnchorElement>(`.${BADGE_CLASS}`)
 
   if (!badge) {
-    badge = document.createElement("span")
+    badge = document.createElement("a")
     badge.className = BADGE_CLASS
+    badge.target = "_blank"
+    badge.rel = "noopener noreferrer"
     host.appendChild(badge)
   }
+
+  badge.href = buildHatenaEntryUrl(target.url)
 
   let icon = badge.querySelector<HTMLImageElement>(`.${BADGE_ICON_CLASS}`)
   if (!icon) {
@@ -108,28 +113,45 @@ function requestCounts(urls: string[]): void {
     return
   }
 
-  const request = { type: MESSAGE_TYPES.REQUEST, urls }
-  chrome.runtime.sendMessage(request, (response: HatenaCountsResponse | undefined) => {
-    urls.forEach((url) => inflightUrls.delete(url))
-
-    if (chrome.runtime.lastError) {
-      console.error("Failed to retrieve Hatena counts", chrome.runtime.lastError)
-      return
-    }
-
-    if (!isHatenaCountsResponse(response)) {
-      console.warn("Unexpected Hatena response", response)
-      return
-    }
-
-    ;(Object.entries(response.counts) as Array<[string, number | null]>).forEach(([url, count]) => {
-      applyCount(url, count)
+  if (!chrome.runtime?.id) {
+    console.warn("Hatena counts skipped: runtime unavailable")
+    urls.forEach((url) => {
+      inflightUrls.delete(url)
+      applyCount(url, null)
     })
+    return
+  }
 
-    urls
-      .filter((url) => !(url in response.counts))
-      .forEach((url) => applyCount(url, null))
-  })
+  const request = { type: MESSAGE_TYPES.REQUEST, urls }
+  try {
+    chrome.runtime.sendMessage(request, (response: HatenaCountsResponse | undefined) => {
+      urls.forEach((url) => inflightUrls.delete(url))
+
+      if (chrome.runtime.lastError) {
+        console.error("Failed to retrieve Hatena counts", chrome.runtime.lastError)
+        urls.forEach((url) => applyCount(url, null))
+        return
+      }
+
+      if (!isHatenaCountsResponse(response)) {
+        console.warn("Unexpected Hatena response", response)
+        urls.forEach((url) => applyCount(url, null))
+        return
+      }
+
+      ;(Object.entries(response.counts) as Array<[string, number | null]>).forEach(([url, count]) => {
+        applyCount(url, count)
+      })
+
+      urls
+        .filter((url) => !(url in response.counts))
+        .forEach((url) => applyCount(url, null))
+    })
+  } catch (error) {
+    urls.forEach((url) => inflightUrls.delete(url))
+    console.error("Unhandled error while requesting Hatena counts", error)
+    urls.forEach((url) => applyCount(url, null))
+  }
 }
 
 function queueTargets(targets: SearchResultTarget[]): void {

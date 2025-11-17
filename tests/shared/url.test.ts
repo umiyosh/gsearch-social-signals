@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { extractExternalUrlFromHref, normalizeUrl } from "../../src/shared/url"
+import {
+  buildHatenaEntryUrl,
+  extractExternalUrlFromHref,
+  normalizeUrl
+} from "../../src/shared/url"
 
 describe("normalizeUrl", () => {
   it("strips hash fragments and enforces protocol", () => {
@@ -21,5 +25,17 @@ describe("extractExternalUrlFromHref", () => {
 
   it("ignores Google internal links", () => {
     expect(extractExternalUrlFromHref("https://www.google.com/search?q=test")).toBeNull()
+  })
+})
+
+describe("buildHatenaEntryUrl", () => {
+  it("creates https entry paths with s segment", () => {
+    expect(buildHatenaEntryUrl("https://developers.line.biz/ja/"))
+      .toBe("https://b.hatena.ne.jp/entry/s/developers.line.biz/ja/")
+  })
+
+  it("creates http entry paths with http segment", () => {
+    expect(buildHatenaEntryUrl("http://example.com/path?q=1"))
+      .toBe("https://b.hatena.ne.jp/entry/http/example.com/path?q=1")
   })
 })

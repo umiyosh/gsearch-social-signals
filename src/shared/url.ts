@@ -47,3 +47,16 @@ export function extractExternalUrlFromHref(href: string): string | null {
 
   return normalizeUrl(parsed.toString())
 }
+
+export function buildHatenaEntryUrl(targetUrl: string): string {
+  const normalized = normalizeUrl(targetUrl)
+  if (!normalized) {
+    return "https://b.hatena.ne.jp/"
+  }
+
+  const target = new URL(normalized)
+  const schemeSegment = target.protocol === "https:" ? "s" : "http"
+  const basePath = `${target.hostname}${target.pathname}`
+  const search = target.search ?? ""
+  return `https://b.hatena.ne.jp/entry/${schemeSegment}/${basePath}${search}`
+}
