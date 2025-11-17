@@ -1,5 +1,3 @@
-const GOOGLE_HOST_FRAGMENT = ".google."
-
 export const DATA_ATTR = "data-gsplus-hatebu"
 
 const HTTP_PROTOCOLS = new Set(["http:", "https:"])
@@ -18,11 +16,13 @@ export function normalizeUrl(rawUrl: string): string | null {
 }
 
 function isGoogleRedirect(url: URL): boolean {
-  return url.hostname.includes(GOOGLE_HOST_FRAGMENT) && url.pathname === "/url"
+  const host = url.hostname.toLowerCase()
+  return host.startsWith("www.google.") && url.pathname === "/url"
 }
 
 function isGoogleProperty(url: URL): boolean {
-  return url.hostname.includes(GOOGLE_HOST_FRAGMENT)
+  const host = url.hostname.toLowerCase()
+  return host.startsWith("www.google.")
 }
 
 export function extractExternalUrlFromHref(href: string): string | null {
@@ -81,4 +81,36 @@ export function stripQueryString(normalizedUrl: string): string {
     return normalizedUrl
   }
   return normalizedUrl.slice(0, queryIndex)
+}
+
+const TRACKING_QUERY_PARAMS = new Set([
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+  "igshid",
+  "gclid",
+  "ref",
+  "fbclid"
+])
+
+export function normalizeRequestUrl(url: string): string {
+  const normalized = normalizeForComparison(url)
+  const queryIndex = normalized.indexOf("?")
+  if (queryIndex === -1) {
+    return normalized
+  }
+
+  const base = normalized.slice(0, queryIndex)
+  const params = new URLSearchParams(normalized.slice(queryIndex + 1))
+  const filtered = new URLSearchParams()
+  params.forEach((value, key) => {
+    if (!TRACKING_QUERY_PARAMS.has(key.toLowerCase())) {
+      filtered.append(key, value)
+    }
+  })
+
+  const queryString = filtered.toString()
+  return queryString ? `${base}?${queryString}` : base
 }

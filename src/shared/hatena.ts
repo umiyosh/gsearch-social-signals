@@ -1,4 +1,9 @@
-import { normalizeUrl, normalizeForComparison, stripQueryString } from "./url"
+import {
+  normalizeRequestUrl,
+  normalizeUrl,
+  normalizeForComparison,
+  stripQueryString
+} from "./url"
 
 export type HatenaCountMap = Record<string, number | null>
 
@@ -58,9 +63,14 @@ async function requestChunk(urls: readonly string[]): Promise<HatenaCountMap> {
 
 export async function fetchHatenaCounts(urls: readonly string[]): Promise<HatenaCountMap> {
   const uniqueUrls = [...new Set(urls)]
+  const normalizedRequestMap = new Map<string, string>()
+  uniqueUrls.forEach((originalUrl) => {
+    normalizedRequestMap.set(originalUrl, normalizeRequestUrl(originalUrl))
+  })
   const counts: HatenaCountMap = {}
 
-  const batches = chunkArray(uniqueUrls, MAX_BATCH_SIZE)
+  const normalizedUrls = uniqueUrls.map((url) => normalizedRequestMap.get(url) ?? url)
+  const batches = chunkArray(normalizedUrls, MAX_BATCH_SIZE)
   for (const batch of batches) {
     try {
       const chunkCounts = await requestChunk(batch)
@@ -69,21 +79,20 @@ export async function fetchHatenaCounts(urls: readonly string[]): Promise<Hatena
         normalizedMap.set(normalizeForComparison(key), value ?? 0)
       })
 
-      batch.forEach((requestedUrl) => {
-        const normalizedRequest = normalizeForComparison(requestedUrl)
-        const candidates = new Set<string>([
-          normalizedRequest,
-          stripQueryString(normalizedRequest)
-        ])
+      uniqueUrls.forEach((requestedUrl) => {
+        const normalizedRequest = normalizeForComparison(
+          normalizedRequestMap.get(requestedUrl) ?? requestedUrl
+        )
 
+        const candidates: string[] = [normalizedRequest]
         const flippedProtocol = normalizedRequest.startsWith("https://")
           ? normalizedRequest.replace("https://", "http://")
           : normalizedRequest.replace("http://", "https://")
+        candidates.push(flippedProtocol)
+        candidates.push(stripQueryString(normalizedRequest))
+        candidates.push(stripQueryString(flippedProtocol))
 
-        candidates.add(flippedProtocol)
-        candidates.add(stripQueryString(flippedProtocol))
-
-        const matchedCandidate = Array.from(candidates).find((candidate) =>
+        const matchedCandidate = candidates.find((candidate) =>
           normalizedMap.has(candidate)
         )
 
