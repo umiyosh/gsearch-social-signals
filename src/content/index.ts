@@ -26,7 +26,7 @@ function ensureStyles(): void {
   style.textContent = `
     .${BADGE_CLASS} {
       font-size: 0.85rem;
-      color: #5f6368;
+      color: #00a4de;
       margin-left: 0.5rem;
       display: inline-flex;
       align-items: center;
