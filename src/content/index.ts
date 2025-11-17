@@ -28,6 +28,8 @@ const inflightUrls = new Set<string>()
 const entryPreviewCache = new Map<string, HatenaBookmarkSummary[] | null>()
 const entryPreviewRequests = new Map<string, Promise<HatenaBookmarkSummary[] | null>>()
 let overlayActiveUrl: string | null = null
+let overlayHover = false
+let overlayHideTimeout: number | null = null
 
 function ensureStyles(): void {
   if (document.getElementById(STYLE_ELEMENT_ID)) {
@@ -169,11 +171,11 @@ function attachBadgeEvents(badge: HTMLAnchorElement, url: string): void {
   }
 
   const enter = () => {
+    cancelOverlayHide()
     void handleBadgeHover(badge, url)
   }
   const leave = () => {
-    overlayActiveUrl = null
-    hideOverlay()
+    scheduleOverlayHide()
   }
 
   badge.addEventListener("mouseenter", enter)
@@ -256,18 +258,45 @@ function ensureOverlay(): HTMLDivElement {
     overlay.appendChild(body)
     document.body.appendChild(overlay)
 
-    window.addEventListener("scroll", hideOverlay, true)
-    window.addEventListener("blur", hideOverlay)
+    window.addEventListener("scroll", () => {
+      overlayHover = false
+      hideOverlayImmediately()
+    }, true)
+    window.addEventListener("blur", hideOverlayImmediately)
+    overlay.addEventListener("mouseenter", () => {
+      overlayHover = true
+      cancelOverlayHide()
+    })
+    overlay.addEventListener("mouseleave", () => {
+      overlayHover = false
+      scheduleOverlayHide()
+    })
   }
   return overlay
 }
 
-function hideOverlay(): void {
+function hideOverlayImmediately(): void {
   const overlay = document.getElementById(OVERLAY_ID)
   if (overlay) {
     overlay.style.display = "none"
   }
   overlayActiveUrl = null
+}
+
+function scheduleOverlayHide(): void {
+  cancelOverlayHide()
+  overlayHideTimeout = window.setTimeout(() => {
+    if (!overlayHover) {
+      hideOverlayImmediately()
+    }
+  }, 150)
+}
+
+function cancelOverlayHide(): void {
+  if (overlayHideTimeout !== null) {
+    window.clearTimeout(overlayHideTimeout)
+    overlayHideTimeout = null
+  }
 }
 
 function showOverlayLoading(badge: HTMLElement): void {
