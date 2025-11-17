@@ -3,18 +3,25 @@ import {
   MESSAGE_TYPES,
   type HatenaCountsResponse,
   type HatenaEntryResponse,
+  type HackerNewsResponse,
   isHatenaCountsResponse,
-  isHatenaEntryResponse
+  isHatenaEntryResponse,
+  isHackerNewsResponse
 } from "../shared/messages"
 import { DATA_ATTR, buildHatenaEntryUrl } from "../shared/url"
 import type { HatenaBookmarkSummary } from "../shared/hatena"
+import type { HackerNewsSummary } from "../shared/hackerNews"
 
 const BADGE_CLASS = "gsplus-hatebu-count"
 const BADGE_ICON_CLASS = "gsplus-hatebu-count__icon"
 const BADGE_TEXT_CLASS = "gsplus-hatebu-count__text"
 const BADGE_BOUND_ATTR = "data-gsplus-badge-bound"
+const HN_BADGE_CLASS = "gsplus-hn-count"
+const HN_BADGE_ICON_CLASS = "gsplus-hn-count__icon"
+const HN_BADGE_TEXT_CLASS = "gsplus-hn-count__text"
 const STYLE_ELEMENT_ID = "gsplus-hatebu-style"
 const HATENA_FAVICON = "https://b.hatena.ne.jp/favicon.ico"
+const HN_FAVICON = "https://news.ycombinator.com/favicon.ico"
 const OVERLAY_CLASS = "gsplus-hatebu-overlay"
 const OVERLAY_BODY_CLASS = "gsplus-hatebu-overlay__body"
 const OVERLAY_USER_CLASS = "gsplus-hatebu-overlay__user"
@@ -25,6 +32,9 @@ const OVERLAY_ID = "gsplus-hatebu-overlay"
 const urlTargets = new Map<string, SearchResultTarget[]>()
 const cachedCounts = new Map<string, number | null>()
 const inflightUrls = new Set<string>()
+const hnTargets = new Map<string, SearchResultTarget[]>()
+const cachedHnSummaries = new Map<string, HackerNewsSummary | null>()
+const hnInflight = new Set<string>()
 const entryPreviewCache = new Map<string, HatenaBookmarkSummary[] | null>()
 const entryPreviewRequests = new Map<string, Promise<HatenaBookmarkSummary[] | null>>()
 let overlayActiveUrl: string | null = null
@@ -58,6 +68,26 @@ function ensureStyles(): void {
 
     .${BADGE_TEXT_CLASS} {
       line-height: 1;
+    }
+
+    .${HN_BADGE_CLASS} {
+      font-size: 0.82rem;
+      color: #ff6600;
+      margin-left: 0.35rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      text-decoration: none;
+    }
+
+    .${HN_BADGE_ICON_CLASS} {
+      width: 12px;
+      height: 12px;
+    }
+
+    .${HN_BADGE_TEXT_CLASS} {
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
     .${OVERLAY_CLASS} {
       position: absolute;
@@ -163,6 +193,55 @@ function insertBadge(target: SearchResultTarget, count: number): void {
   text.textContent = `${count} users`
   attachBadgeEvents(badge, target.url)
   target.container.setAttribute(DATA_ATTR, "rendered")
+}
+
+function insertHnBadge(target: SearchResultTarget, summary: HackerNewsSummary): void {
+  const host =
+    target.anchor.closest<HTMLElement>(".b8lM7") ??
+    target.anchor.closest<HTMLElement>(".yuRUbf") ??
+    target.anchor.parentElement ??
+    target.container
+
+  let badge = host.querySelector<HTMLAnchorElement>(`.${HN_BADGE_CLASS}`)
+  if (!badge) {
+    badge = document.createElement("a")
+    badge.className = HN_BADGE_CLASS
+    badge.target = "_blank"
+    badge.rel = "noopener noreferrer"
+    const reference = host.querySelector(`.${BADGE_CLASS}`)
+    const translateLink = host.querySelector<HTMLAnchorElement>("a.dEEN8c")
+    if (reference) {
+      reference.insertAdjacentElement("afterend", badge)
+    } else if (translateLink) {
+      translateLink.insertAdjacentElement("beforebegin", badge)
+    } else {
+      target.anchor.insertAdjacentElement("afterend", badge)
+    }
+  }
+
+  badge.href = buildHnSearchUrl(target.url)
+
+  let icon = badge.querySelector<HTMLImageElement>(`.${HN_BADGE_ICON_CLASS}`)
+  if (!icon) {
+    icon = document.createElement("img")
+    icon.className = HN_BADGE_ICON_CLASS
+    icon.src = HN_FAVICON
+    icon.alt = "Hacker News"
+    icon.width = 12
+    icon.height = 12
+    icon.decoding = "async"
+    icon.loading = "lazy"
+    badge.prepend(icon)
+  }
+
+  let text = badge.querySelector<HTMLElement>(`.${HN_BADGE_TEXT_CLASS}`)
+  if (!text) {
+    text = document.createElement("span")
+    text.className = HN_BADGE_TEXT_CLASS
+    badge.appendChild(text)
+  }
+
+  text.textContent = `HN ${summary.nbHits} posts`
 }
 
 function attachBadgeEvents(badge: HTMLAnchorElement, url: string): void {
@@ -366,6 +445,11 @@ function positionOverlay(reference: HTMLElement, overlay: HTMLElement): void {
   overlay.style.left = `${left}px`
 }
 
+function buildHnSearchUrl(url: string): string {
+  const encoded = encodeURIComponent(url)
+  return `https://hn.algolia.com/?query=${encoded}&type=story&sort=byPopularity`
+}
+
 function applyCount(url: string, count: number | null | undefined): void {
   if (typeof count === "number" && count > 0) {
     cachedCounts.set(url, count)
@@ -382,6 +466,17 @@ function applyCount(url: string, count: number | null | undefined): void {
     }
   })
   urlTargets.delete(url)
+}
+
+function applyHnSummary(url: string, summary: HackerNewsSummary | null | undefined): void {
+  cachedHnSummaries.set(url, summary ?? null)
+  const targets = hnTargets.get(url) ?? []
+  if (summary && summary.nbHits > 0) {
+    targets.forEach((target) => {
+      insertHnBadge(target, summary)
+    })
+  }
+  hnTargets.delete(url)
 }
 
 function requestCounts(urls: string[]): void {
@@ -430,13 +525,60 @@ function requestCounts(urls: string[]): void {
   }
 }
 
+function requestHnSummaries(urls: string[]): void {
+  if (!urls.length) {
+    return
+  }
+
+  if (!chrome.runtime?.id) {
+    console.warn("HN summaries skipped: runtime unavailable")
+    urls.forEach((url) => {
+      hnInflight.delete(url)
+      applyHnSummary(url, null)
+    })
+    return
+  }
+
+  const request = { type: MESSAGE_TYPES.HN_REQUEST, urls }
+  try {
+    chrome.runtime.sendMessage(request, (response: HackerNewsResponse | undefined) => {
+      urls.forEach((url) => hnInflight.delete(url))
+
+      if (chrome.runtime.lastError) {
+        console.error("Failed to retrieve HN summaries", chrome.runtime.lastError)
+        urls.forEach((url) => applyHnSummary(url, null))
+        return
+      }
+
+      if (!isHackerNewsResponse(response)) {
+        console.warn("Unexpected HN response", response)
+        urls.forEach((url) => applyHnSummary(url, null))
+        return
+      }
+
+      Object.entries(response.summaries).forEach(([url, summary]) => {
+        applyHnSummary(url, summary)
+      })
+    })
+  } catch (error) {
+    urls.forEach((url) => hnInflight.delete(url))
+    console.error("Unhandled error while requesting HN summaries", error)
+    urls.forEach((url) => applyHnSummary(url, null))
+  }
+}
+
 function queueTargets(targets: SearchResultTarget[]): void {
   const urlsToRequest: string[] = []
+  const hnUrlsToRequest: string[] = []
 
   targets.forEach((target) => {
     const list = urlTargets.get(target.url) ?? []
     list.push(target)
     urlTargets.set(target.url, list)
+
+    const hnList = hnTargets.get(target.url) ?? []
+    hnList.push(target)
+    hnTargets.set(target.url, hnList)
 
     const cached = cachedCounts.get(target.url)
     if (cached !== undefined) {
@@ -452,10 +594,24 @@ function queueTargets(targets: SearchResultTarget[]): void {
       inflightUrls.add(target.url)
       urlsToRequest.push(target.url)
     }
+
+    const hnCached = cachedHnSummaries.get(target.url)
+    if (hnCached !== undefined) {
+      if (hnCached && hnCached.nbHits > 0) {
+        insertHnBadge(target, hnCached)
+      }
+    } else if (!hnInflight.has(target.url)) {
+      hnInflight.add(target.url)
+      hnUrlsToRequest.push(target.url)
+    }
   })
 
   if (urlsToRequest.length) {
     requestCounts(urlsToRequest)
+  }
+
+  if (hnUrlsToRequest.length) {
+    requestHnSummaries(hnUrlsToRequest)
   }
 }
 

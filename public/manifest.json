@@ -6,7 +6,8 @@
   "permissions": [],
   "host_permissions": [
     "https://bookmark.hatenaapis.com/*",
-    "https://b.hatena.ne.jp/*"
+    "https://b.hatena.ne.jp/*",
+    "https://hn.algolia.com/*"
   ],
   "background": {
     "service_worker": "background.js",
