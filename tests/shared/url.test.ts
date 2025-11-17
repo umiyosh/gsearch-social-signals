@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   buildHatenaEntryUrl,
   extractExternalUrlFromHref,
+  normalizeForComparison,
   normalizeUrl
 } from "../../src/shared/url"
 
@@ -37,5 +38,13 @@ describe("buildHatenaEntryUrl", () => {
   it("creates http entry paths with http segment", () => {
     expect(buildHatenaEntryUrl("http://example.com/path?q=1"))
       .toBe("https://b.hatena.ne.jp/entry/http/example.com/path?q=1")
+  })
+})
+
+describe("normalizeForComparison", () => {
+  it("normalizes protocol, host casing, and trailing slash", () => {
+    expect(normalizeForComparison("https://Example.com")).toBe("https://example.com/")
+    expect(normalizeForComparison("https://example.com/index?q=1"))
+      .toBe("https://example.com/index?q=1")
   })
 })

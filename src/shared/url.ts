@@ -60,3 +60,25 @@ export function buildHatenaEntryUrl(targetUrl: string): string {
   const search = target.search ?? ""
   return `https://b.hatena.ne.jp/entry/${schemeSegment}/${basePath}${search}`
 }
+
+export function normalizeForComparison(url: string): string {
+  const normalized = normalizeUrl(url)
+  if (!normalized) {
+    return url
+  }
+
+  const parsed = new URL(normalized)
+  const scheme = parsed.protocol === "https:" ? "https://" : "http://"
+  const hostname = parsed.hostname.toLowerCase()
+  const pathname = parsed.pathname || "/"
+  const search = parsed.search ?? ""
+  return `${scheme}${hostname}${pathname}${search}`
+}
+
+export function stripQueryString(normalizedUrl: string): string {
+  const queryIndex = normalizedUrl.indexOf("?")
+  if (queryIndex === -1) {
+    return normalizedUrl
+  }
+  return normalizedUrl.slice(0, queryIndex)
+}

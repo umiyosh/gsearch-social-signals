@@ -8,6 +8,7 @@ export interface SearchResultTarget {
 
 const RESULT_CONTAINER_SELECTOR = [
   "div.g",
+  "div.MjjYud",
   "div[data-sokoban-grid]",
   "div[jscontroller=\"SC7lYd\"]",
   "div[jscontroller=\"TFQHme\"]"

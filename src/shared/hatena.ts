@@ -1,4 +1,4 @@
-import { normalizeUrl } from "./url"
+import { normalizeUrl, normalizeForComparison, stripQueryString } from "./url"
 
 export type HatenaCountMap = Record<string, number | null>
 
@@ -64,7 +64,35 @@ export async function fetchHatenaCounts(urls: readonly string[]): Promise<Hatena
   for (const batch of batches) {
     try {
       const chunkCounts = await requestChunk(batch)
-      Object.assign(counts, chunkCounts)
+      const normalizedMap = new Map<string, number>()
+      Object.entries(chunkCounts).forEach(([key, value]) => {
+        normalizedMap.set(normalizeForComparison(key), value ?? 0)
+      })
+
+      batch.forEach((requestedUrl) => {
+        const normalizedRequest = normalizeForComparison(requestedUrl)
+        const candidates = new Set<string>([
+          normalizedRequest,
+          stripQueryString(normalizedRequest)
+        ])
+
+        const flippedProtocol = normalizedRequest.startsWith("https://")
+          ? normalizedRequest.replace("https://", "http://")
+          : normalizedRequest.replace("http://", "https://")
+
+        candidates.add(flippedProtocol)
+        candidates.add(stripQueryString(flippedProtocol))
+
+        const matchedCandidate = Array.from(candidates).find((candidate) =>
+          normalizedMap.has(candidate)
+        )
+
+        if (matchedCandidate) {
+          counts[requestedUrl] = normalizedMap.get(matchedCandidate) ?? 0
+        } else {
+          counts[requestedUrl] = null
+        }
+      })
     } catch (error) {
       console.error("Hatena API chunk failed", error)
       batch.forEach((url) => {
