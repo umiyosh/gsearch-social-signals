@@ -77,6 +77,8 @@ function ensureStyles(): void {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+      max-height: 320px;
+      overflow-y: auto;
     }
 
     .${OVERLAY_CLASS} ul {
@@ -302,7 +304,7 @@ function showOverlayWithComments(
     body.appendChild(empty)
   } else {
     const list = document.createElement("ul")
-    bookmarks.slice(0, 3).forEach((bookmark) => {
+    bookmarks.forEach((bookmark) => {
       const item = document.createElement("li")
       const user = document.createElement("span")
       user.className = OVERLAY_USER_CLASS
