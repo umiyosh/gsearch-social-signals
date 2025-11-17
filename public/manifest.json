@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "GSPlus Hatebu Counts",
+  "version": "0.1.0",
+  "description": "Displays Hatena Bookmark counts next to Google Search results.",
+  "permissions": [],
+  "host_permissions": [
+    "https://bookmark.hatenaapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.google.com/search*",
+        "https://www.google.co.jp/search*",
+        "https://www.google.co.uk/search*",
+        "https://www.google.co.in/search*",
+        "https://www.google.ca/search*",
+        "https://www.google.com.au/search*",
+        "https://www.google.com.hk/search*",
+        "https://www.google.com.sg/search*",
+        "https://www.google.com.tw/search*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "GSPlus Hatebu"
+  }
+}

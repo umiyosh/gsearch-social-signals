@@ -1,0 +1,32 @@
+module.exports = {
+  root: true,
+  env: {
+    browser: true,
+    es2022: true,
+    webextensions: true
+  },
+  parser: "@typescript-eslint/parser",
+  parserOptions: {
+    sourceType: "module",
+    project: "./tsconfig.json",
+    tsconfigRootDir: __dirname
+  },
+  plugins: ["@typescript-eslint"],
+  extends: [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier"
+  ],
+  rules: {
+    "@typescript-eslint/consistent-type-imports": "warn",
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/no-misused-promises": [
+      "error",
+      {
+        "checksVoidReturn": false
+      }
+    ]
+  },
+  ignorePatterns: ["dist", "dist-types", "node_modules"]
+};
