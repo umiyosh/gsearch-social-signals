@@ -7,7 +7,10 @@ import {
 import { DATA_ATTR } from "../shared/url"
 
 const BADGE_CLASS = "gsplus-hatebu-count"
+const BADGE_ICON_CLASS = "gsplus-hatebu-count__icon"
+const BADGE_TEXT_CLASS = "gsplus-hatebu-count__text"
 const STYLE_ELEMENT_ID = "gsplus-hatebu-style"
+const HATENA_FAVICON = "https://b.hatena.ne.jp/favicon.ico"
 
 const urlTargets = new Map<string, SearchResultTarget[]>()
 const cachedCounts = new Map<string, number | null>()
@@ -25,13 +28,20 @@ function ensureStyles(): void {
       font-size: 0.85rem;
       color: #5f6368;
       margin-left: 0.5rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
     }
 
-    .${BADGE_CLASS}::before {
-      content: "★";
-      font-size: 0.75rem;
-      color: #fbbc05;
-      margin-right: 0.25rem;
+    .${BADGE_ICON_CLASS} {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .${BADGE_TEXT_CLASS} {
+      line-height: 1;
     }
   `
   document.head.appendChild(style)
@@ -51,7 +61,27 @@ function insertBadge(target: SearchResultTarget, count: number): void {
     host.appendChild(badge)
   }
 
-  badge.textContent = `${count} users`
+  let icon = badge.querySelector<HTMLImageElement>(`.${BADGE_ICON_CLASS}`)
+  if (!icon) {
+    icon = document.createElement("img")
+    icon.className = BADGE_ICON_CLASS
+    icon.src = HATENA_FAVICON
+    icon.alt = "Hatena"
+    icon.width = 14
+    icon.height = 14
+    icon.decoding = "async"
+    icon.loading = "lazy"
+    badge.appendChild(icon)
+  }
+
+  let text = badge.querySelector<HTMLElement>(`.${BADGE_TEXT_CLASS}`)
+  if (!text) {
+    text = document.createElement("span")
+    text.className = BADGE_TEXT_CLASS
+    badge.appendChild(text)
+  }
+
+  text.textContent = `${count} users`
   target.container.setAttribute(DATA_ATTR, "rendered")
 }
 
