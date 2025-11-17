@@ -25,28 +25,30 @@ function ensureStyles(): void {
       font-size: 0.85rem;
       color: #5f6368;
       margin-left: 0.5rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
     }
 
     .${BADGE_CLASS}::before {
       content: "★";
       font-size: 0.75rem;
       color: #fbbc05;
+      margin-right: 0.25rem;
     }
   `
   document.head.appendChild(style)
 }
 
 function insertBadge(target: SearchResultTarget, count: number): void {
-  const host = target.anchor.parentElement ?? target.container
+  const host =
+    target.anchor.closest<HTMLElement>(".b8lM7") ??
+    target.anchor.closest<HTMLElement>(".yuRUbf") ??
+    target.anchor.parentElement ??
+    target.container
   let badge = host.querySelector<HTMLElement>(`.${BADGE_CLASS}`)
 
   if (!badge) {
     badge = document.createElement("span")
     badge.className = BADGE_CLASS
-    target.anchor.insertAdjacentElement("afterend", badge)
+    host.appendChild(badge)
   }
 
   badge.textContent = `${count} users`
