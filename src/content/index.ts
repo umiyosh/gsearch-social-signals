@@ -12,6 +12,7 @@ import { DATA_ATTR, buildHatenaEntryUrl } from "../shared/url"
 import type { HatenaBookmarkSummary } from "../shared/hatena"
 import type { HackerNewsSummary } from "../shared/hackerNews"
 
+const BADGE_CONTAINER_CLASS = "gsplus-signal-container"
 const BADGE_CLASS = "gsplus-hatebu-count"
 const BADGE_ICON_CLASS = "gsplus-hatebu-count__icon"
 const BADGE_TEXT_CLASS = "gsplus-hatebu-count__text"
@@ -89,6 +90,14 @@ function ensureStyles(): void {
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
+
+    .${BADGE_CONTAINER_CLASS} {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.2rem;
+      direction: ltr;
+    }
     .${OVERLAY_CLASS} {
       position: absolute;
       z-index: 2147483647;
@@ -152,20 +161,35 @@ function ensureStyles(): void {
   document.head.appendChild(style)
 }
 
-function insertBadge(target: SearchResultTarget, count: number): void {
+function getSignalContainer(target: SearchResultTarget): HTMLElement {
   const host =
     target.anchor.closest<HTMLElement>(".b8lM7") ??
     target.anchor.closest<HTMLElement>(".yuRUbf") ??
     target.anchor.parentElement ??
     target.container
-  let badge = host.querySelector<HTMLAnchorElement>(`.${BADGE_CLASS}`)
+  let container = host.querySelector<HTMLElement>(`.${BADGE_CONTAINER_CLASS}`)
+  if (!container) {
+    container = document.createElement("span")
+    container.className = BADGE_CONTAINER_CLASS
+    if (target.anchor.parentElement === host) {
+      host.insertBefore(container, target.anchor)
+    } else {
+      host.insertAdjacentElement("afterbegin", container)
+    }
+  }
+  return container
+}
+
+function insertBadge(target: SearchResultTarget, count: number): void {
+  const container = getSignalContainer(target)
+  let badge = container.querySelector<HTMLAnchorElement>(`.${BADGE_CLASS}`)
 
   if (!badge) {
     badge = document.createElement("a")
     badge.className = BADGE_CLASS
     badge.target = "_blank"
     badge.rel = "noopener noreferrer"
-    host.appendChild(badge)
+    container.appendChild(badge)
   }
 
   badge.href = buildHatenaEntryUrl(target.url)
@@ -196,27 +220,14 @@ function insertBadge(target: SearchResultTarget, count: number): void {
 }
 
 function insertHnBadge(target: SearchResultTarget, summary: HackerNewsSummary): void {
-  const host =
-    target.anchor.closest<HTMLElement>(".b8lM7") ??
-    target.anchor.closest<HTMLElement>(".yuRUbf") ??
-    target.anchor.parentElement ??
-    target.container
-
-  let badge = host.querySelector<HTMLAnchorElement>(`.${HN_BADGE_CLASS}`)
+  const container = getSignalContainer(target)
+  let badge = container.querySelector<HTMLAnchorElement>(`.${HN_BADGE_CLASS}`)
   if (!badge) {
     badge = document.createElement("a")
     badge.className = HN_BADGE_CLASS
     badge.target = "_blank"
     badge.rel = "noopener noreferrer"
-    const reference = host.querySelector(`.${BADGE_CLASS}`)
-    const translateLink = host.querySelector<HTMLAnchorElement>("a.dEEN8c")
-    if (reference) {
-      reference.insertAdjacentElement("afterend", badge)
-    } else if (translateLink) {
-      translateLink.insertAdjacentElement("beforebegin", badge)
-    } else {
-      target.anchor.insertAdjacentElement("afterend", badge)
-    }
+    container.appendChild(badge)
   }
 
   badge.href = buildHnSearchUrl(target.url)
