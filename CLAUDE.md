@@ -23,6 +23,8 @@ npm run quality:test    # node --test for scripts/*.test.mjs
 
 Quality gate before a PR: `make check` (= lint / fmt-check / typecheck / quality-test / lint-quality / test-coverage). Manual smoke test: rebuild, reload the extension at `chrome://extensions/`, open a Google SERP and confirm badges render.
 
+Live E2E sweep (real Chrome + chrome-devtools MCP, badge counts vs Hatena API): use the `gsplus-hatebu-e2e` user skill. On-demand only — never wire it into CI; Google bot detection makes it inherently flaky there.
+
 Make targets are thin wrappers around the npm scripts.
 
 ### Quality baseline (ratchet)
