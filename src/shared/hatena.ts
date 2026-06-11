@@ -13,6 +13,10 @@ const API_ENDPOINT = "https://bookmark.hatenaapis.com/count/entries"
 const MAX_BATCH_SIZE = 50
 const ENTRY_ENDPOINT = "https://b.hatena.ne.jp/entry/jsonlite/"
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
 export function chunkArray<T>(values: readonly T[], size: number): T[][] {
   if (size <= 0) {
     throw new Error("chunk size must be positive")
@@ -23,6 +27,38 @@ export function chunkArray<T>(values: readonly T[], size: number): T[][] {
     chunks.push(values.slice(index, index + size))
   }
   return chunks
+}
+
+// API のキーはリクエスト URL と一致しないことがある（http/https、クエリ有無）。
+// その揺れを吸収する候補キー生成と照合は純粋関数として公開し、直接テストする。
+export function buildCandidateKeys(normalizedRequest: string): string[] {
+  const flippedProtocol = normalizedRequest.startsWith("https://")
+    ? normalizedRequest.replace("https://", "http://")
+    : normalizedRequest.replace("http://", "https://")
+  return [
+    normalizedRequest,
+    flippedProtocol,
+    stripQueryString(normalizedRequest),
+    stripQueryString(flippedProtocol)
+  ]
+}
+
+export function normalizeCountKeys(chunkCounts: HatenaCountMap): Map<string, number> {
+  const normalized = new Map<string, number>()
+  Object.entries(chunkCounts).forEach(([key, value]) => {
+    normalized.set(normalizeForComparison(key), value ?? 0)
+  })
+  return normalized
+}
+
+export function resolveRequestedCount(
+  normalizedRequest: string,
+  normalizedCounts: ReadonlyMap<string, number>
+): number | null {
+  const matched = buildCandidateKeys(normalizedRequest).find((candidate) =>
+    normalizedCounts.has(candidate)
+  )
+  return matched !== undefined ? (normalizedCounts.get(matched) ?? 0) : null
 }
 
 async function requestChunk(urls: readonly string[]): Promise<HatenaCountMap> {
@@ -43,12 +79,16 @@ async function requestChunk(urls: readonly string[]): Promise<HatenaCountMap> {
   }
 
   const payloadText = await response.text()
-  let parsed: Record<string, number | string>
+  let parsed: unknown
   try {
-    parsed = JSON.parse(payloadText) as Record<string, number | string>
+    parsed = JSON.parse(payloadText)
   } catch (error) {
     console.error("Failed to parse Hatena API response", error)
     throw error
+  }
+
+  if (!isRecord(parsed)) {
+    throw new Error("Hatena API returned an unexpected payload shape")
   }
 
   return Object.fromEntries(
@@ -71,32 +111,13 @@ export async function fetchHatenaCounts(urls: readonly string[]): Promise<Hatena
   const batches = chunkArray(normalizedUrls, MAX_BATCH_SIZE)
   for (const batch of batches) {
     try {
-      const chunkCounts = await requestChunk(batch)
-      const normalizedMap = new Map<string, number>()
-      Object.entries(chunkCounts).forEach(([key, value]) => {
-        normalizedMap.set(normalizeForComparison(key), value ?? 0)
-      })
+      const normalizedMap = normalizeCountKeys(await requestChunk(batch))
 
       uniqueUrls.forEach((requestedUrl) => {
         const normalizedRequest = normalizeForComparison(
           normalizedRequestMap.get(requestedUrl) ?? requestedUrl
         )
-
-        const candidates: string[] = [normalizedRequest]
-        const flippedProtocol = normalizedRequest.startsWith("https://")
-          ? normalizedRequest.replace("https://", "http://")
-          : normalizedRequest.replace("http://", "https://")
-        candidates.push(flippedProtocol)
-        candidates.push(stripQueryString(normalizedRequest))
-        candidates.push(stripQueryString(flippedProtocol))
-
-        const matchedCandidate = candidates.find((candidate) => normalizedMap.has(candidate))
-
-        if (matchedCandidate) {
-          counts[requestedUrl] = normalizedMap.get(matchedCandidate) ?? 0
-        } else {
-          counts[requestedUrl] = null
-        }
+        counts[requestedUrl] = resolveRequestedCount(normalizedRequest, normalizedMap)
       })
     } catch (error) {
       console.error("Hatena API chunk failed", error)
@@ -127,24 +148,24 @@ export async function fetchHatenaEntry(url: string): Promise<HatenaBookmarkSumma
     throw new Error(`Hatena entry API failed with status ${response.status}`)
   }
 
-  const payload = (await response.json()) as {
-    bookmarks?: Array<{
-      user?: string
-      comment?: string
-      timestamp?: string
-      permalink?: string
-    }>
-  }
+  const payload: unknown = await response.json()
+  const bookmarks = isRecord(payload) && Array.isArray(payload.bookmarks) ? payload.bookmarks : []
 
-  const bookmarks = payload.bookmarks ?? []
-  return bookmarks
-    .filter(
-      (bookmark) => typeof bookmark?.comment === "string" && bookmark.comment.trim().length > 0
-    )
-    .map((bookmark) => ({
-      user: bookmark.user ?? "anonymous",
-      comment: bookmark.comment?.trim() ?? "",
-      timestamp: bookmark.timestamp,
-      permalink: bookmark.permalink
-    }))
+  return bookmarks.flatMap((bookmark: unknown): HatenaBookmarkSummary[] => {
+    if (!isRecord(bookmark) || typeof bookmark.comment !== "string") {
+      return []
+    }
+    const comment = bookmark.comment.trim()
+    if (!comment) {
+      return []
+    }
+    return [
+      {
+        user: typeof bookmark.user === "string" ? bookmark.user : "anonymous",
+        comment,
+        timestamp: typeof bookmark.timestamp === "string" ? bookmark.timestamp : undefined,
+        permalink: typeof bookmark.permalink === "string" ? bookmark.permalink : undefined
+      }
+    ]
+  })
 }

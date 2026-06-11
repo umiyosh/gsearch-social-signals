@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { chunkArray, fetchHatenaCounts, fetchHatenaEntry } from "../../src/shared/hatena"
+import {
+  buildCandidateKeys,
+  chunkArray,
+  fetchHatenaCounts,
+  fetchHatenaEntry,
+  normalizeCountKeys,
+  resolveRequestedCount
+} from "../../src/shared/hatena"
 
 function mockFetchResponse(payload: unknown, ok = true): void {
   vi.stubGlobal(
@@ -90,5 +97,35 @@ describe("fetchHatenaEntry", () => {
     mockFetchResponse({}, false)
 
     await expect(fetchHatenaEntry("https://example.com/entry")).rejects.toThrowError()
+  })
+})
+
+describe("buildCandidateKeys", () => {
+  it("expands a request into protocol flips and query-stripped variants", () => {
+    expect(buildCandidateKeys("https://example.com/a?q=1")).toEqual([
+      "https://example.com/a?q=1",
+      "http://example.com/a?q=1",
+      "https://example.com/a",
+      "http://example.com/a"
+    ])
+  })
+})
+
+describe("resolveRequestedCount", () => {
+  it("returns the count of the first matching candidate", () => {
+    const counts = new Map([["http://example.com/a", 8]])
+    expect(resolveRequestedCount("https://example.com/a?q=1", counts)).toBe(8)
+  })
+
+  it("returns null when no candidate matches", () => {
+    expect(resolveRequestedCount("https://example.com/a", new Map())).toBeNull()
+  })
+})
+
+describe("normalizeCountKeys", () => {
+  it("normalizes API keys for comparison and coerces null counts to zero", () => {
+    const normalized = normalizeCountKeys({ "https://Example.com/A": 3, "https://b.example": null })
+    expect(normalized.get("https://example.com/A")).toBe(3)
+    expect(normalized.get("https://b.example/")).toBe(0)
   })
 })
