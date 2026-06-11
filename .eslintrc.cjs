@@ -12,21 +12,31 @@ module.exports = {
     tsconfigRootDir: __dirname
   },
   plugins: ["@typescript-eslint"],
-  extends: [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier"
-  ],
+  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
   rules: {
+    complexity: ["warn", { max: 20 }],
+    "max-depth": ["warn", 4],
+    "max-lines": ["warn", { max: 500, skipBlankLines: true, skipComments: true }],
+    "max-lines-per-function": ["warn", { max: 120, skipBlankLines: true, skipComments: true }],
+    "max-params": ["warn", 5],
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_"
+      }
+    ],
     "@typescript-eslint/consistent-type-imports": "warn",
     "@typescript-eslint/no-floating-promises": "error",
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-misused-promises": [
       "error",
       {
-        "checksVoidReturn": false
+        checksVoidReturn: false
       }
     ]
   },
-  ignorePatterns: ["dist", "dist-types", "node_modules"]
-};
+  ignorePatterns: ["dist", "dist-types", "node_modules", "coverage"]
+}

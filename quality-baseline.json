@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "policy": "Every current quality violation is a repayment target. The baseline exists to prevent increases and track reductions.",
+  "thresholds": {},
+  "issues": [
+    {
+      "id": "eslint|max-lines|src/content/index.ts|573|1",
+      "tool": "eslint",
+      "category": "max-lines",
+      "path": "src/content/index.ts",
+      "line": 573,
+      "column": 1,
+      "detail": "File has too many lines (568). Maximum allowed is 500.",
+      "metric": {
+        "name": "lines",
+        "value": 568,
+        "limit": 500,
+        "direction": "lowerIsBetter"
+      },
+      "stableKey": "eslint|max-lines|src/content/index.ts|file"
+    }
+  ]
+}

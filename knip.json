@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/background/index.ts",
+    "src/content/index.ts",
+    "tests/**/*.test.ts",
+    "tsup.config.ts",
+    "vitest.config.ts"
+  ],
+  "project": ["src/**/*.ts", "tests/**/*.ts", "tsup.config.ts", "vitest.config.ts"],
+  "ignore": ["dist/**", "coverage/**"]
+}
