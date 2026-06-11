@@ -64,6 +64,10 @@ export function isHackerNewsRequest(value: unknown): value is HackerNewsRequest 
   return isRecord(value) && value.type === MESSAGE_TYPES.HN_REQUEST && isStringArray(value.urls)
 }
 
+export function isExtensionRequest(value: unknown): value is ExtensionRequest {
+  return isHatenaCountsRequest(value) || isHatenaEntryRequest(value) || isHackerNewsRequest(value)
+}
+
 export function isCountMap(value: unknown): value is HatenaCountMap {
   return (
     isRecord(value) &&
