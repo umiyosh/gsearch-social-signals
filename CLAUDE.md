@@ -12,14 +12,26 @@ Chrome extension (Manifest V3, TypeScript) that overlays Hatena Bookmark counts 
 npm run build       # clean → tsup bundle → copy public/ into dist/
 npm run dev         # tsup watch + public/ copy watch (load dist/ unpacked in Chrome)
 npm run lint        # ESLint on src/ and tests/
+npm run fmt-check   # Prettier check (fmt = --write)
 npm run test        # Vitest (jsdom), run once
+npm run test:coverage   # Vitest + v8 coverage with per-file thresholds
 npx vitest run tests/shared/url.test.ts   # run a single test file
 npm run typecheck   # tsc --noEmit
+npm run quality:check   # eslint warnings + knip vs quality-baseline.json (ratchet)
+npm run quality:test    # node --test for scripts/*.test.mjs
 ```
 
-Quality gate before a PR: `npm run lint && npm run test && npm run typecheck`. Manual smoke test: rebuild, reload the extension at `chrome://extensions/`, open a Google SERP and confirm badges render.
+Quality gate before a PR: `make check` (= lint / fmt-check / typecheck / quality-test / lint-quality / test-coverage). Manual smoke test: rebuild, reload the extension at `chrome://extensions/`, open a Google SERP and confirm badges render.
 
-Make targets (`make build`, `make test`, etc.) are thin wrappers around the npm scripts.
+Make targets are thin wrappers around the npm scripts.
+
+### Quality baseline (ratchet)
+
+`quality-baseline.json` records every currently-known ESLint warning (complexity / max-lines etc.) and knip finding as repayment targets. `npm run quality:check` fails on any **new or worsened** entry; after intentionally reducing debt, refresh with `npm run quality:update-baseline` (it refuses to ratchet upward). The gate logic lives in `scripts/quality-gate*.mjs`, tested via `npm run quality:test` (node:test, not Vitest).
+
+### Coverage gate
+
+`vitest.config.ts` enforces per-file thresholds (lines/statements/functions 80%, branches 70%) on the logic layer. `src/background/index.ts` and `src/content/index.ts` are excluded as chrome-runtime/DOM entrypoint glue — keep logic out of them and in `src/shared/` or `src/content/searchResults.ts`, which are gated.
 
 ## Architecture
 
@@ -63,7 +75,7 @@ Follow the Hacker News example: API client in `src/shared/`, request/response ty
 
 ## Conventions
 
-- Prettier: no semicolons, 100 char width (`.prettierrc`). TypeScript strict mode.
+- Prettier: no semicolons, double quotes, 100 char width (`.prettierrc`), enforced by `fmt-check`. TypeScript strict mode.
 - Tests live in `tests/` mirroring the source tree (`tests/shared/`, `tests/content/`), named `*.test.ts`, Vitest + jsdom with globals enabled. Pure helpers (`url.ts`, `hatena.ts`, `searchResults.ts`) are the tested surface — keep new logic in pure functions so it stays testable.
 - Conventional Commits (`feat(content): ...`).
 - `docs/spec.md` is the architectural source of truth; feature specs (`docs/spec_hn.md`, `docs/spec_hn_overlay.md`) document the HN integration. Reflect major changes there. See also `AGENTS.md` for PR/commit guidelines.
