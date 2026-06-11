@@ -13,7 +13,7 @@ npm run build       # clean → tsup bundle → copy public/ into dist/
 npm run dev         # tsup watch + public/ copy watch (load dist/ unpacked in Chrome)
 npm run lint        # ESLint on src/ and tests/
 npm run test        # Vitest (jsdom), run once
-npx vitest run tests/url.test.ts   # run a single test file
+npx vitest run tests/shared/url.test.ts   # run a single test file
 npm run typecheck   # tsc --noEmit
 ```
 
@@ -64,6 +64,6 @@ Follow the Hacker News example: API client in `src/shared/`, request/response ty
 ## Conventions
 
 - Prettier: no semicolons, 100 char width (`.prettierrc`). TypeScript strict mode.
-- Tests live flat in `tests/` named `*.test.ts`, Vitest + jsdom with globals enabled. Pure helpers (`url.ts`, `hatena.ts`, `searchResults.ts`) are the tested surface — keep new logic in pure functions so it stays testable.
+- Tests live in `tests/` mirroring the source tree (`tests/shared/`, `tests/content/`), named `*.test.ts`, Vitest + jsdom with globals enabled. Pure helpers (`url.ts`, `hatena.ts`, `searchResults.ts`) are the tested surface — keep new logic in pure functions so it stays testable.
 - Conventional Commits (`feat(content): ...`).
 - `docs/spec.md` is the architectural source of truth; feature specs (`docs/spec_hn.md`, `docs/spec_hn_overlay.md`) document the HN integration. Reflect major changes there. See also `AGENTS.md` for PR/commit guidelines.
