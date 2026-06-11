@@ -10,11 +10,13 @@ const RESULT_CONTAINER_SELECTOR = [
   "div.g",
   "div.MjjYud",
   "div[data-sokoban-grid]",
-  "div[jscontroller=\"SC7lYd\"]",
-  "div[jscontroller=\"TFQHme\"]"
+  'div[jscontroller="SC7lYd"]',
+  'div[jscontroller="TFQHme"]'
 ].join(", ")
 
-function findPrimaryAnchor(container: HTMLElement): { anchor: HTMLAnchorElement; url: string } | null {
+function findPrimaryAnchor(
+  container: HTMLElement
+): { anchor: HTMLAnchorElement; url: string } | null {
   const anchors = container.querySelectorAll<HTMLAnchorElement>("a[href]")
   for (const anchor of anchors) {
     const resolvedUrl = extractExternalUrlFromHref(anchor.href)

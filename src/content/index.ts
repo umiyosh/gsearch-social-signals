@@ -521,13 +521,13 @@ function requestCounts(urls: string[]): void {
         return
       }
 
-      ;(Object.entries(response.counts) as Array<[string, number | null]>).forEach(([url, count]) => {
-        applyCount(url, count)
-      })
+      ;(Object.entries(response.counts) as Array<[string, number | null]>).forEach(
+        ([url, count]) => {
+          applyCount(url, count)
+        }
+      )
 
-      urls
-        .filter((url) => !(url in response.counts))
-        .forEach((url) => applyCount(url, null))
+      urls.filter((url) => !(url in response.counts)).forEach((url) => applyCount(url, null))
     })
   } catch (error) {
     urls.forEach((url) => inflightUrls.delete(url))

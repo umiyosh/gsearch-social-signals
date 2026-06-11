@@ -1,9 +1,4 @@
-import {
-  normalizeRequestUrl,
-  normalizeUrl,
-  normalizeForComparison,
-  stripQueryString
-} from "./url"
+import { normalizeRequestUrl, normalizeUrl, normalizeForComparison, stripQueryString } from "./url"
 
 export type HatenaCountMap = Record<string, number | null>
 
@@ -57,7 +52,10 @@ async function requestChunk(urls: readonly string[]): Promise<HatenaCountMap> {
   }
 
   return Object.fromEntries(
-    Object.entries(parsed).map(([key, value]) => [key, typeof value === "number" ? value : Number(value) || 0])
+    Object.entries(parsed).map(([key, value]) => [
+      key,
+      typeof value === "number" ? value : Number(value) || 0
+    ])
   )
 }
 
@@ -92,9 +90,7 @@ export async function fetchHatenaCounts(urls: readonly string[]): Promise<Hatena
         candidates.push(stripQueryString(normalizedRequest))
         candidates.push(stripQueryString(flippedProtocol))
 
-        const matchedCandidate = candidates.find((candidate) =>
-          normalizedMap.has(candidate)
-        )
+        const matchedCandidate = candidates.find((candidate) => normalizedMap.has(candidate))
 
         if (matchedCandidate) {
           counts[requestedUrl] = normalizedMap.get(matchedCandidate) ?? 0
@@ -142,7 +138,9 @@ export async function fetchHatenaEntry(url: string): Promise<HatenaBookmarkSumma
 
   const bookmarks = payload.bookmarks ?? []
   return bookmarks
-    .filter((bookmark) => typeof bookmark?.comment === "string" && bookmark.comment.trim().length > 0)
+    .filter(
+      (bookmark) => typeof bookmark?.comment === "string" && bookmark.comment.trim().length > 0
+    )
     .map((bookmark) => ({
       user: bookmark.user ?? "anonymous",
       comment: bookmark.comment?.trim() ?? "",
