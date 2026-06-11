@@ -1,13 +1,5 @@
 import { discoverSearchResults, type SearchResultTarget } from "./searchResults"
-import {
-  MESSAGE_TYPES,
-  type HatenaCountsResponse,
-  type HatenaEntryResponse,
-  type HackerNewsResponse,
-  isHatenaCountsResponse,
-  isHatenaEntryResponse,
-  isHackerNewsResponse
-} from "../shared/messages"
+import { requestEntryBookmarks, requestHatenaCounts, requestHnSummaries } from "./messaging"
 import { DATA_ATTR, buildHatenaEntryUrl } from "../shared/url"
 import type { HatenaBookmarkSummary } from "../shared/hatena"
 import type { HackerNewsSummary } from "../shared/hackerNews"
@@ -312,31 +304,6 @@ async function getEntryPreviews(url: string): Promise<HatenaBookmarkSummary[] | 
   return result
 }
 
-function requestEntryBookmarks(url: string): Promise<HatenaBookmarkSummary[] | null> {
-  if (!chrome.runtime?.id) {
-    return Promise.resolve(null)
-  }
-
-  return new Promise((resolve) => {
-    const request = { type: MESSAGE_TYPES.ENTRY_REQUEST, url }
-    chrome.runtime.sendMessage(request, (response: HatenaEntryResponse | undefined) => {
-      if (chrome.runtime.lastError) {
-        console.error("Failed to load Hatena entry", chrome.runtime.lastError)
-        resolve(null)
-        return
-      }
-
-      if (!isHatenaEntryResponse(response)) {
-        console.warn("Unexpected entry response", response)
-        resolve(null)
-        return
-      }
-
-      resolve(response.bookmarks ?? [])
-    })
-  })
-}
-
 function ensureOverlay(): HTMLDivElement {
   let overlay = document.getElementById(OVERLAY_ID) as HTMLDivElement | null
   if (!overlay) {
@@ -490,94 +457,6 @@ function applyHnSummary(url: string, summary: HackerNewsSummary | null | undefin
   hnTargets.delete(url)
 }
 
-function requestCounts(urls: string[]): void {
-  if (!urls.length) {
-    return
-  }
-
-  if (!chrome.runtime?.id) {
-    console.warn("Hatena counts skipped: runtime unavailable")
-    urls.forEach((url) => {
-      inflightUrls.delete(url)
-      applyCount(url, null)
-    })
-    return
-  }
-
-  const request = { type: MESSAGE_TYPES.COUNT_REQUEST, urls }
-  try {
-    chrome.runtime.sendMessage(request, (response: HatenaCountsResponse | undefined) => {
-      urls.forEach((url) => inflightUrls.delete(url))
-
-      if (chrome.runtime.lastError) {
-        console.error("Failed to retrieve Hatena counts", chrome.runtime.lastError)
-        urls.forEach((url) => applyCount(url, null))
-        return
-      }
-
-      if (!isHatenaCountsResponse(response)) {
-        console.warn("Unexpected Hatena response", response)
-        urls.forEach((url) => applyCount(url, null))
-        return
-      }
-
-      ;(Object.entries(response.counts) as Array<[string, number | null]>).forEach(
-        ([url, count]) => {
-          applyCount(url, count)
-        }
-      )
-
-      urls.filter((url) => !(url in response.counts)).forEach((url) => applyCount(url, null))
-    })
-  } catch (error) {
-    urls.forEach((url) => inflightUrls.delete(url))
-    console.error("Unhandled error while requesting Hatena counts", error)
-    urls.forEach((url) => applyCount(url, null))
-  }
-}
-
-function requestHnSummaries(urls: string[]): void {
-  if (!urls.length) {
-    return
-  }
-
-  if (!chrome.runtime?.id) {
-    console.warn("HN summaries skipped: runtime unavailable")
-    urls.forEach((url) => {
-      hnInflight.delete(url)
-      applyHnSummary(url, null)
-    })
-    return
-  }
-
-  const request = { type: MESSAGE_TYPES.HN_REQUEST, urls }
-  try {
-    chrome.runtime.sendMessage(request, (response: HackerNewsResponse | undefined) => {
-      urls.forEach((url) => hnInflight.delete(url))
-
-      if (chrome.runtime.lastError) {
-        console.error("Failed to retrieve HN summaries", chrome.runtime.lastError)
-        urls.forEach((url) => applyHnSummary(url, null))
-        return
-      }
-
-      if (!isHackerNewsResponse(response)) {
-        console.warn("Unexpected HN response", response)
-        urls.forEach((url) => applyHnSummary(url, null))
-        return
-      }
-
-      Object.entries(response.summaries).forEach(([url, summary]) => {
-        applyHnSummary(url, summary)
-      })
-    })
-  } catch (error) {
-    urls.forEach((url) => hnInflight.delete(url))
-    console.error("Unhandled error while requesting HN summaries", error)
-    urls.forEach((url) => applyHnSummary(url, null))
-  }
-}
-
 function queueTargets(targets: SearchResultTarget[]): void {
   const urlsToRequest: string[] = []
   const hnUrlsToRequest: string[] = []
@@ -615,11 +494,11 @@ function queueTargets(targets: SearchResultTarget[]): void {
   })
 
   if (urlsToRequest.length) {
-    requestCounts(urlsToRequest)
+    requestHatenaCounts(urlsToRequest, applyCount, (url) => inflightUrls.delete(url))
   }
 
   if (hnUrlsToRequest.length) {
-    requestHnSummaries(hnUrlsToRequest)
+    requestHnSummaries(hnUrlsToRequest, applyHnSummary, (url) => hnInflight.delete(url))
   }
 }
 
