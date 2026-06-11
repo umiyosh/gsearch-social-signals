@@ -598,10 +598,7 @@ function queueTargets(targets: SearchResultTarget[]): void {
       } else {
         target.container.setAttribute(DATA_ATTR, "done")
       }
-      return
-    }
-
-    if (!inflightUrls.has(target.url)) {
+    } else if (!inflightUrls.has(target.url)) {
       inflightUrls.add(target.url)
       urlsToRequest.push(target.url)
     }
