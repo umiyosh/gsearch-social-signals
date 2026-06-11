@@ -23,7 +23,15 @@ npm run quality:test    # node --test for scripts/*.test.mjs
 
 Quality gate before a PR: `make check` (= lint / fmt-check / typecheck / quality-test / lint-quality / test-coverage). Manual smoke test: rebuild, reload the extension at `chrome://extensions/`, open a Google SERP and confirm badges render.
 
-Live E2E sweep (real Chrome + chrome-devtools MCP, badge counts vs Hatena API): use the `gsplus-hatebu-e2e` user skill. On-demand only — never wire it into CI; Google bot detection makes it inherently flaky there.
+Live E2E sweep (real Chrome + chrome-devtools MCP, badge counts vs Hatena API): use the `gsplus-hatebu-e2e` user skill. Never wire it into CI; Google bot detection makes it inherently flaky there.
+
+### Post-push live verification (rule)
+
+After pushing changes that touch extension runtime behavior (`src/**` or `public/manifest.json`), run the `gsplus-hatebu-e2e` skill yourself before reporting the work complete:
+
+1. `make build`, then ask the user to reload the extension at `chrome://extensions/` (⟳). Never skip the reload — the installed extension keeps running the old build, so a sweep without it validates stale code and produces false confidence.
+2. Default to a reduced smoke sweep (~10 keywords, no pagination). Use the full scale when the change touches `src/shared/url.ts`, `src/shared/hatena.ts`, or `src/content/searchResults.ts` (URL normalization / count matching / SERP selectors), or when the user asks.
+3. Docs-, tooling-, and test-only pushes don't require the sweep.
 
 Make targets are thin wrappers around the npm scripts.
 
