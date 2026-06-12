@@ -1,6 +1,26 @@
 import { discoverSearchResults } from "./searchResults"
 import { ensureStyles } from "./styles"
-import { queueTargets } from "./signals"
+import { insertBadge, insertHnBadge } from "./badges"
+import { requestEntryBookmarks, requestHatenaCounts, requestHnSummaries } from "./messaging"
+import {
+  beginOverlaySession,
+  cancelOverlayHide,
+  presentOverlay,
+  scheduleOverlayHide
+} from "./overlay"
+import { createSignalPipeline } from "./signals"
+
+const queueTargets = createSignalPipeline({
+  requestHatenaCounts,
+  requestHnSummaries,
+  requestEntryBookmarks,
+  insertBadge,
+  insertHnBadge,
+  beginOverlaySession,
+  presentOverlay,
+  scheduleOverlayHide,
+  cancelOverlayHide
+})
 
 function scan(root: ParentNode = document): void {
   const targets = discoverSearchResults(root)
