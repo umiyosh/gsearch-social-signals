@@ -1,21 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { queueTargets } from "../../src/content/signals"
+import { insertBadge, insertHnBadge } from "../../src/content/badges"
 import {
-  requestEntryBookmarks,
-  requestHatenaCounts,
-  requestHnSummaries
-} from "../../src/content/messaging"
+  beginOverlaySession,
+  cancelOverlayHide,
+  presentOverlay,
+  scheduleOverlayHide
+} from "../../src/content/overlay"
+import { createSignalPipeline, type SignalPipelineDeps } from "../../src/content/signals"
 import type { SearchResultTarget } from "../../src/content/searchResults"
 
-vi.mock("../../src/content/messaging", () => ({
-  requestHatenaCounts: vi.fn(),
-  requestHnSummaries: vi.fn(),
-  requestEntryBookmarks: vi.fn()
-}))
+type CountRequest = SignalPipelineDeps["requestHatenaCounts"]
+type HnRequest = SignalPipelineDeps["requestHnSummaries"]
+type EntryRequest = SignalPipelineDeps["requestEntryBookmarks"]
 
-const mockedCounts = vi.mocked(requestHatenaCounts)
-const mockedHn = vi.mocked(requestHnSummaries)
-const mockedEntry = vi.mocked(requestEntryBookmarks)
+let deps: SignalPipelineDeps
+let queueTargets: (targets: SearchResultTarget[]) => void
+let requestHatenaCounts: ReturnType<
+  typeof vi.fn<Parameters<CountRequest>, ReturnType<CountRequest>>
+>
+let requestHnSummaries: ReturnType<typeof vi.fn<Parameters<HnRequest>, ReturnType<HnRequest>>>
+let requestEntryBookmarks: ReturnType<
+  typeof vi.fn<Parameters<EntryRequest>, ReturnType<EntryRequest>>
+>
 
 function buildTarget(url: string): SearchResultTarget {
   const container = document.createElement("div")
@@ -33,7 +39,7 @@ function lastCountsCall(): {
   apply: (url: string, count: number | null | undefined) => void
   settle: (url: string) => void
 } {
-  const call = mockedCounts.mock.calls.at(-1)
+  const call = requestHatenaCounts.mock.calls.at(-1)
   if (!call) {
     throw new Error("requestHatenaCounts was not called")
   }
@@ -42,7 +48,21 @@ function lastCountsCall(): {
 
 beforeEach(() => {
   document.body.textContent = ""
-  vi.clearAllMocks()
+  requestHatenaCounts = vi.fn<Parameters<CountRequest>, ReturnType<CountRequest>>()
+  requestHnSummaries = vi.fn<Parameters<HnRequest>, ReturnType<HnRequest>>()
+  requestEntryBookmarks = vi.fn<Parameters<EntryRequest>, ReturnType<EntryRequest>>()
+  deps = {
+    requestHatenaCounts,
+    requestHnSummaries,
+    requestEntryBookmarks,
+    insertBadge,
+    insertHnBadge,
+    beginOverlaySession,
+    presentOverlay,
+    scheduleOverlayHide,
+    cancelOverlayHide
+  }
+  queueTargets = createSignalPipeline(deps)
 })
 
 describe("queueTargets", () => {
@@ -77,24 +97,24 @@ describe("queueTargets", () => {
     const { apply, settle } = lastCountsCall()
     apply("https://signals.example/cached", 4)
     settle("https://signals.example/cached")
-    const requestsSoFar = mockedCounts.mock.calls.length
+    const requestsSoFar = requestHatenaCounts.mock.calls.length
 
     const second = buildTarget("https://signals.example/cached")
     queueTargets([second])
 
-    expect(mockedCounts.mock.calls.length).toBe(requestsSoFar)
+    expect(requestHatenaCounts.mock.calls.length).toBe(requestsSoFar)
     expect(second.container.querySelector(".gsplus-hatebu-count")?.textContent).toContain("4 users")
   })
 
   it("suppresses duplicate requests while a url is in flight", () => {
     const first = buildTarget("https://signals.example/inflight")
     queueTargets([first])
-    const requestsSoFar = mockedCounts.mock.calls.length
+    const requestsSoFar = requestHatenaCounts.mock.calls.length
 
     const second = buildTarget("https://signals.example/inflight")
     queueTargets([second])
 
-    expect(mockedCounts.mock.calls.length).toBe(requestsSoFar)
+    expect(requestHatenaCounts.mock.calls.length).toBe(requestsSoFar)
   })
 
   it("renders HN badges when summaries report hits", () => {
@@ -102,7 +122,7 @@ describe("queueTargets", () => {
 
     queueTargets([target])
 
-    const hnCall = mockedHn.mock.calls.at(-1)
+    const hnCall = requestHnSummaries.mock.calls.at(-1)
     expect(hnCall?.[0]).toEqual(["https://signals.example/hn"])
     hnCall?.[1]("https://signals.example/hn", { nbHits: 6 })
 
@@ -113,7 +133,7 @@ describe("queueTargets", () => {
     const target = buildTarget("https://signals.example/hn-none")
 
     queueTargets([target])
-    mockedHn.mock.calls.at(-1)?.[1]("https://signals.example/hn-none", null)
+    requestHnSummaries.mock.calls.at(-1)?.[1]("https://signals.example/hn-none", null)
 
     expect(target.container.querySelector(".gsplus-hn-count")).toBeNull()
   })
@@ -123,7 +143,7 @@ describe("badge hover previews", () => {
   it("loads entry previews once and shows them in the overlay", async () => {
     const url = "https://signals.example/preview"
     const target = buildTarget(url)
-    mockedEntry.mockResolvedValue([{ user: "alice", comment: "insightful" }])
+    requestEntryBookmarks.mockResolvedValue([{ user: "alice", comment: "insightful" }])
 
     queueTargets([target])
     lastCountsCall().apply(url, 3)
@@ -139,6 +159,6 @@ describe("badge hover previews", () => {
       expect(document.getElementById("gsplus-hatebu-overlay")?.textContent).toContain("insightful")
     })
 
-    expect(mockedEntry).toHaveBeenCalledTimes(1)
+    expect(requestEntryBookmarks).toHaveBeenCalledTimes(1)
   })
 })
