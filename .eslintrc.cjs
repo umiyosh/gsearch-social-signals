@@ -12,7 +12,12 @@ module.exports = {
     tsconfigRootDir: __dirname
   },
   plugins: ["@typescript-eslint"],
-  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
+  extends: [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-type-checked",
+    "prettier"
+  ],
   rules: {
     complexity: ["warn", { max: 20 }],
     "max-depth": ["warn", 4],
@@ -30,6 +35,7 @@ module.exports = {
     ],
     "@typescript-eslint/consistent-type-imports": "warn",
     "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/switch-exhaustiveness-check": "error",
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-misused-promises": [
       "error",
