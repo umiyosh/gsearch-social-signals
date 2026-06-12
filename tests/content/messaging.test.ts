@@ -8,17 +8,17 @@ import { err, ok } from "../../src/shared/messages"
 
 type ChromeStub = {
   runtime?: {
-    id?: string
-    lastError?: { message: string }
+    id?: string | undefined
+    lastError?: { message: string } | undefined
     sendMessage: (message: unknown, callback: (response: unknown) => void) => void
   }
 }
 
 function stubChrome(options: {
-  id?: string
-  lastError?: { message: string }
+  id?: string | undefined
+  lastError?: { message: string } | undefined
   respond?: unknown
-  throwOnSend?: boolean
+  throwOnSend?: boolean | undefined
 }): void {
   const stub: ChromeStub = {
     runtime: {

@@ -163,8 +163,8 @@ export async function fetchHatenaEntry(url: string): Promise<HatenaBookmarkSumma
       {
         user: typeof bookmark.user === "string" ? bookmark.user : "anonymous",
         comment,
-        timestamp: typeof bookmark.timestamp === "string" ? bookmark.timestamp : undefined,
-        permalink: typeof bookmark.permalink === "string" ? bookmark.permalink : undefined
+        ...(typeof bookmark.timestamp === "string" ? { timestamp: bookmark.timestamp } : {}),
+        ...(typeof bookmark.permalink === "string" ? { permalink: bookmark.permalink } : {})
       }
     ]
   })
