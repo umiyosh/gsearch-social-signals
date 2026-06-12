@@ -15,7 +15,9 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "resolveJsonModule": true,
-    "outDir": "dist-types"
+    "outDir": "dist-types",
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true
   },
   "include": ["src", "tests", "tsup.config.ts", "vitest.config.ts"],
   "exclude": ["dist", "node_modules"]

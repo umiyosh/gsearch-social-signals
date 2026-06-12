@@ -41,7 +41,7 @@ Make targets are thin wrappers around the npm scripts.
 
 ### Coverage gate
 
-`vitest.config.ts` enforces per-file thresholds (lines/statements/functions 80%, branches 70%) on the logic layer. `src/background/index.ts` and `src/content/index.ts` are excluded as chrome-runtime/DOM entrypoint glue — keep logic out of them and in `src/shared/` or `src/content/searchResults.ts`, which are gated.
+`vitest.config.ts` enforces per-file thresholds (lines/statements/functions 80%, branches 70%) on the logic layer. Only the two entrypoints (`src/background/index.ts`, `src/content/index.ts`) are excluded as wiring glue — every other module (shared, handlers, content modules, infra adapters) is gated, so keep the entrypoints free of logic.
 
 ## Architecture
 
@@ -49,19 +49,18 @@ tsup builds exactly two bundles from `tsup.config.ts`: `dist/background.js` (ser
 
 The code is split by Chrome extension runtime boundary:
 
-- **`src/content/`** — runs on Google SERPs. Discovers result links, renders badges/overlay into the DOM. Never fetches external APIs directly.
-- **`src/background/`** — service worker. The only place that performs network requests (Hatena and HN Algolia APIs, allowed via `host_permissions` in the manifest).
+- **`src/content/`** — runs on Google SERPs. `index.ts` is thin boot glue (styles + MutationObserver); the work happens in `searchResults.ts` (DOM discovery), `signals.ts` (per-URL caching/orchestration), `badges.ts` / `overlay.ts` / `styles.ts` (rendering), and `messaging.ts` (the only content-side file that touches `chrome.runtime`). Never fetches external APIs directly.
+- **`src/background/`** — service worker. `index.ts` only wires real fetchers into `handlers.ts` (`createMessageHandler(deps)` — dependency-injected, exhaustively switched, unit-testable). The only place that performs network requests (Hatena and HN Algolia APIs, allowed via `host_permissions` in the manifest).
 - **`src/shared/`** — message contracts, URL normalization, and API clients used by both sides.
+- **`src/infra/chrome/`** — `messageRouter.ts` wraps `chrome.runtime.onMessage` and owns the MV3 "return `true` to keep the channel open for async `sendResponse`" protocol, so handlers just return a `Promise` (or `null` for foreign messages).
 
 ### Message flow
 
-Content and background communicate exclusively through typed message envelopes defined in `src/shared/messages.ts` (`MESSAGE_TYPES` constants + `is...Request/Response` type guards — every handler validates with the guard, never casts). The flow:
+Content and background communicate exclusively through typed messages defined in `src/shared/messages.ts`: requests are a discriminated union (`MESSAGE_TYPES` + `is...Request` guards that validate payload element types), responses are `{ ok: true, data } | { ok: false, error }` envelopes validated with `isExtensionResponse(value, isData)`. Never cast a message — always narrow through the guards. The flow:
 
 1. Content script scans the SERP (`discoverSearchResults`), extracts external URLs, and batches `COUNT_REQUEST` / `HN_REQUEST` messages.
-2. Background fetches counts (`src/shared/hatena.ts`, `src/shared/hackerNews.ts`) and responds.
-3. Content renders inline badges; results with 0 counts get no badge. Hovering the Hatena badge sends `ENTRY_REQUEST` to fetch bookmark comments for the overlay popup.
-
-Async `sendResponse` handlers in `src/background/index.ts` must `return true` to keep the message channel open.
+2. Background validates the payload (http/https allowlist, size cap — content-script input is treated as untrusted), fetches counts (`src/shared/hatena.ts`, `src/shared/hackerNews.ts`), and responds with an envelope.
+3. Content renders inline badges; results with 0 counts get no badge. Hovering the Hatena badge sends `ENTRY_REQUEST` to fetch bookmark comments for the overlay popup. Error envelopes map to the same UI states as the legacy behavior (counts → no badge, entry → empty-comments wording).
 
 ### Caching layers
 
@@ -77,7 +76,7 @@ All DOM selectors for result containers are concentrated in `src/content/searchR
 
 ### Adding a new data source
 
-Follow the Hacker News example: API client in `src/shared/`, request/response types + type guards in `src/shared/messages.ts`, handler in `src/background/index.ts`, badge rendering in `src/content/index.ts`, and the API host added to `host_permissions` in `public/manifest.json`.
+Follow the Hacker News example: API client in `src/shared/`, request/response types + type guards in `src/shared/messages.ts`, a case in `src/background/handlers.ts`, send/validate plumbing in `src/content/messaging.ts`, badge rendering in `src/content/badges.ts` + orchestration in `src/content/signals.ts`, and the API host added to `host_permissions` in `public/manifest.json`.
 
 ### Manifest
 

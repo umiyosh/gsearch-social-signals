@@ -1,13 +1,10 @@
-import type { HatenaBookmarkSummary } from "./hatena"
+import type { HatenaBookmarkSummary, HatenaCountMap } from "./hatena"
 import type { HackerNewsSummary } from "./hackerNews"
 
 export const MESSAGE_TYPES = {
   COUNT_REQUEST: "GSPLUS_HATEBU_REQUEST_COUNTS",
-  COUNT_RESPONSE: "GSPLUS_HATEBU_COUNTS_RESPONSE",
   ENTRY_REQUEST: "GSPLUS_HATEBU_REQUEST_ENTRY",
-  ENTRY_RESPONSE: "GSPLUS_HATEBU_ENTRY_RESPONSE",
-  HN_REQUEST: "GSPLUS_HATEBU_REQUEST_HN",
-  HN_RESPONSE: "GSPLUS_HATEBU_HN_RESPONSE"
+  HN_REQUEST: "GSPLUS_HATEBU_REQUEST_HN"
 } as const
 
 export type HatenaCountsRequest = {
@@ -15,93 +12,101 @@ export type HatenaCountsRequest = {
   urls: string[]
 }
 
-export type HatenaCountsResponse = {
-  type: typeof MESSAGE_TYPES.COUNT_RESPONSE
-  counts: Record<string, number | null>
-}
-
 export type HatenaEntryRequest = {
   type: typeof MESSAGE_TYPES.ENTRY_REQUEST
   url: string
 }
-
-export type HatenaEntryResponse = {
-  type: typeof MESSAGE_TYPES.ENTRY_RESPONSE
-  url: string
-  bookmarks: HatenaBookmarkSummary[]
-}
-
-export type RuntimeMessage =
-  | HatenaCountsRequest
-  | HatenaCountsResponse
-  | HatenaEntryRequest
-  | HatenaEntryResponse
-  | HackerNewsRequest
-  | HackerNewsResponse
 
 export type HackerNewsRequest = {
   type: typeof MESSAGE_TYPES.HN_REQUEST
   urls: string[]
 }
 
-export type HackerNewsResponse = {
-  type: typeof MESSAGE_TYPES.HN_RESPONSE
-  summaries: Record<string, HackerNewsSummary | null>
+export type ExtensionRequest = HatenaCountsRequest | HatenaEntryRequest | HackerNewsRequest
+
+export type Ok<T> = { ok: true; data: T }
+export type Err = { ok: false; error: string }
+export type ExtensionResponse<T> = Ok<T> | Err
+
+export type HnSummaryMap = Record<string, HackerNewsSummary | null>
+
+export type HatenaCountsResponse = ExtensionResponse<HatenaCountMap>
+export type HatenaEntryResponse = ExtensionResponse<HatenaBookmarkSummary[]>
+export type HackerNewsResponse = ExtensionResponse<HnSummaryMap>
+
+export function ok<T>(data: T): Ok<T> {
+  return { ok: true, data }
+}
+
+export function err(error: unknown): Err {
+  return { ok: false, error: error instanceof Error ? error.message : String(error) }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string")
 }
 
 export function isHatenaCountsRequest(value: unknown): value is HatenaCountsRequest {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { type?: string }).type === MESSAGE_TYPES.COUNT_REQUEST &&
-    Array.isArray((value as { urls?: unknown }).urls)
-  )
-}
-
-export function isHatenaCountsResponse(value: unknown): value is HatenaCountsResponse {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { type?: string }).type === MESSAGE_TYPES.COUNT_RESPONSE &&
-    typeof (value as { counts?: unknown }).counts === "object" &&
-    (value as { counts?: unknown }).counts !== null
-  )
+  return isRecord(value) && value.type === MESSAGE_TYPES.COUNT_REQUEST && isStringArray(value.urls)
 }
 
 export function isHatenaEntryRequest(value: unknown): value is HatenaEntryRequest {
   return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { type?: string }).type === MESSAGE_TYPES.ENTRY_REQUEST &&
-    typeof (value as { url?: unknown }).url === "string"
-  )
-}
-
-export function isHatenaEntryResponse(value: unknown): value is HatenaEntryResponse {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { type?: string }).type === MESSAGE_TYPES.ENTRY_RESPONSE &&
-    typeof (value as { url?: unknown }).url === "string" &&
-    Array.isArray((value as { bookmarks?: unknown }).bookmarks)
+    isRecord(value) && value.type === MESSAGE_TYPES.ENTRY_REQUEST && typeof value.url === "string"
   )
 }
 
 export function isHackerNewsRequest(value: unknown): value is HackerNewsRequest {
+  return isRecord(value) && value.type === MESSAGE_TYPES.HN_REQUEST && isStringArray(value.urls)
+}
+
+export function isExtensionRequest(value: unknown): value is ExtensionRequest {
+  return isHatenaCountsRequest(value) || isHatenaEntryRequest(value) || isHackerNewsRequest(value)
+}
+
+export function isCountMap(value: unknown): value is HatenaCountMap {
   return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { type?: string }).type === MESSAGE_TYPES.HN_REQUEST &&
-    Array.isArray((value as { urls?: unknown }).urls)
+    isRecord(value) &&
+    Object.values(value).every((count) => count === null || typeof count === "number")
   )
 }
 
-export function isHackerNewsResponse(value: unknown): value is HackerNewsResponse {
+export function isBookmarkSummaryList(value: unknown): value is HatenaBookmarkSummary[] {
   return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { type?: string }).type === MESSAGE_TYPES.HN_RESPONSE &&
-    typeof (value as { summaries?: unknown }).summaries === "object" &&
-    (value as { summaries?: unknown }).summaries !== null
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        isRecord(item) &&
+        typeof item.user === "string" &&
+        typeof item.comment === "string" &&
+        (item.timestamp === undefined || typeof item.timestamp === "string") &&
+        (item.permalink === undefined || typeof item.permalink === "string")
+    )
   )
+}
+
+export function isHnSummaryMap(value: unknown): value is HnSummaryMap {
+  return (
+    isRecord(value) &&
+    Object.values(value).every(
+      (summary) => summary === null || (isRecord(summary) && typeof summary.nbHits === "number")
+    )
+  )
+}
+
+export function isExtensionResponse<T>(
+  value: unknown,
+  isData: (data: unknown) => data is T
+): value is ExtensionResponse<T> {
+  if (!isRecord(value)) {
+    return false
+  }
+  if (value.ok === true) {
+    return isData(value.data)
+  }
+  return value.ok === false && typeof value.error === "string"
 }

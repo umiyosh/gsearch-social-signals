@@ -64,8 +64,9 @@ async function fetchHackerNewsSummary(url: string): Promise<HackerNewsSummary | 
     nbHits,
     maxPoints,
     maxComments,
-    topStoryId,
-    topStoryUrl: topStoryId ? `https://news.ycombinator.com/item?id=${topStoryId}` : undefined
+    ...(topStoryId !== undefined
+      ? { topStoryId, topStoryUrl: `https://news.ycombinator.com/item?id=${topStoryId}` }
+      : {})
   }
 }
 
