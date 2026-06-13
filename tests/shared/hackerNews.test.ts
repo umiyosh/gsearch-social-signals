@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { fetchHackerNewsSummaries } from "../../src/shared/hackerNews"
 
-function mockFetchResponse(payload: unknown, ok = true): void {
+function mockFetchResponse(payload: unknown, ok = true, status = ok ? 200 : 500): void {
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue({
       ok,
-      status: ok ? 200 : 500,
+      status,
       json: () => Promise.resolve(payload)
     })
   )
@@ -21,8 +21,8 @@ describe("fetchHackerNewsSummaries", () => {
     mockFetchResponse({
       nbHits: 2,
       hits: [
-        { objectID: "111", points: 10, num_comments: 4 },
-        { objectID: "222", points: 50, num_comments: 2 }
+        { objectID: "111", points: 10, num_comments: 4, url: "https://example.com/article" },
+        { objectID: "222", points: 50, num_comments: 2, url: "https://example.com/article" }
       ]
     })
 
@@ -63,5 +63,43 @@ describe("fetchHackerNewsSummaries", () => {
 
     await fetchHackerNewsSummaries(["https://example.com/", "https://example.com/"])
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1)
+  })
+
+  it("searches with a normalized URL without the unsupported url attribute restriction", async () => {
+    mockFetchResponse({ nbHits: 0, hits: [] })
+
+    await fetchHackerNewsSummaries([
+      "https://Example.com/article?utm_source=google&keep=1#comments"
+    ])
+
+    const requestUrl = new URL(String(vi.mocked(fetch).mock.calls[0]?.[0]))
+    expect(requestUrl.searchParams.get("query")).toBe("https://example.com/article?keep=1")
+    expect(requestUrl.searchParams.has("restrictSearchableAttributes")).toBe(false)
+  })
+
+  it("counts only hits whose url matches the requested URL", async () => {
+    mockFetchResponse({
+      nbHits: 2,
+      hits: [
+        { objectID: "111", points: 10, num_comments: 4, url: "http://example.com/article" },
+        { objectID: "222", points: 50, num_comments: 2, url: "https://other.example/article" }
+      ]
+    })
+
+    const summaries = await fetchHackerNewsSummaries(["https://example.com/article?utm_medium=cpc"])
+    expect(summaries["https://example.com/article?utm_medium=cpc"]).toEqual({
+      nbHits: 1,
+      maxPoints: 10,
+      maxComments: 4,
+      topStoryId: "111",
+      topStoryUrl: "https://news.ycombinator.com/item?id=111"
+    })
+  })
+
+  it("treats HN 400 responses as missing summaries", async () => {
+    mockFetchResponse({}, false, 400)
+
+    const summaries = await fetchHackerNewsSummaries(["https://example.com/"])
+    expect(summaries["https://example.com/"]).toBeNull()
   })
 })

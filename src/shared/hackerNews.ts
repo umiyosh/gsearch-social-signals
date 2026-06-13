@@ -1,3 +1,5 @@
+import { normalizeForComparison, normalizeRequestUrl, stripQueryString } from "./url"
+
 export interface HackerNewsSummary {
   nbHits: number
   maxPoints?: number
@@ -21,34 +23,35 @@ interface HackerNewsSearchResponse {
   hits?: HackerNewsSearchHit[]
 }
 
-async function fetchHackerNewsSummary(url: string): Promise<HackerNewsSummary | null> {
-  const endpoint = new URL(HN_ENDPOINT)
-  endpoint.searchParams.set("query", url)
-  endpoint.searchParams.set("tags", "story")
-  endpoint.searchParams.set("restrictSearchableAttributes", "url")
-  endpoint.searchParams.set("numericFilters", "points>0")
-  endpoint.searchParams.set("hitsPerPage", String(HITS_PER_PAGE))
+function flipProtocol(normalizedUrl: string): string {
+  return normalizedUrl.startsWith("https://")
+    ? normalizedUrl.replace("https://", "http://")
+    : normalizedUrl.replace("http://", "https://")
+}
 
-  const response = await fetch(endpoint.toString(), {
-    method: "GET",
-    cache: "no-cache"
-  })
+function buildCandidateKeys(normalizedRequest: string): Set<string> {
+  const flippedProtocol = flipProtocol(normalizedRequest)
+  return new Set([
+    normalizedRequest,
+    flippedProtocol,
+    stripQueryString(normalizedRequest),
+    stripQueryString(flippedProtocol)
+  ])
+}
 
-  if (!response.ok) {
-    throw new Error(`HN API responded with ${response.status}`)
+function hitMatchesRequest(hit: HackerNewsSearchHit, normalizedRequest: string): boolean {
+  if (typeof hit.url !== "string") {
+    return false
   }
+  return buildCandidateKeys(normalizedRequest).has(normalizeForComparison(hit.url))
+}
 
-  const payload = (await response.json()) as HackerNewsSearchResponse
-  const nbHits = typeof payload.nbHits === "number" ? payload.nbHits : 0
-  if (!Array.isArray(payload.hits)) {
-    return { nbHits }
-  }
-
+function summarizeHits(hits: HackerNewsSearchHit[]): HackerNewsSummary {
   let maxPoints = 0
   let maxComments = 0
   let topStoryId: string | undefined
 
-  payload.hits.forEach((hit) => {
+  hits.forEach((hit) => {
     const points = typeof hit.points === "number" ? hit.points : 0
     const comments = typeof hit.num_comments === "number" ? hit.num_comments : 0
     if (points >= maxPoints) {
@@ -61,13 +64,41 @@ async function fetchHackerNewsSummary(url: string): Promise<HackerNewsSummary | 
   })
 
   return {
-    nbHits,
+    nbHits: hits.length,
     maxPoints,
     maxComments,
     ...(topStoryId !== undefined
       ? { topStoryId, topStoryUrl: `https://news.ycombinator.com/item?id=${topStoryId}` }
       : {})
   }
+}
+
+async function fetchHackerNewsSummary(url: string): Promise<HackerNewsSummary | null> {
+  const normalizedRequest = normalizeRequestUrl(url)
+  const endpoint = new URL(HN_ENDPOINT)
+  endpoint.searchParams.set("query", normalizedRequest)
+  endpoint.searchParams.set("tags", "story")
+  endpoint.searchParams.set("numericFilters", "points>0")
+  endpoint.searchParams.set("hitsPerPage", String(HITS_PER_PAGE))
+
+  const response = await fetch(endpoint.toString(), {
+    method: "GET",
+    cache: "no-cache"
+  })
+
+  if (!response.ok) {
+    if (response.status === 400) {
+      return null
+    }
+    throw new Error(`HN API responded with ${response.status}`)
+  }
+
+  const payload = (await response.json()) as HackerNewsSearchResponse
+  if (!Array.isArray(payload.hits)) {
+    return { nbHits: typeof payload.nbHits === "number" ? payload.nbHits : 0 }
+  }
+  const matchingHits = payload.hits.filter((hit) => hitMatchesRequest(hit, normalizedRequest))
+  return summarizeHits(matchingHits)
 }
 
 export async function fetchHackerNewsSummaries(
