@@ -29,21 +29,44 @@ function flipProtocol(normalizedUrl: string): string {
     : normalizedUrl.replace("http://", "https://")
 }
 
+function stripNonRootTrailingSlash(normalizedUrl: string): string {
+  const parsed = new URL(normalizedUrl)
+  if (parsed.pathname === "/" || !parsed.pathname.endsWith("/")) {
+    return normalizedUrl
+  }
+
+  parsed.pathname = parsed.pathname.replace(/\/+$/, "")
+  return normalizeForComparison(parsed.toString())
+}
+
+function addCandidateKeyVariants(keys: Set<string>, normalizedUrl: string): void {
+  keys.add(normalizedUrl)
+  keys.add(stripQueryString(normalizedUrl))
+
+  const withoutTrailingSlash = stripNonRootTrailingSlash(normalizedUrl)
+  keys.add(withoutTrailingSlash)
+  keys.add(stripQueryString(withoutTrailingSlash))
+}
+
 function buildCandidateKeys(normalizedRequest: string): Set<string> {
   const flippedProtocol = flipProtocol(normalizedRequest)
-  return new Set([
-    normalizedRequest,
-    flippedProtocol,
-    stripQueryString(normalizedRequest),
-    stripQueryString(flippedProtocol)
-  ])
+  const keys = new Set<string>()
+  addCandidateKeyVariants(keys, normalizedRequest)
+  addCandidateKeyVariants(keys, flippedProtocol)
+  return keys
 }
 
 function hitMatchesRequest(hit: HackerNewsSearchHit, normalizedRequest: string): boolean {
   if (typeof hit.url !== "string") {
     return false
   }
-  return buildCandidateKeys(normalizedRequest).has(normalizeForComparison(hit.url))
+
+  const candidateKeys = buildCandidateKeys(normalizedRequest)
+  const normalizedHitUrl = normalizeForComparison(hit.url)
+  return (
+    candidateKeys.has(normalizedHitUrl) ||
+    candidateKeys.has(stripNonRootTrailingSlash(normalizedHitUrl))
+  )
 }
 
 function summarizeHits(hits: HackerNewsSearchHit[]): HackerNewsSummary {

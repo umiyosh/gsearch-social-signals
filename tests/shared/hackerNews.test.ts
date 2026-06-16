@@ -96,6 +96,44 @@ describe("fetchHackerNewsSummaries", () => {
     })
   })
 
+  it("matches HN hit URLs when only a non-root trailing slash differs", async () => {
+    mockFetchResponse({
+      nbHits: 1,
+      hits: [
+        {
+          objectID: "333",
+          points: 500,
+          num_comments: 131,
+          url: "https://github.com/HackerNews/API"
+        }
+      ]
+    })
+
+    const summaries = await fetchHackerNewsSummaries(["https://github.com/HackerNews/API/"])
+    expect(summaries["https://github.com/HackerNews/API/"]).toEqual({
+      nbHits: 1,
+      maxPoints: 500,
+      maxComments: 131,
+      topStoryId: "333",
+      topStoryUrl: "https://news.ycombinator.com/item?id=333"
+    })
+  })
+
+  it("matches requested URLs when only the HN hit has a non-root trailing slash", async () => {
+    mockFetchResponse({
+      nbHits: 1,
+      hits: [{ objectID: "444", points: 42, num_comments: 7, url: "https://example.com/article/" }]
+    })
+
+    const summaries = await fetchHackerNewsSummaries(["https://example.com/article"])
+    expect(summaries["https://example.com/article"]).toMatchObject({
+      nbHits: 1,
+      maxPoints: 42,
+      maxComments: 7,
+      topStoryId: "444"
+    })
+  })
+
   it("treats HN 400 responses as missing summaries", async () => {
     mockFetchResponse({}, false, 400)
 
