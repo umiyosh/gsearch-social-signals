@@ -10,7 +10,7 @@
 - 配布形態は「既存拡張の上から読み込む野良プラグイン」。そのため **オリジナル DOM を直接改変（削除／書き換え）してはならない**。
 - Google 検索結果ページ内に、はてなバッジ群と独立した HN 表示領域を動的に挿入し、DOM を分離する。
 - 既存拡張と競合しないよう、`data-gsplus-*` 属性・クラス名を再利用せず、`gsplus-hn-*` 接頭辞を付与した独自ラッパーを使用する。
-- HN データ取得には Algolia Hacker News Search API を利用し、`nbHits` を主指標としてバッジに表示。API 詳細は `docs/spec_hn.md` に準拠。
+- HN データ取得には Algolia Hacker News Search API を利用し、`maxPoints` を主指標としてバッジに表示。API 詳細は `docs/spec_hn.md` に準拠。
 
 ## 3. 非侵襲 DOM 合成戦略
 
@@ -29,9 +29,9 @@
 
 ## 5. UI 仕様
 
-- バッジテキスト: `HN <nbHits> posts`。`nbHits === 0` の場合はコンテナを追加しない。
-- クリック先: `https://hn.algolia.com/?query=<encoded_url>&type=story&restrictSearchableAttributes=url`。
-- ツールチップ: 既存オーバーレイに干渉しないよう、title 属性で `Top story: <points> pts / <comments> comments` を付与するのみ。
+- バッジテキスト: `HN <maxPoints> pts`。`maxPoints <= 0` または未定義の場合はコンテナを追加しない。
+- クリック先: `topStoryUrl` があれば `https://news.ycombinator.com/item?id=<objectID>`、なければ Algolia HN Search。
+- ツールチップ: 既存オーバーレイに干渉しないよう、title 属性で投稿数、top story の points、最大コメント数を補助表示するのみ。
 - レイアウト: 12px favicon + テキスト。左右余白は `.35rem`。`display: inline-flex`。
 
 ## 6. 実装ステップ

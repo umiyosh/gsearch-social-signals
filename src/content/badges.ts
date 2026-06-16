@@ -95,7 +95,10 @@ export function insertHnBadge(target: SearchResultTarget, summary: HackerNewsSum
     container.appendChild(badge)
   }
 
-  badge.href = buildHnSearchUrl(target.url)
+  badge.href = summary.topStoryUrl ?? buildHnSearchUrl(target.url)
+  badge.title = `${summary.nbHits} posts / top ${summary.maxPoints ?? 0} pts / ${
+    summary.maxComments ?? 0
+  } comments`
 
   let icon = badge.querySelector<HTMLImageElement>(`.${HN_BADGE_ICON_CLASS}`)
   if (!icon) {
@@ -117,7 +120,7 @@ export function insertHnBadge(target: SearchResultTarget, summary: HackerNewsSum
     badge.appendChild(text)
   }
 
-  text.textContent = `HN ${summary.nbHits} posts`
+  text.textContent = `HN ${summary.maxPoints ?? 0} pts`
 }
 
 function attachBadgeEvents(badge: HTMLAnchorElement, url: string, hover: BadgeHoverHandlers): void {
