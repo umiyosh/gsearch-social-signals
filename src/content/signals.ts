@@ -107,7 +107,7 @@ export function createSignalPipeline(
   function applyHnSummary(url: string, summary: HackerNewsSummary | null | undefined): void {
     cachedHnSummaries.set(url, summary ?? null)
     const targets = hnTargets.get(url) ?? []
-    if (summary && summary.nbHits > 0) {
+    if (summary && typeof summary.maxPoints === "number" && summary.maxPoints > 0) {
       targets.forEach((target) => {
         deps.insertHnBadge(target, summary)
       })
@@ -142,7 +142,7 @@ export function createSignalPipeline(
 
       const hnCached = cachedHnSummaries.get(target.url)
       if (hnCached !== undefined) {
-        if (hnCached && hnCached.nbHits > 0) {
+        if (hnCached && typeof hnCached.maxPoints === "number" && hnCached.maxPoints > 0) {
           deps.insertHnBadge(target, hnCached)
         }
       } else if (!hnInflight.has(target.url)) {

@@ -75,22 +75,37 @@ describe("insertBadge", () => {
 })
 
 describe("insertHnBadge", () => {
-  it("renders an HN badge linking to the Algolia search", () => {
+  it("renders an HN badge with points, supporting title, and top story link", () => {
     const target = buildTarget("https://example.com/hn")
 
-    insertHnBadge(target, { nbHits: 3 })
+    insertHnBadge(target, {
+      nbHits: 3,
+      maxPoints: 123,
+      maxComments: 45,
+      topStoryUrl: "https://news.ycombinator.com/item?id=123"
+    })
+
+    const badge = target.container.querySelector<HTMLAnchorElement>(".gsplus-hn-count")
+    expect(badge?.href).toBe("https://news.ycombinator.com/item?id=123")
+    expect(badge?.textContent).toContain("HN 123 pts")
+    expect(badge?.title).toBe("3 posts / top 123 pts / 45 comments")
+  })
+
+  it("falls back to the Algolia search when no top story link exists", () => {
+    const target = buildTarget("https://example.com/hn")
+
+    insertHnBadge(target, { nbHits: 3, maxPoints: 9 })
 
     const badge = target.container.querySelector<HTMLAnchorElement>(".gsplus-hn-count")
     expect(badge?.href).toContain("https://hn.algolia.com/?query=")
     expect(badge?.href).toContain(encodeURIComponent("https://example.com/hn"))
-    expect(badge?.textContent).toContain("HN 3 posts")
   })
 
   it("shares the signal container with the hatena badge", () => {
     const target = buildTarget("https://example.com/both")
 
     insertBadge(target, 2, noopHover())
-    insertHnBadge(target, { nbHits: 1 })
+    insertHnBadge(target, { nbHits: 1, maxPoints: 10 })
 
     const containers = target.container.querySelectorAll(".gsplus-signal-container")
     expect(containers).toHaveLength(1)

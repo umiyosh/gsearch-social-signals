@@ -117,24 +117,45 @@ describe("queueTargets", () => {
     expect(requestHatenaCounts.mock.calls.length).toBe(requestsSoFar)
   })
 
-  it("renders HN badges when summaries report hits", () => {
+  it("renders HN badges when summaries report positive max points", () => {
     const target = buildTarget("https://signals.example/hn")
 
     queueTargets([target])
 
     const hnCall = requestHnSummaries.mock.calls.at(-1)
     expect(hnCall?.[0]).toEqual(["https://signals.example/hn"])
-    hnCall?.[1]("https://signals.example/hn", { nbHits: 6 })
+    hnCall?.[1]("https://signals.example/hn", { nbHits: 6, maxPoints: 42 })
 
-    expect(target.container.querySelector(".gsplus-hn-count")?.textContent).toContain("HN 6 posts")
+    expect(target.container.querySelector(".gsplus-hn-count")?.textContent).toContain("HN 42 pts")
   })
 
-  it("skips HN badges for null or zero-hit summaries", () => {
-    const target = buildTarget("https://signals.example/hn-none")
+  it("skips HN badges for null, zero-point, or points-missing summaries", () => {
+    const nullTarget = buildTarget("https://signals.example/hn-null")
+    const zeroTarget = buildTarget("https://signals.example/hn-zero")
+    const missingTarget = buildTarget("https://signals.example/hn-missing")
+
+    queueTargets([nullTarget, zeroTarget, missingTarget])
+    const hnCall = requestHnSummaries.mock.calls.at(-1)
+    hnCall?.[1]("https://signals.example/hn-null", null)
+    hnCall?.[1]("https://signals.example/hn-zero", { nbHits: 2, maxPoints: 0 })
+    hnCall?.[1]("https://signals.example/hn-missing", { nbHits: 2 })
+
+    expect(nullTarget.container.querySelector(".gsplus-hn-count")).toBeNull()
+    expect(zeroTarget.container.querySelector(".gsplus-hn-count")).toBeNull()
+    expect(missingTarget.container.querySelector(".gsplus-hn-count")).toBeNull()
+  })
+
+  it("keeps rendering Hatena badges when HN max points are zero", () => {
+    const target = buildTarget("https://signals.example/hatena-only")
 
     queueTargets([target])
-    requestHnSummaries.mock.calls.at(-1)?.[1]("https://signals.example/hn-none", null)
+    lastCountsCall().apply("https://signals.example/hatena-only", 5)
+    requestHnSummaries.mock.calls.at(-1)?.[1]("https://signals.example/hatena-only", {
+      nbHits: 2,
+      maxPoints: 0
+    })
 
+    expect(target.container.querySelector(".gsplus-hatebu-count")?.textContent).toContain("5 users")
     expect(target.container.querySelector(".gsplus-hn-count")).toBeNull()
   })
 })
