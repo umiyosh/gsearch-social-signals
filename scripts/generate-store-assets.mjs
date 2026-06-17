@@ -70,128 +70,6 @@ function hnBadge(x, y, label = "HN 128 pts") {
     </g>`
 }
 
-function resultBlock(y, options) {
-  const badges = []
-  let badgeX = 340
-  if (options.hatena) {
-    badges.push(hatenaBadge(badgeX, y - 29, options.hatena))
-    badgeX += 114
-  }
-  if (options.hn) {
-    badges.push(hnBadge(badgeX, y - 29, options.hn))
-  }
-
-  return `
-    <g>
-      ${rect(160, y - 54, 34, 34, { fill: options.iconFill ?? "#f1f3f4", radius: 17 })}
-      ${text(177, y - 32, options.icon ?? "G", { size: 16, weight: 700, fill: "#ffffff", anchor: "middle" })}
-      ${text(206, y - 40, options.site, { size: 16, weight: 600 })}
-      ${text(206, y - 17, options.url, { size: 14, fill: colors.muted })}
-      ${badges.join("")}
-      ${text(160, y + 16, options.title, { size: 25, fill: "#1a0dab" })}
-      ${text(160, y + 48, options.snippet1, { size: 17, fill: colors.text })}
-      ${text(160, y + 74, options.snippet2, { size: 17, fill: colors.text })}
-    </g>`
-}
-
-function serpFrame(content, title) {
-  return `
-    <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
-      ${rect(0, 0, 1280, 800)}
-      ${text(62, 76, "Google", { size: 40, weight: 700, fill: "#4285f4" })}
-      ${rect(175, 34, 665, 56, { fill: "#ffffff", stroke: "#dadce0", radius: 28 })}
-      ${text(215, 70, "browser extension social signals", { size: 20 })}
-      ${text(802, 70, "⌕", { size: 25, fill: colors.muted })}
-      ${text(1090, 68, "No account", { size: 15, fill: colors.muted })}
-      ${line(0, 126, 1280, 126)}
-      ${text(178, 165, "All", { size: 17, weight: 700 })}
-      ${text(235, 165, "Images", { size: 17, fill: colors.muted })}
-      ${text(320, 165, "News", { size: 17, fill: colors.muted })}
-      ${text(390, 165, "Videos", { size: 17, fill: colors.muted })}
-      ${line(170, 183, 214, 183, { stroke: colors.text, width: 3 })}
-      ${text(160, 222, title, { size: 14, fill: colors.muted })}
-      ${content}
-      ${rect(918, 230, 220, 132, { fill: "#f8fafd", stroke: "#e8eaed", radius: 8 })}
-      ${text(940, 263, "Extension preview", { size: 17, weight: 700 })}
-      ${hatenaBadge(940, 285, "24 users")}
-      ${hnBadge(940, 324, "HN 128 pts")}
-    </svg>`
-}
-
-function screenshot(kind) {
-  const first = {
-    site: "Example Docs",
-    url: "https://example.com › docs › extension-signals",
-    title: "Understanding social signals in search results",
-    snippet1: "A public example page used to show how bookmark counts and discussion scores",
-    snippet2: "appear next to normal Google Search results.",
-    icon: "E",
-    iconFill: "#34a853"
-  }
-  const second = {
-    site: "Open Web Guide",
-    url: "https://open.example.org › guides › browser-tools",
-    title: "Browser tools for researching public web pages",
-    snippet1: "Compare public references without opening every result. This sample contains",
-    snippet2: "no login state, personal data, or internal information.",
-    icon: "W",
-    iconFill: "#fbbc04"
-  }
-  const third = {
-    site: "Developer Notes",
-    url: "https://developer.example.net › articles › search-context",
-    title: "Reading context from public search results",
-    snippet1: "Short result snippets stay unchanged while GSPlusHatebu adds compact badges",
-    snippet2: "for Hatena Bookmark and Hacker News activity.",
-    icon: "D",
-    iconFill: "#ea4335"
-  }
-
-  if (kind === "hatena") {
-    first.hatena = "24 users"
-  } else if (kind === "hn") {
-    first.hn = "HN 128 pts"
-  } else {
-    first.hatena = "24 users"
-    first.hn = "HN 128 pts"
-  }
-  second.hatena = "63 users"
-  third.hn = "HN 42 pts"
-
-  const overlay =
-    kind === "hover"
-      ? `
-        <g filter="url(#shadow)">
-          ${rect(340, 320, 318, 226, { fill: "#ffffff", radius: 8 })}
-          ${text(364, 354, "sample_user", { size: 16, weight: 700, fill: colors.blue })}
-          ${text(364, 380, "Public bookmark comment shown on hover.", { size: 15 })}
-          ${line(364, 402, 634, 402)}
-          ${text(364, 433, "reader_demo", { size: 16, weight: 700, fill: colors.blue })}
-          ${text(364, 459, "Useful for checking discussion before opening.", { size: 15 })}
-          ${line(364, 482, 634, 482)}
-          ${text(364, 512, "web_researcher", { size: 16, weight: 700, fill: colors.blue })}
-          ${text(364, 538, "Synthetic sample text for store screenshots.", { size: 15 })}
-        </g>`
-      : ""
-
-  return serpFrame(
-    `
-      <defs>
-        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000000" flood-opacity="0.2"/>
-        </filter>
-      </defs>
-      ${resultBlock(286, first)}
-      ${resultBlock(430, second)}
-      ${resultBlock(574, third)}
-      ${overlay}
-    `,
-    kind === "hover"
-      ? "Hover overlay uses synthetic public comments"
-      : "Sanitized store screenshot with synthetic public results"
-  )
-}
-
 function promoSmall() {
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
@@ -223,10 +101,6 @@ function promoMarquee() {
 }
 
 const assets = [
-  ["screenshot-hatena-badge", screenshot("hatena")],
-  ["screenshot-hn-badge", screenshot("hn")],
-  ["screenshot-hatena-hn-badges", screenshot("both")],
-  ["screenshot-hover-overlay", screenshot("hover")],
   ["promo-small-440x280", promoSmall()],
   ["promo-marquee-1400x560", promoMarquee()]
 ]
