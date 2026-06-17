@@ -97,6 +97,30 @@ describe("fetchHackerNewsSummaries", () => {
     })
   })
 
+  it("filters non-positive points locally instead of using Algolia numeric filters", async () => {
+    mockFetchResponse({
+      nbHits: 4,
+      hits: [
+        { objectID: "111", points: 0, num_comments: 4, url: "https://example.com/article" },
+        { objectID: "222", num_comments: 8, url: "https://example.com/article" },
+        { objectID: "333", points: 12, num_comments: 2, url: "https://example.com/article" },
+        { objectID: "444", points: 99, num_comments: 1, url: "https://other.example/article" }
+      ]
+    })
+
+    const summaries = await fetchHackerNewsSummaries(["https://example.com/article"])
+    const requestUrl = new URL(String(vi.mocked(fetch).mock.calls[0]?.[0]))
+
+    expect(requestUrl.searchParams.has("numericFilters")).toBe(false)
+    expect(summaries["https://example.com/article"]).toEqual({
+      nbHits: 1,
+      maxPoints: 12,
+      maxComments: 2,
+      topStoryId: "333",
+      topStoryUrl: "https://news.ycombinator.com/item?id=333"
+    })
+  })
+
   it("treats HN 400 responses as missing summaries", async () => {
     mockFetchResponse({}, false, 400)
 
