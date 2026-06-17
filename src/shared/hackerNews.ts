@@ -10,6 +10,7 @@ export interface HackerNewsSummary {
 
 const HN_ENDPOINT = "https://hn.algolia.com/api/v1/search"
 const HITS_PER_PAGE = 50
+const MAX_CONCURRENT_REQUESTS = 4
 
 interface HackerNewsSearchHit {
   objectID?: string
@@ -106,22 +107,50 @@ async function fetchHackerNewsSummary(url: string): Promise<HackerNewsSummary | 
   return summarizeHits(matchingHits)
 }
 
+async function runWithConcurrency<T>(
+  items: readonly T[],
+  limit: number,
+  worker: (item: T) => Promise<void>
+): Promise<void> {
+  let nextIndex = 0
+  const workerCount = Math.min(limit, items.length)
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < items.length) {
+        const item = items[nextIndex] as T
+        nextIndex += 1
+        await worker(item)
+      }
+    })
+  )
+}
+
 export async function fetchHackerNewsSummaries(
   urls: readonly string[]
 ): Promise<Record<string, HackerNewsSummary | null>> {
   const uniqueUrls = [...new Set(urls)]
   const summaries: Record<string, HackerNewsSummary | null> = {}
+  let failedRequests = 0
+  let firstError: unknown = null
 
-  await Promise.all(
-    uniqueUrls.map(async (url) => {
-      try {
-        summaries[url] = await fetchHackerNewsSummary(url)
-      } catch (error) {
-        console.error("Failed to fetch Hacker News summary", error)
-        summaries[url] = null
-      }
+  await runWithConcurrency(uniqueUrls, MAX_CONCURRENT_REQUESTS, async (url) => {
+    try {
+      summaries[url] = await fetchHackerNewsSummary(url)
+    } catch (error) {
+      failedRequests += 1
+      firstError ??= error
+      summaries[url] = null
+    }
+  })
+
+  if (failedRequests > 0) {
+    console.error("Failed to fetch Hacker News summaries", {
+      failedRequests,
+      requestedUrls: uniqueUrls.length,
+      error: firstError
     })
-  )
+  }
 
   return summaries
 }

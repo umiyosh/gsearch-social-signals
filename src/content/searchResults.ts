@@ -6,6 +6,8 @@ export interface SearchResultTarget {
   url: string
 }
 
+export const MAX_SERP_TARGETS_PER_SCAN = 40
+
 const RESULT_CONTAINER_SELECTOR = [
   "div.g",
   "div.MjjYud",
@@ -48,23 +50,27 @@ export function discoverSearchResults(root: ParentNode): SearchResultTarget[] {
   const containers = root.querySelectorAll<HTMLElement>(RESULT_CONTAINER_SELECTOR)
   const targets: SearchResultTarget[] = []
 
-  containers.forEach((container) => {
+  for (const container of containers) {
+    if (targets.length >= MAX_SERP_TARGETS_PER_SCAN) {
+      break
+    }
+
     if (container.getAttribute(DATA_ATTR)) {
-      return
+      continue
     }
 
     if (isExcludedSerpSurface(container)) {
-      return
+      continue
     }
 
     const candidate = findPrimaryAnchor(container)
     if (!candidate) {
-      return
+      continue
     }
 
     container.setAttribute(DATA_ATTR, "pending")
     targets.push({ container, anchor: candidate.anchor, url: candidate.url })
-  })
+  }
 
   return targets
 }

@@ -13,14 +13,7 @@ export const OVERLAY_EMPTY_CLASS = "gsplus-hatebu-overlay__empty"
 
 const STYLE_ELEMENT_ID = "gsplus-hatebu-style"
 
-export function ensureStyles(): void {
-  if (document.getElementById(STYLE_ELEMENT_ID)) {
-    return
-  }
-
-  const style = document.createElement("style")
-  style.id = STYLE_ELEMENT_ID
-  style.textContent = `
+const STYLE_TEXT = `
     .${BADGE_CLASS} {
       font-size: 0.85rem;
       color: #00a4de;
@@ -40,6 +33,13 @@ export function ensureStyles(): void {
 
     .${BADGE_TEXT_CLASS} {
       line-height: 1;
+    }
+
+    .${BADGE_CLASS}:focus-visible,
+    .${HN_BADGE_CLASS}:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 2px;
+      border-radius: 3px;
     }
 
     .${HN_BADGE_CLASS} {
@@ -128,6 +128,39 @@ export function ensureStyles(): void {
       color: #5f6368;
       font-style: italic;
     }
-  `
+
+    @media (prefers-color-scheme: dark) {
+      .${OVERLAY_CLASS} {
+        background: #202124;
+        color: #e8eaed;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      }
+
+      .${OVERLAY_CLASS} li {
+        border-top-color: #3c4043;
+      }
+
+      .${OVERLAY_USER_CLASS} {
+        color: #8ab4f8;
+      }
+
+      .${OVERLAY_COMMENT_CLASS} {
+        color: #e8eaed;
+      }
+
+      .${OVERLAY_EMPTY_CLASS} {
+        color: #bdc1c6;
+      }
+    }
+`
+
+export function ensureStyles(): void {
+  if (document.getElementById(STYLE_ELEMENT_ID)) {
+    return
+  }
+
+  const style = document.createElement("style")
+  style.id = STYLE_ELEMENT_ID
+  style.textContent = STYLE_TEXT
   document.head.appendChild(style)
 }

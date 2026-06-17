@@ -42,6 +42,7 @@ describe("insertBadge", () => {
       "chrome-extension://test-extension/icons/hatena-bookmark.svg"
     )
     expect(badge?.textContent).toContain("12 users")
+    expect(badge?.getAttribute("aria-label")).toBe("Hatena Bookmark: 12 users")
     expect(target.container.getAttribute("data-gsplus-hatebu")).toBe("rendered")
   })
 
@@ -83,7 +84,7 @@ describe("insertBadge", () => {
 })
 
 describe("insertHnBadge", () => {
-  it("renders an HN badge with points, supporting title, and top story link", () => {
+  it("renders an HN badge with points, a minimal title, and top story link", () => {
     const target = buildTarget("https://example.com/hn")
 
     insertHnBadge(target, {
@@ -99,7 +100,8 @@ describe("insertHnBadge", () => {
       "chrome-extension://test-extension/icons/hacker-news.svg"
     )
     expect(badge?.textContent).toContain("HN 123 pts")
-    expect(badge?.title).toBe("3 posts / top 123 pts / 45 comments")
+    expect(badge?.getAttribute("aria-label")).toBe("Hacker News: 123 points")
+    expect(badge?.title).toBe("Hacker News: 123 points")
   })
 
   it("falls back to the Algolia search when no top story link exists", () => {
