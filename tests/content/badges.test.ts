@@ -22,6 +22,11 @@ function noopHover(): BadgeHoverHandlers {
 
 beforeEach(() => {
   document.body.innerHTML = ""
+  vi.stubGlobal("chrome", {
+    runtime: {
+      getURL: (path: string) => `chrome-extension://test-extension/${path}`
+    }
+  })
 })
 
 describe("insertBadge", () => {
@@ -33,6 +38,9 @@ describe("insertBadge", () => {
     const badge = target.container.querySelector<HTMLAnchorElement>(".gsplus-hatebu-count")
     expect(badge?.href).toBe("https://b.hatena.ne.jp/entry/s/example.com/article")
     expect(badge?.querySelector("img")?.alt).toBe("Hatena")
+    expect(badge?.querySelector("img")?.src).toBe(
+      "chrome-extension://test-extension/icons/hatena-bookmark.svg"
+    )
     expect(badge?.textContent).toContain("12 users")
     expect(target.container.getAttribute("data-gsplus-hatebu")).toBe("rendered")
   })
@@ -87,6 +95,9 @@ describe("insertHnBadge", () => {
 
     const badge = target.container.querySelector<HTMLAnchorElement>(".gsplus-hn-count")
     expect(badge?.href).toBe("https://news.ycombinator.com/item?id=123")
+    expect(badge?.querySelector("img")?.src).toBe(
+      "chrome-extension://test-extension/icons/hacker-news.svg"
+    )
     expect(badge?.textContent).toContain("HN 123 pts")
     expect(badge?.title).toBe("3 posts / top 123 pts / 45 comments")
   })

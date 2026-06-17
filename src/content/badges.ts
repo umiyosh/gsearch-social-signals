@@ -12,8 +12,15 @@ import {
 } from "./styles"
 
 const BADGE_BOUND_ATTR = "data-gsplus-badge-bound"
-const HATENA_FAVICON = "https://b.hatena.ne.jp/favicon.ico"
-const HN_FAVICON = "https://news.ycombinator.com/favicon.ico"
+const HATENA_ICON = "icons/hatena-bookmark.svg"
+const HN_ICON = "icons/hacker-news.svg"
+
+function extensionAssetUrl(path: string): string {
+  if (typeof chrome === "undefined") {
+    return path
+  }
+  return chrome.runtime?.getURL(path) ?? path
+}
 
 export interface BadgeHoverHandlers {
   onEnter: (badge: HTMLAnchorElement, url: string) => void
@@ -63,7 +70,7 @@ export function insertBadge(
   if (!icon) {
     icon = document.createElement("img")
     icon.className = BADGE_ICON_CLASS
-    icon.src = HATENA_FAVICON
+    icon.src = extensionAssetUrl(HATENA_ICON)
     icon.alt = "Hatena"
     icon.width = 14
     icon.height = 14
@@ -104,7 +111,7 @@ export function insertHnBadge(target: SearchResultTarget, summary: HackerNewsSum
   if (!icon) {
     icon = document.createElement("img")
     icon.className = HN_BADGE_ICON_CLASS
-    icon.src = HN_FAVICON
+    icon.src = extensionAssetUrl(HN_ICON)
     icon.alt = "Hacker News"
     icon.width = 12
     icon.height = 12

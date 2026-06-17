@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" role="img" aria-label="Hatena Bookmark">
+  <rect width="16" height="16" rx="2" fill="#00a4de" />
+  <path d="M3 3h4.9c1.9 0 3.1 1 3.1 2.5 0 1-.5 1.8-1.5 2.1 1.2.3 1.9 1.1 1.9 2.3 0 1.9-1.4 3.1-3.7 3.1H3V3zm2.4 2v2h2c.8 0 1.2-.4 1.2-1s-.4-1-1.2-1h-2zm0 3.8V11h2.3c.8 0 1.3-.4 1.3-1.1 0-.7-.5-1.1-1.4-1.1H5.4z" fill="#fff" />
+  <circle cx="13.2" cy="4" r="1.3" fill="#fff" />
+</svg>
