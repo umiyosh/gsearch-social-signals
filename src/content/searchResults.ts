@@ -14,6 +14,23 @@ const RESULT_CONTAINER_SELECTOR = [
   'div[jscontroller="TFQHme"]'
 ].join(", ")
 
+const EXCLUDED_SERP_SURFACE_SELECTOR = [
+  "[data-text-ad]",
+  '[aria-label="Ads"]',
+  '[aria-label="広告"]',
+  '[aria-label="Sponsored"]',
+  '[aria-label="スポンサー"]',
+  '[data-attrid*="AI Overview"]',
+  '[data-attrid*="SGE"]',
+  '[data-attrid*="People also ask"]',
+  '[data-initq*="people_also_ask"]',
+  '[data-initq*="related_question"]'
+].join(", ")
+
+function isExcludedSerpSurface(container: HTMLElement): boolean {
+  return Boolean(container.closest(EXCLUDED_SERP_SURFACE_SELECTOR))
+}
+
 function findPrimaryAnchor(
   container: HTMLElement
 ): { anchor: HTMLAnchorElement; url: string } | null {
@@ -33,6 +50,10 @@ export function discoverSearchResults(root: ParentNode): SearchResultTarget[] {
 
   containers.forEach((container) => {
     if (container.getAttribute(DATA_ATTR)) {
+      return
+    }
+
+    if (isExcludedSerpSurface(container)) {
       return
     }
 

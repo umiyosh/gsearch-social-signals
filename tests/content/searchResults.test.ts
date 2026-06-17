@@ -34,6 +34,13 @@ describe("discoverSearchResults", () => {
     expect(
       document.getElementById("already-processed-result")?.getAttribute("data-gsplus-hatebu")
     ).toBe("done")
+    expect(document.getElementById("ad-result")?.getAttribute("data-gsplus-hatebu")).toBe(null)
+    expect(document.getElementById("ai-overview-result")?.getAttribute("data-gsplus-hatebu")).toBe(
+      null
+    )
+    expect(
+      document.getElementById("people-also-ask-result")?.getAttribute("data-gsplus-hatebu")
+    ).toBe(null)
 
     const secondPass = discoverSearchResults(document)
     expect(secondPass).toHaveLength(0)

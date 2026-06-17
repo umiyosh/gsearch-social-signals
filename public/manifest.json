@@ -3,6 +3,7 @@
   "name": "Google検索 with ソーシャルシグナル",
   "version": "0.1.0",
   "description": "Show Hatena Bookmark counts and Hacker News points on Google Search results.",
+  "homepage_url": "https://github.com/umiyosh/GSPlusHatebu",
   "permissions": [],
   "host_permissions": [
     "https://bookmark.hatenaapis.com/*",
