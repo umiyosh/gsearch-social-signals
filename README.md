@@ -1,12 +1,29 @@
-# GSPlus Hatebu Extension
+# Google検索 with ソーシャルシグナル
 
-Google検索結果に各リンクのはてなブックマーク件数（`X users`）を表示するChrome拡張です。Manifest V3 + TypeScriptで構築し、Hatena公開APIからカウントをバッチ取得してDOMへ柔らかく描画します。
+Google検索結果に、各リンクのはてなブックマーク件数（`X users`）とHacker News最大スコア（`HN X pts`）を表示するChrome拡張です。公開ソーシャル情報を検索結果に重ね、リンク先の信任性・注目度を判断するための補助シグナルを追加します。
+
+この拡張は検索結果の順位や内容を変更しません。Manifest V3 + TypeScriptで構築し、Hatena Bookmark APIとHacker News Search API（Algolia）から公開情報を取得してDOMへ控えめに描画します。
+
+## 機能
+
+- Google検索結果の各URL付近にHatena Bookmark件数を表示します。
+- Hacker Newsで言及されているURLには、そのURLに対応するstory群の最大スコアを`HN X pts`として表示します。
+- Hatenaバッジにマウスオーバーまたはフォーカスすると、コメント付きブックマークのプレビューを表示します。
+- 件数やスコアが0件の結果にはバッジを表示しません。
+- Google redirect URLを正規化し、同じURLへの重複リクエストを抑制します。
+
+## 公開名
+
+- 日本語名: `Google検索 with ソーシャルシグナル`
+- English name: `Google Search with social signal`
+
+This extension is not affiliated with Google, Hatena, Hacker News, or Y Combinator.
 
 ## プロジェクト構成
 
-- `src/background/`: サービスワーカー。content scriptからのURLリストを受け取り、Hatena APIをコールしてレスポンスを返します。
-- `src/content/`: Google検索DOMを解析し、URL抽出・キャッシュ管理・UI挿入を担うコンテンツスクリプト。
-- `src/shared/`: メッセージ型・URL正規化・Hatenaクライアントなど共通ユーティリティ。
+- `src/background/`: サービスワーカー。content scriptからのURLリストを受け取り、Hatena API / Hacker News APIをコールしてレスポンスを返します。
+- `src/content/`: Google検索DOMを解析し、URL抽出・キャッシュ管理・Hatena/HNバッジ挿入を担うコンテンツスクリプト。
+- `src/shared/`: メッセージ型・URL正規化・Hatena/Hacker Newsクライアントなど共通ユーティリティ。
 - `public/manifest.json`: Manifest V3定義（権限、content scriptのマッチ条件など）。
 - `tests/`: Vitest + jsdomでのユニットテスト。
 
@@ -51,7 +68,45 @@ npm run build   # もしくは make build
 1. 上記ビルドを完了させ、`dist/` ディレクトリがあることを確認します。
 2. Chromeで `chrome://extensions/` を開き、右上の「デベロッパーモード」を有効化。
 3. 「パッケージ化されていない拡張機能を読み込む」をクリックし、プロジェクトの `dist/` を選択。
-4. Googleで検索結果を開くと、各結果のリンク横に `★ 123 users` のようなバッジが表示されます（0件の結果は非表示）。
+4. Googleで検索結果を開くと、各結果のリンク付近に `123 users` や `HN 456 pts` のようなバッジが表示されます（0件の結果は非表示）。
+
+## プライバシー概要
+
+この拡張は、Google検索結果ページ上のリンクURLを読み取り、公開ソーシャルシグナルを取得するために外部APIへ送信します。
+
+- Hatena Bookmark件数取得のため、検索結果URLをHatena Bookmark APIへ送信します。
+- Hatenaコメントプレビュー取得のため、ユーザーがHatenaバッジをhoverまたはfocusしたURLをHatena entry APIへ送信します。
+- Hacker News最大スコア取得のため、検索結果URLをHacker News Search API（Algolia）へ送信します。
+
+開発者サーバーにはデータを送信しません。検索クエリ文字列、ページ本文、Googleアカウント情報、Cookie、入力フォーム内容を意図的に収集しません。キャッシュはブラウザ実行中のメモリ上で扱い、永続保存には`chrome.storage`を使用していません。
+
+## Chrome Web Store掲載文ドラフト
+
+### 短い説明文
+
+Show Hatena Bookmark counts and Hacker News points directly on Google Search results.
+
+### 詳細説明文
+
+Google検索 with ソーシャルシグナル adds public social signals to Google Search results.
+
+It shows Hatena Bookmark counts and Hacker News points next to supported Google Search result links, helping you judge how much attention a page has received in Japanese and international tech communities without changing the ranking or content of the search results.
+
+Features:
+
+- Hatena Bookmark count badges on Google Search results.
+- Hacker News points badges based on the highest matching story score.
+- Hatena comment preview on badge hover/focus.
+- Google redirect URL normalization.
+- Zero-count results are hidden to keep the search page quiet.
+
+Data usage:
+
+- Search result URLs are sent to Hatena Bookmark APIs to retrieve bookmark counts and comment previews.
+- Search result URLs are sent to Hacker News Search API (Algolia) to retrieve matching story scores.
+- The developer does not operate a server for this extension and does not store browsing history, search queries, page contents, account information, cookies, or form inputs.
+
+This extension is not affiliated with Google, Hatena, Hacker News, or Y Combinator.
 
 ## テストと品質ゲート
 
