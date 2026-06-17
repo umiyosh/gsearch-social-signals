@@ -37,6 +37,22 @@
       "run_at": "document_idle"
     }
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/hatena-bookmark.svg", "icons/hacker-news.svg"],
+      "matches": [
+        "https://www.google.com/*",
+        "https://www.google.co.jp/*",
+        "https://www.google.co.uk/*",
+        "https://www.google.co.in/*",
+        "https://www.google.ca/*",
+        "https://www.google.com.au/*",
+        "https://www.google.com.hk/*",
+        "https://www.google.com.sg/*",
+        "https://www.google.com.tw/*"
+      ]
+    }
+  ],
   "action": {
     "default_title": "Google検索 with ソーシャルシグナル",
     "default_icon": {

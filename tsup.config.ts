@@ -6,7 +6,7 @@ export default defineConfig({
     content: "src/content/index.ts"
   },
   format: ["esm"],
-  sourcemap: true,
+  sourcemap: false,
   clean: true,
   splitting: false,
   treeshake: true,
