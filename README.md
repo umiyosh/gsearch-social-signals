@@ -74,6 +74,8 @@ npm run build   # もしくは make build
 
 デフォルトでは以下のGoogleドメインで検索ページが対象になります: `google.com`, `google.co.jp`, `google.co.uk`, `google.co.in`, `google.ca`, `google.com.au`, `google.com.hk`, `google.com.sg`, `google.com.tw`。他地域に対応したい場合は `public/manifest.json` の `content_scripts[0].matches` に該当する `https://www.google.<tld>/search*` パターンを追加してください。
 
+Chrome拡張のmatch patternはTLDワイルドカードをサポートしていないため、`https://www.google.*` のような指定は使いません。`https://*/*` など広い `matches` と `include_globs` の組み合わせでも近い絞り込みはできますが、content scriptの権限警告と審査説明が広くなるため、この拡張では対応するGoogleドメインを明示列挙します。
+
 ## Chromeへのインストール手順
 
 1. 上記ビルドを完了させ、`dist/` ディレクトリがあることを確認します。
