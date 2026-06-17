@@ -40,7 +40,8 @@
 ### 4.1 機能要件
 
 1. **対象ページ**
-   - URL が `https://www.google.*/*`（`.co.jp`など含む）で、検索クエリを含む検索結果ページに対して拡張機能を有効化する。
+   - URL が明示列挙した Google 検索ドメイン（例: `https://www.google.com/search*`, `https://www.google.co.jp/search*`）に一致する場合だけ、検索結果ページに対して拡張機能を有効化する。
+   - Chrome 拡張の match pattern は TLD ワイルドカードをサポートしないため、`https://www.google.*` のような指定は使わない。
 
 2. **検索結果の検出**
    - 検索結果ページ内から「外部サイトへの結果リンク」を列挙する。
@@ -124,8 +125,10 @@ Coding Agent は以下のようなポイントを満たすように `manifest.js
   - `"background": { "service_worker": "<ビルド済みbackgroundスクリプト>", "type": "module" }`
 
 - **コンテンツスクリプト**
-  - 検索結果ページにマッチする `matches` 配列（例: `https://www.google.*/*`）
-  - 検索クエリを含むURLに限定するための `include_globs` or `exclude_matches` 等。
+  - 検索結果ページにマッチする `matches` 配列（例: `https://www.google.com/search*`, `https://www.google.co.jp/search*`）を、対応する Google ドメインごとに明示列挙する。
+  - `https://www.google.*` は Chrome の match pattern として無効なため使わない。
+  - `https://*/*` など広い `matches` と `include_globs` で疑似的に絞る案は、content script の権限警告と審査説明が広くなるため採用しない。
+  - `matches` の path を `/search*` にして、検索結果ページへ限定する。
   - `run_at` は `document_end` または `document_idle`
 
 - **権限**
