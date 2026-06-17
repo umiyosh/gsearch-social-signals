@@ -46,6 +46,10 @@ function hitMatchesRequest(hit: HackerNewsSearchHit, normalizedRequest: string):
   return buildCandidateKeys(normalizedRequest).has(normalizeForComparison(hit.url))
 }
 
+function hasPositivePoints(hit: HackerNewsSearchHit): boolean {
+  return typeof hit.points === "number" && hit.points > 0
+}
+
 function summarizeHits(hits: HackerNewsSearchHit[]): HackerNewsSummary {
   let maxPoints = 0
   let maxComments = 0
@@ -96,7 +100,9 @@ async function fetchHackerNewsSummary(url: string): Promise<HackerNewsSummary | 
   if (!Array.isArray(payload.hits)) {
     return { nbHits: typeof payload.nbHits === "number" ? payload.nbHits : 0 }
   }
-  const matchingHits = payload.hits.filter((hit) => hitMatchesRequest(hit, normalizedRequest))
+  const matchingHits = payload.hits.filter(
+    (hit) => hitMatchesRequest(hit, normalizedRequest) && hasPositivePoints(hit)
+  )
   return summarizeHits(matchingHits)
 }
 
