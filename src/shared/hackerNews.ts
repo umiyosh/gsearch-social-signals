@@ -78,7 +78,6 @@ async function fetchHackerNewsSummary(url: string): Promise<HackerNewsSummary | 
   const endpoint = new URL(HN_ENDPOINT)
   endpoint.searchParams.set("query", normalizedRequest)
   endpoint.searchParams.set("tags", "story")
-  endpoint.searchParams.set("numericFilters", "points>0")
   endpoint.searchParams.set("hitsPerPage", String(HITS_PER_PAGE))
 
   const response = await fetch(endpoint.toString(), {

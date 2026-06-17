@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "GSPlus Hatebu Counts",
+  "name": "Google検索 with ソーシャルシグナル",
   "version": "0.1.0",
-  "description": "Displays Hatena Bookmark counts next to Google Search results.",
+  "description": "Show Hatena Bookmark counts and Hacker News points on Google Search results.",
   "permissions": [],
   "host_permissions": [
     "https://bookmark.hatenaapis.com/*",
@@ -31,6 +31,6 @@
     }
   ],
   "action": {
-    "default_title": "GSPlus Hatebu"
+    "default_title": "Google検索 with ソーシャルシグナル"
   }
 }
