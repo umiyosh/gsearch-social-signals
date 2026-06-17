@@ -65,6 +65,7 @@ export function insertBadge(
   }
 
   badge.href = buildHatenaEntryUrl(target.url)
+  badge.setAttribute("aria-label", `Hatena Bookmark: ${count} users`)
 
   let icon = badge.querySelector<HTMLImageElement>(`.${BADGE_ICON_CLASS}`)
   if (!icon) {
@@ -103,9 +104,8 @@ export function insertHnBadge(target: SearchResultTarget, summary: HackerNewsSum
   }
 
   badge.href = summary.topStoryUrl ?? buildHnSearchUrl(target.url)
-  badge.title = `${summary.nbHits} posts / top ${summary.maxPoints ?? 0} pts / ${
-    summary.maxComments ?? 0
-  } comments`
+  badge.setAttribute("aria-label", `Hacker News: ${summary.maxPoints ?? 0} points`)
+  badge.title = `Hacker News: ${summary.maxPoints ?? 0} points`
 
   let icon = badge.querySelector<HTMLImageElement>(`.${HN_BADGE_ICON_CLASS}`)
   if (!icon) {

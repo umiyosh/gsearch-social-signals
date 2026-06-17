@@ -13,6 +13,7 @@ function mockFetchResponse(payload: unknown, ok = true, status = ok ? 200 : 500)
 }
 
 afterEach(() => {
+  vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
 
@@ -52,10 +53,33 @@ describe("fetchHackerNewsSummaries", () => {
   })
 
   it("maps failed requests to null without rejecting", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined)
     mockFetchResponse({}, false)
 
     const summaries = await fetchHackerNewsSummaries(["https://example.com/"])
     expect(summaries["https://example.com/"]).toBeNull()
+  })
+})
+
+describe("fetchHackerNewsSummaries request control", () => {
+  it("logs failed requests once per batch", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    mockFetchResponse({}, false)
+
+    const summaries = await fetchHackerNewsSummaries([
+      "https://example.com/a",
+      "https://example.com/b",
+      "https://example.com/c"
+    ])
+
+    expect(summaries["https://example.com/a"]).toBeNull()
+    expect(summaries["https://example.com/b"]).toBeNull()
+    expect(summaries["https://example.com/c"]).toBeNull()
+    expect(consoleError).toHaveBeenCalledTimes(1)
+    expect(consoleError).toHaveBeenCalledWith(
+      "Failed to fetch Hacker News summaries",
+      expect.objectContaining({ failedRequests: 3, requestedUrls: 3 })
+    )
   })
 
   it("deduplicates urls before fetching", async () => {
@@ -65,6 +89,61 @@ describe("fetchHackerNewsSummaries", () => {
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1)
   })
 
+  it("limits concurrent HN requests to four", async () => {
+    const releaseFetches: Array<() => void> = []
+    let activeRequests = 0
+    let maxActiveRequests = 0
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => {
+        activeRequests += 1
+        maxActiveRequests = Math.max(maxActiveRequests, activeRequests)
+
+        let releaseFetch: () => void = () => {}
+        const waitForRelease = new Promise<void>((resolve) => {
+          releaseFetch = resolve
+        })
+        releaseFetches.push(releaseFetch)
+
+        return waitForRelease.then(() => {
+          activeRequests -= 1
+          return {
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ nbHits: 0, hits: [] })
+          }
+        })
+      })
+    )
+
+    const request = fetchHackerNewsSummaries([
+      "https://example.com/1",
+      "https://example.com/2",
+      "https://example.com/3",
+      "https://example.com/4",
+      "https://example.com/5",
+      "https://example.com/6"
+    ])
+
+    await vi.waitFor(() => {
+      expect(releaseFetches).toHaveLength(4)
+    })
+    expect(maxActiveRequests).toBe(4)
+
+    releaseFetches.splice(0).forEach((releaseFetch) => releaseFetch())
+
+    await vi.waitFor(() => {
+      expect(releaseFetches).toHaveLength(2)
+    })
+    releaseFetches.splice(0).forEach((releaseFetch) => releaseFetch())
+    await request
+
+    expect(maxActiveRequests).toBe(4)
+  })
+})
+
+describe("fetchHackerNewsSummaries URL matching", () => {
   it("searches with a normalized URL without unsupported Algolia filters", async () => {
     mockFetchResponse({ nbHits: 0, hits: [] })
 
