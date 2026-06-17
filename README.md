@@ -17,7 +17,14 @@ Google検索結果に、各リンクのはてなブックマーク件数（`X us
 - 日本語名: `Google検索 with ソーシャルシグナル`
 - English name: `Google Search with social signal`
 
+## 商標・非公式性
+
 This extension is not affiliated with Google, Hatena, Hacker News, or Y Combinator.
+
+- Google公式拡張ではありません。名称中のGoogleは、この拡張がGoogle検索結果ページ上で動作することを説明するために使っています。
+- Hatena公式拡張ではありません。Hatena Bookmarkの公開APIから取得した件数とコメント情報を表示します。
+- Hacker NewsまたはY Combinatorの公式拡張ではありません。Hacker News Search API（Algolia）から取得した公開story情報の最大スコアを補助シグナルとして表示します。
+- この拡張は検索結果の順位や内容を変更せず、各検索結果の横に公開ソーシャル情報を小さなバッジとして追加します。
 
 ## プロジェクト構成
 
@@ -88,7 +95,7 @@ Show Hatena Bookmark counts and Hacker News points directly on Google Search res
 
 ### 詳細説明文
 
-Google検索 with ソーシャルシグナル adds public social signals to Google Search results.
+Google検索 with ソーシャルシグナル is an unofficial extension that adds public social signals to Google Search results.
 
 It shows Hatena Bookmark counts and Hacker News points next to supported Google Search result links, helping you judge how much attention a page has received in Japanese and international tech communities without changing the ranking or content of the search results.
 
@@ -106,7 +113,11 @@ Data usage:
 - Search result URLs are sent to Hacker News Search API (Algolia) to retrieve matching story scores.
 - The developer does not operate a server for this extension and does not store browsing history, search queries, page contents, account information, cookies, or form inputs.
 
+Non-affiliation:
+
 This extension is not affiliated with Google, Hatena, Hacker News, or Y Combinator.
+
+Google, Hatena, Hacker News, and Y Combinator names are used only to describe where the extension works and which public services provide the displayed signals.
 
 ## テストと品質ゲート
 
