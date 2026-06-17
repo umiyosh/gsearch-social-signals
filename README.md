@@ -117,6 +117,13 @@ Data usage:
 - Search result URLs are sent to Hacker News Search API (Algolia) to retrieve matching story scores.
 - The developer does not operate a server for this extension and does not store browsing history, search queries, page contents, account information, cookies, or form inputs.
 
+Host permissions:
+
+- `https://bookmark.hatenaapis.com/*`: used to retrieve Hatena Bookmark counts for URLs shown in Google Search results.
+- `https://b.hatena.ne.jp/*`: used to retrieve public Hatena Bookmark entry comments when the user hovers or focuses a Hatena badge, and to open Hatena entry pages from the badge.
+- `https://hn.algolia.com/*`: used to search the Hacker News Search API for matching stories and retrieve public points/comment counts.
+- `news.ycombinator.com` is not requested as a host permission. Hacker News story pages are only opened when the user clicks a badge; the extension does not fetch data from `news.ycombinator.com`.
+
 Non-affiliation:
 
 This extension is not affiliated with Google, Hatena, Hacker News, or Y Combinator.
