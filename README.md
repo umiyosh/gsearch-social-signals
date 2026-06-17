@@ -4,6 +4,10 @@ Google検索結果に、各リンクのはてなブックマーク件数（`X us
 
 この拡張は検索結果の順位や内容を変更しません。Manifest V3 + TypeScriptで構築し、Hatena Bookmark APIとHacker News Search API（Algolia）から公開情報を取得してDOMへ控えめに描画します。
 
+## スクリーンショット
+
+![Google検索結果にHatena Bookmark件数とコメントプレビューを表示している画面](docs/assets/google-search-social-signals-serp.png)
+
 ## 機能
 
 - Google検索結果の各URL付近にHatena Bookmark件数を表示します。
