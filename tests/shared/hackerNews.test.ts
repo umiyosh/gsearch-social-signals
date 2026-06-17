@@ -65,7 +65,7 @@ describe("fetchHackerNewsSummaries", () => {
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1)
   })
 
-  it("searches with a normalized URL without the unsupported url attribute restriction", async () => {
+  it("searches with a normalized URL without unsupported Algolia filters", async () => {
     mockFetchResponse({ nbHits: 0, hits: [] })
 
     await fetchHackerNewsSummaries([
@@ -75,6 +75,7 @@ describe("fetchHackerNewsSummaries", () => {
     const requestUrl = new URL(String(vi.mocked(fetch).mock.calls[0]?.[0]))
     expect(requestUrl.searchParams.get("query")).toBe("https://example.com/article?keep=1")
     expect(requestUrl.searchParams.has("restrictSearchableAttributes")).toBe(false)
+    expect(requestUrl.searchParams.has("numericFilters")).toBe(false)
   })
 
   it("counts only hits whose url matches the requested URL", async () => {

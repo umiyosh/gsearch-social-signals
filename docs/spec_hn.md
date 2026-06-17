@@ -115,12 +115,12 @@
 - 推奨クエリパラメータ（1 URL あたり）：
   - `query=<encoded_url>`
   - `tags=story`（story のみに限定）
-  - `restrictSearchableAttributes=url`（URLフィールドに限定）
-  - `numericFilters=points>0`（ノイズ除外用。0ポイント story を外す）
   - `hitsPerPage=50`（代表的な hits を十分に取得できる範囲）
+  - `restrictSearchableAttributes` や `numericFilters=points>0` は現在の HN Algolia API では 400 を返すため使わない。
+  - URL一致と `points > 0` 相当の判断は、取得した `hits` をローカルで検証して行う。
 
 例：
-`https://hn.algolia.com/api/v1/search?query=<encoded_url>&tags=story&restrictSearchableAttributes=url&numericFilters=points>0&hitsPerPage=50`
+`https://hn.algolia.com/api/v1/search?query=<encoded_url>&tags=story&hitsPerPage=50`
 
 ### 4.2 レスポンスの利用方針
 
