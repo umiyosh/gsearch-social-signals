@@ -46,8 +46,17 @@ function findPrimaryAnchor(
   return null
 }
 
+function collectResultContainers(root: ParentNode): HTMLElement[] {
+  const containers: HTMLElement[] = []
+  if (root instanceof HTMLElement && root.matches(RESULT_CONTAINER_SELECTOR)) {
+    containers.push(root)
+  }
+  containers.push(...root.querySelectorAll<HTMLElement>(RESULT_CONTAINER_SELECTOR))
+  return containers
+}
+
 export function discoverSearchResults(root: ParentNode): SearchResultTarget[] {
-  const containers = root.querySelectorAll<HTMLElement>(RESULT_CONTAINER_SELECTOR)
+  const containers = collectResultContainers(root)
   const targets: SearchResultTarget[] = []
 
   for (const container of containers) {

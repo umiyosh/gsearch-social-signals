@@ -22,30 +22,39 @@ const queueTargets = createSignalPipeline({
   cancelOverlayHide
 })
 
-function scan(root: ParentNode = document): void {
+export function scan(root: ParentNode = document): void {
   const targets = discoverSearchResults(root)
   if (targets.length) {
     queueTargets(targets)
   }
 }
 
-function boot(): void {
-  ensureStyles()
-  scan(document)
-
+export function observeSearchResults(
+  root: HTMLElement | null = document.body,
+  scanner: (root: ParentNode) => void = scan
+): MutationObserver | null {
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       mutation.addedNodes.forEach((node) => {
         if (node instanceof HTMLElement || node instanceof DocumentFragment) {
-          scan(node)
+          scanner(node)
         }
       })
     }
   })
 
-  if (document.body) {
-    observer.observe(document.body, { childList: true, subtree: true })
+  if (!root) {
+    return null
   }
+
+  observer.observe(root, { childList: true, subtree: true })
+  return observer
 }
 
-void boot()
+export function boot(): MutationObserver | null {
+  ensureStyles()
+  scan(document)
+  return observeSearchResults()
+}
+
+export const autoObserver = boot()
