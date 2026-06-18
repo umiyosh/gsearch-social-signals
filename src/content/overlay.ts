@@ -20,8 +20,11 @@ function ensureOverlay(): HTMLDivElement {
     overlay = document.createElement("div")
     overlay.id = OVERLAY_ID
     overlay.className = OVERLAY_CLASS
+    overlay.setAttribute("role", "tooltip")
+    overlay.setAttribute("aria-hidden", "true")
     const body = document.createElement("div")
     body.className = OVERLAY_BODY_CLASS
+    body.setAttribute("aria-live", "polite")
     overlay.appendChild(body)
     document.body.appendChild(overlay)
 
@@ -52,6 +55,7 @@ function hideOverlayImmediately(): void {
   const overlay = document.getElementById(OVERLAY_ID)
   if (overlay) {
     overlay.style.display = "none"
+    overlay.setAttribute("aria-hidden", "true")
   }
   activeUrl = null
 }
@@ -83,6 +87,7 @@ export function beginOverlaySession(url: string, badge: HTMLElement): void {
   }
   positionOverlay(badge, overlay)
   overlay.style.display = "block"
+  overlay.setAttribute("aria-hidden", "false")
 }
 
 export function presentOverlay(
@@ -131,6 +136,7 @@ export function presentOverlay(
 
   positionOverlay(badge, overlay)
   overlay.style.display = "block"
+  overlay.setAttribute("aria-hidden", "false")
 }
 
 function positionOverlay(reference: HTMLElement, overlay: HTMLElement): void {

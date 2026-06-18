@@ -15,8 +15,8 @@ const STYLE_ELEMENT_ID = "gsplus-hatebu-style"
 
 const STYLE_TEXT = `
     .${BADGE_CLASS} {
-      font-size: 0.85rem;
-      color: #00a4de;
+      font-size: 0.875rem;
+      color: #0079a8;
       margin-left: 0.5rem;
       display: inline-flex;
       align-items: center;
@@ -43,8 +43,8 @@ const STYLE_TEXT = `
     }
 
     .${HN_BADGE_CLASS} {
-      font-size: 0.82rem;
-      color: #ff6600;
+      font-size: 0.875rem;
+      color: #a34700;
       margin-left: 0.35rem;
       display: inline-flex;
       align-items: center;
@@ -59,7 +59,7 @@ const STYLE_TEXT = `
 
     .${HN_BADGE_TEXT_CLASS} {
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0;
     }
 
     .${BADGE_CONTAINER_CLASS} {
@@ -130,6 +130,14 @@ const STYLE_TEXT = `
     }
 
     @media (prefers-color-scheme: dark) {
+      .${BADGE_CLASS} {
+        color: #4cc9f0;
+      }
+
+      .${HN_BADGE_CLASS} {
+        color: #ffb36b;
+      }
+
       .${OVERLAY_CLASS} {
         background: #202124;
         color: #e8eaed;
@@ -150,6 +158,32 @@ const STYLE_TEXT = `
 
       .${OVERLAY_EMPTY_CLASS} {
         color: #bdc1c6;
+      }
+    }
+
+    @media (forced-colors: active) {
+      .${BADGE_CLASS},
+      .${HN_BADGE_CLASS} {
+        color: LinkText;
+        text-decoration: underline;
+      }
+
+      .${BADGE_CLASS}:focus-visible,
+      .${HN_BADGE_CLASS}:focus-visible {
+        outline-color: Highlight;
+      }
+
+      .${OVERLAY_CLASS} {
+        background: Canvas;
+        color: CanvasText;
+        border: 1px solid CanvasText;
+        box-shadow: none;
+      }
+
+      .${OVERLAY_USER_CLASS},
+      .${OVERLAY_COMMENT_CLASS},
+      .${OVERLAY_EMPTY_CLASS} {
+        color: CanvasText;
       }
     }
 `
