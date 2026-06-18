@@ -25,7 +25,7 @@ export function requestHatenaCounts(
   }
 
   if (!runtimeAvailable()) {
-    console.warn("Hatena counts skipped: runtime unavailable")
+    console.debug("Hatena counts skipped: runtime unavailable")
     urls.forEach((url) => {
       settle(url)
       apply(url, null)
@@ -79,7 +79,7 @@ export function requestHnSummaries(
   }
 
   if (!runtimeAvailable()) {
-    console.warn("HN summaries skipped: runtime unavailable")
+    console.debug("HN summaries skipped: runtime unavailable")
     urls.forEach((url) => {
       settle(url)
       apply(url, null)

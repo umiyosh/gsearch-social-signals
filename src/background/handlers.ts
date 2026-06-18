@@ -20,7 +20,9 @@ export interface BackgroundDeps {
 
 // content script からの入力はページ DOM 由来で攻撃者の影響を受けうる。
 // fetch に渡す前に http(s) の実 URL のみへ絞り、異常な量は処理しない。
-const MAX_URLS_PER_REQUEST = 500
+export const MAX_URLS_PER_REQUEST = 500
+export const MAX_HN_URLS_PER_REQUEST = 40
+export const MAX_HN_CACHE_ENTRIES = 200
 
 function isHttpUrl(value: string): boolean {
   try {
@@ -31,15 +33,25 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
-function sanitizeUrls(urls: string[]): string[] | null {
-  if (urls.length > MAX_URLS_PER_REQUEST) {
+function sanitizeUrls(urls: string[], maxUrls: number): string[] | null {
+  if (urls.length > maxUrls) {
     return null
   }
   return urls.filter(isHttpUrl)
 }
 
+function trimOldestEntries<T>(cache: Map<string, T>, maxEntries: number): void {
+  while (cache.size > maxEntries) {
+    const oldestKey = cache.keys().next().value
+    if (oldestKey === undefined) {
+      return
+    }
+    cache.delete(oldestKey)
+  }
+}
+
 async function handleCounts(deps: BackgroundDeps, urls: string[]): Promise<HatenaCountsResponse> {
-  const sanitized = sanitizeUrls(urls)
+  const sanitized = sanitizeUrls(urls, MAX_URLS_PER_REQUEST)
   if (sanitized === null) {
     return err(`counts request rejected: more than ${MAX_URLS_PER_REQUEST} urls`)
   }
@@ -66,9 +78,9 @@ async function handleEntry(deps: BackgroundDeps, url: string): Promise<HatenaEnt
 }
 
 async function handleHackerNews(deps: BackgroundDeps, urls: string[]): Promise<HackerNewsResponse> {
-  const sanitized = sanitizeUrls(urls)
+  const sanitized = sanitizeUrls(urls, MAX_HN_URLS_PER_REQUEST)
   if (sanitized === null) {
-    return err(`hn request rejected: more than ${MAX_URLS_PER_REQUEST} urls`)
+    return err(`hn request rejected: more than ${MAX_HN_URLS_PER_REQUEST} urls`)
   }
 
   try {
@@ -78,6 +90,7 @@ async function handleHackerNews(deps: BackgroundDeps, urls: string[]): Promise<H
       Object.entries(fetched).forEach(([url, summary]) => {
         deps.hnCache.set(url, summary)
       })
+      trimOldestEntries(deps.hnCache, MAX_HN_CACHE_ENTRIES)
     }
 
     const summaries: HnSummaryMap = {}
