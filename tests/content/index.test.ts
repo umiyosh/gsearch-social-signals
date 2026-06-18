@@ -55,8 +55,19 @@ describe("content script boot", () => {
     document.body.innerHTML = ""
     const messages: unknown[] = []
     stubChrome(messages)
+    const NativeMutationObserver = globalThis.MutationObserver
+    const observers: MutationObserver[] = []
+    vi.stubGlobal(
+      "MutationObserver",
+      class extends NativeMutationObserver {
+        constructor(callback: MutationCallback) {
+          super(callback)
+          observers.push(this)
+        }
+      }
+    )
 
-    const content = await import("../../src/content/index")
+    await import("../../src/content/index")
     const result = document.createElement("div")
     result.className = "g"
     result.innerHTML = `
@@ -81,6 +92,6 @@ describe("content script boot", () => {
     })
     expect(result.querySelector(".gsplus-hatebu-count__text")?.textContent).toBe("3 users")
 
-    content.autoObserver?.disconnect()
+    observers.forEach((observer) => observer.disconnect())
   })
 })

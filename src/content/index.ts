@@ -22,14 +22,14 @@ const queueTargets = createSignalPipeline({
   cancelOverlayHide
 })
 
-export function scan(root: ParentNode = document): void {
+function scan(root: ParentNode = document): void {
   const targets = discoverSearchResults(root)
   if (targets.length) {
     queueTargets(targets)
   }
 }
 
-export function observeSearchResults(
+function observeSearchResults(
   root: HTMLElement | null = document.body,
   scanner: (root: ParentNode) => void = scan
 ): MutationObserver | null {
@@ -51,10 +51,10 @@ export function observeSearchResults(
   return observer
 }
 
-export function boot(): MutationObserver | null {
+function boot(): MutationObserver | null {
   ensureStyles()
   scan(document)
   return observeSearchResults()
 }
 
-export const autoObserver = boot()
+boot()
