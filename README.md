@@ -80,6 +80,15 @@ npm run package:store   # もしくは make package
 
 配布 zip には `.git`、`.env`、`node_modules`、`src`、`tests`、`coverage`、`.DS_Store`、`__MACOSX`、`.map` を含めません。`tsup.config.ts` は `sourcemap: false` のため公開 zip に source map は入りません。minify は審査時の確認しやすさを優先して現時点では無効のままにしています。
 
+## リリース作成
+
+`v*` タグを push すると GitHub Actions の Release workflow が動き、`npm run package:store` で配布 zip を作成して GitHub Release に添付します。
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 ### 対応ドメイン
 
 デフォルトでは以下のGoogleドメインで検索ページが対象になります: `google.com`, `google.co.jp`, `google.co.uk`, `google.co.in`, `google.ca`, `google.com.au`, `google.com.hk`, `google.com.sg`, `google.com.tw`。他地域に対応したい場合は `public/manifest.json` の `content_scripts[0].matches` に該当する `https://www.google.<tld>/search*` パターンを追加してください。
