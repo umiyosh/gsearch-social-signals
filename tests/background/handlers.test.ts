@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest"
-import { createMessageHandler, type BackgroundDeps } from "../../src/background/handlers"
+import {
+  createMessageHandler,
+  MAX_HN_CACHE_ENTRIES,
+  MAX_HN_URLS_PER_REQUEST,
+  type BackgroundDeps
+} from "../../src/background/handlers"
 import { MESSAGE_TYPES } from "../../src/shared/messages"
 import type { HackerNewsSummary } from "../../src/shared/hackerNews"
 
@@ -104,49 +109,78 @@ describe("createMessageHandler", () => {
       expect(response).toEqual({ ok: false, error: "entry down" })
     })
   })
+})
 
-  describe("hacker news request", () => {
-    it("fetches uncached urls once and serves repeats from the cache", async () => {
-      const fetchHackerNewsSummaries = vi.fn().mockResolvedValue({ "https://a": { nbHits: 5 } })
-      const deps = buildDeps({ fetchHackerNewsSummaries })
-      const handler = createMessageHandler(deps)
-      const request = { type: MESSAGE_TYPES.HN_REQUEST, urls: ["https://a"] }
+describe("hacker news request", () => {
+  it("fetches uncached urls once and serves repeats from the cache", async () => {
+    const fetchHackerNewsSummaries = vi.fn().mockResolvedValue({ "https://a": { nbHits: 5 } })
+    const deps = buildDeps({ fetchHackerNewsSummaries })
+    const handler = createMessageHandler(deps)
+    const request = { type: MESSAGE_TYPES.HN_REQUEST, urls: ["https://a"] }
 
-      const first = await handler(request)
-      const second = await handler(request)
+    const first = await handler(request)
+    const second = await handler(request)
 
-      expect(first).toEqual({ ok: true, data: { "https://a": { nbHits: 5 } } })
-      expect(second).toEqual(first)
-      expect(fetchHackerNewsSummaries).toHaveBeenCalledTimes(1)
+    expect(first).toEqual({ ok: true, data: { "https://a": { nbHits: 5 } } })
+    expect(second).toEqual(first)
+    expect(fetchHackerNewsSummaries).toHaveBeenCalledTimes(1)
+  })
+
+  it("answers null for urls that were filtered out", async () => {
+    const handler = createMessageHandler(buildDeps())
+
+    const response = await handler({
+      type: MESSAGE_TYPES.HN_REQUEST,
+      urls: ["not a url"]
     })
 
-    it("answers null for urls that were filtered out", async () => {
-      const handler = createMessageHandler(buildDeps())
+    expect(response).toEqual({ ok: true, data: { "not a url": null } })
+  })
 
-      const response = await handler({
-        type: MESSAGE_TYPES.HN_REQUEST,
-        urls: ["not a url"]
-      })
+  it("rejects oversized url lists with the HN-specific limit", async () => {
+    const handler = createMessageHandler(buildDeps())
+    const urls = Array.from(
+      { length: MAX_HN_URLS_PER_REQUEST + 1 },
+      (_, i) => `https://example.com/${i}`
+    )
 
-      expect(response).toEqual({ ok: true, data: { "not a url": null } })
+    const response = await handler({ type: MESSAGE_TYPES.HN_REQUEST, urls })
+
+    expect(response).toMatchObject({ ok: false })
+  })
+
+  it("evicts the oldest HN cache entries after fetching new summaries", async () => {
+    const hnCache = new Map<string, HackerNewsSummary | null>(
+      Array.from({ length: MAX_HN_CACHE_ENTRIES }, (_, i) => [
+        `https://example.com/cached-${i}`,
+        { nbHits: i }
+      ])
+    )
+    const fetchHackerNewsSummaries = vi
+      .fn()
+      .mockResolvedValue({ "https://example.com/new": { nbHits: 999 } })
+    const handler = createMessageHandler(buildDeps({ fetchHackerNewsSummaries, hnCache }))
+
+    const response = await handler({
+      type: MESSAGE_TYPES.HN_REQUEST,
+      urls: ["https://example.com/new"]
     })
 
-    it("rejects oversized url lists with an error envelope", async () => {
-      const handler = createMessageHandler(buildDeps())
-      const urls = Array.from({ length: 501 }, (_, i) => `https://example.com/${i}`)
-
-      const response = await handler({ type: MESSAGE_TYPES.HN_REQUEST, urls })
-
-      expect(response).toMatchObject({ ok: false })
+    expect(response).toEqual({
+      ok: true,
+      data: { "https://example.com/new": { nbHits: 999 } }
     })
+    expect(hnCache.size).toBe(MAX_HN_CACHE_ENTRIES)
+    expect(hnCache.has("https://example.com/cached-0")).toBe(false)
+    expect(hnCache.get("https://example.com/new")).toEqual({ nbHits: 999 })
+  })
 
-    it("maps fetch failures to an error envelope", async () => {
-      const fetchHackerNewsSummaries = vi.fn().mockRejectedValue(new Error("hn down"))
-      const handler = createMessageHandler(buildDeps({ fetchHackerNewsSummaries }))
+  it("maps fetch failures to an error envelope", async () => {
+    const fetchHackerNewsSummaries = vi.fn().mockRejectedValue(new Error("hn down"))
+    const handler = createMessageHandler(buildDeps({ fetchHackerNewsSummaries }))
 
-      const response = await handler({ type: MESSAGE_TYPES.HN_REQUEST, urls: ["https://a"] })
+    const response = await handler({ type: MESSAGE_TYPES.HN_REQUEST, urls: ["https://a"] })
 
-      expect(response).toEqual({ ok: false, error: "hn down" })
-    })
+    expect(response).toEqual({ ok: false, error: "hn down" })
   })
 })

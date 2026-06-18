@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { fetchHackerNewsSummaries } from "../../src/shared/hackerNews"
+import { fetchHackerNewsSummaries, HN_REQUEST_TIMEOUT_MS } from "../../src/shared/hackerNews"
 
 function mockFetchResponse(payload: unknown, ok = true, status = ok ? 200 : 500): void {
   vi.stubGlobal(
@@ -24,6 +24,7 @@ function mockFetchJsonError(): void {
 }
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
@@ -117,6 +118,36 @@ describe("fetchHackerNewsSummaries request control", () => {
 
     await fetchHackerNewsSummaries(["https://example.com/", "https://example.com/"])
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1)
+  })
+
+  it("passes an abort signal to HN fetch requests", async () => {
+    mockFetchResponse({ nbHits: 0, hits: [] })
+
+    await fetchHackerNewsSummaries(["https://example.com/"])
+
+    const requestInit = vi.mocked(fetch).mock.calls[0]?.[1]
+    expect(requestInit?.signal).toBeInstanceOf(AbortSignal)
+  })
+
+  it("times out slow HN fetch requests", async () => {
+    vi.useFakeTimers()
+    vi.spyOn(console, "error").mockImplementation(() => undefined)
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string | URL | Request, init?: RequestInit) => {
+        const signal = init?.signal
+        return new Promise<Response>((_resolve, reject) => {
+          signal?.addEventListener("abort", () => {
+            reject(new DOMException("The operation was aborted.", "AbortError"))
+          })
+        })
+      })
+    )
+
+    const request = fetchHackerNewsSummaries(["https://example.com/slow"])
+    await vi.advanceTimersByTimeAsync(HN_REQUEST_TIMEOUT_MS)
+
+    await expect(request).resolves.toEqual({ "https://example.com/slow": null })
   })
 
   it("limits concurrent HN requests to four", async () => {

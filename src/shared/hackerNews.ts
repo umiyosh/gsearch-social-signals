@@ -11,6 +11,7 @@ export interface HackerNewsSummary {
 const HN_ENDPOINT = "https://hn.algolia.com/api/v1/search"
 const HITS_PER_PAGE = 50
 const MAX_CONCURRENT_REQUESTS = 4
+export const HN_REQUEST_TIMEOUT_MS = 5_000
 
 interface HackerNewsSearchHit {
   objectID?: string
@@ -85,10 +86,18 @@ async function fetchHackerNewsSummary(url: string): Promise<HackerNewsSummary | 
   endpoint.searchParams.set("tags", "story")
   endpoint.searchParams.set("hitsPerPage", String(HITS_PER_PAGE))
 
-  const response = await fetch(endpoint.toString(), {
-    method: "GET",
-    cache: "no-cache"
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), HN_REQUEST_TIMEOUT_MS)
+  let response: Response
+  try {
+    response = await fetch(endpoint.toString(), {
+      method: "GET",
+      cache: "no-cache",
+      signal: controller.signal
+    })
+  } finally {
+    clearTimeout(timeoutId)
+  }
 
   if (!response.ok) {
     if (response.status === 400) {
