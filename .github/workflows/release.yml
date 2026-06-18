@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify release version
+        run: node scripts/validate-release-version.mjs "$GITHUB_REF_NAME"
+
+      - name: Build store package
+        run: npm run package:store
+
+      - name: Verify store package
+        run: |
+          set -eu
+          zip_path="$(find store-package -maxdepth 1 -type f -name '*.zip' | head -n 1)"
+          test -n "$zip_path"
+          unzip -Z1 "$zip_path" | grep -Fx manifest.json
+          if unzip -Z1 "$zip_path" | grep -E '(^|/)(\.git|\.env|node_modules|src|tests|coverage|\.DS_Store|__MACOSX)(/|$)|\.map$'; then
+            echo "Store package contains forbidden entries" >&2
+            exit 1
+          fi
+          echo "STORE_PACKAGE_ZIP=$zip_path" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          tag_name="${GITHUB_REF_NAME}"
+          gh release create "$tag_name" "$STORE_PACKAGE_ZIP" \
+            --title "$tag_name" \
+            --notes "Chrome Web Store package built from ${GITHUB_SHA}."
