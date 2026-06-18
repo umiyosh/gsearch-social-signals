@@ -1,4 +1,7 @@
-.PHONY: install build dev lint fmt fmt-check typecheck lint-quality quality-baseline quality-test quality-ts test test-coverage check clean package
+.PHONY: install build dev lint fmt fmt-check typecheck lint-quality quality-baseline quality-test quality-ts test test-coverage check clean package release-tag
+
+VERSION ?=
+TAG := $(if $(VERSION),$(if $(filter v%,$(VERSION)),$(VERSION),v$(VERSION)),)
 
 install:
 	npm install
@@ -8,6 +11,15 @@ build:
 
 package:
 	npm run package:store
+
+release-tag:
+	@test -n "$(VERSION)" || (echo "Usage: make release-tag VERSION=0.1.0"; exit 1)
+	@case "$(TAG)" in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "VERSION must be semantic version like 0.1.0 or v0.1.0"; exit 1;; esac
+	@git diff --quiet || (echo "Working tree has unstaged changes"; exit 1)
+	@git diff --cached --quiet || (echo "Index has staged changes"; exit 1)
+	@if git rev-parse -q --verify "refs/tags/$(TAG)" >/dev/null; then echo "Tag $(TAG) already exists"; exit 1; fi
+	git tag "$(TAG)"
+	git push origin "$(TAG)"
 
 clean:
 	npm run clean || true

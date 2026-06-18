@@ -85,8 +85,7 @@ npm run package:store   # もしくは make package
 `v*` タグを push すると GitHub Actions の Release workflow が動き、`npm run package:store` で配布 zip を作成して GitHub Release に添付します。
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+make release-tag VERSION=0.1.0
 ```
 
 ### 対応ドメイン
