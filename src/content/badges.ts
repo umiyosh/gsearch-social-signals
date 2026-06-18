@@ -72,7 +72,8 @@ export function insertBadge(
     icon = document.createElement("img")
     icon.className = BADGE_ICON_CLASS
     icon.src = extensionAssetUrl(HATENA_ICON)
-    icon.alt = "Hatena"
+    icon.alt = ""
+    icon.setAttribute("aria-hidden", "true")
     icon.width = 14
     icon.height = 14
     icon.decoding = "async"
@@ -112,7 +113,8 @@ export function insertHnBadge(target: SearchResultTarget, summary: HackerNewsSum
     icon = document.createElement("img")
     icon.className = HN_BADGE_ICON_CLASS
     icon.src = extensionAssetUrl(HN_ICON)
-    icon.alt = "Hacker News"
+    icon.alt = ""
+    icon.setAttribute("aria-hidden", "true")
     icon.width = 12
     icon.height = 12
     icon.decoding = "async"

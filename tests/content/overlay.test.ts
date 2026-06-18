@@ -34,6 +34,11 @@ describe("beginOverlaySession", () => {
 
     const overlay = getOverlay()
     expect(overlay?.style.display).toBe("block")
+    expect(overlay?.getAttribute("role")).toBe("tooltip")
+    expect(overlay?.getAttribute("aria-hidden")).toBe("false")
+    expect(overlay?.querySelector(".gsplus-hatebu-overlay__body")?.getAttribute("aria-live")).toBe(
+      "polite"
+    )
     expect(overlay?.textContent).toBe("読み込み中...")
   })
 })
@@ -84,6 +89,7 @@ describe("hide scheduling", () => {
     vi.advanceTimersByTime(150)
 
     expect(getOverlay()?.style.display).toBe("none")
+    expect(getOverlay()?.getAttribute("aria-hidden")).toBe("true")
   })
 
   it("keeps the overlay visible when the hide is cancelled", () => {

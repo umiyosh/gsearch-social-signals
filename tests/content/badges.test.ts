@@ -37,7 +37,8 @@ describe("insertBadge", () => {
 
     const badge = target.container.querySelector<HTMLAnchorElement>(".gsplus-hatebu-count")
     expect(badge?.href).toBe("https://b.hatena.ne.jp/entry/s/example.com/article")
-    expect(badge?.querySelector("img")?.alt).toBe("Hatena")
+    expect(badge?.querySelector("img")?.alt).toBe("")
+    expect(badge?.querySelector("img")?.getAttribute("aria-hidden")).toBe("true")
     expect(badge?.querySelector("img")?.src).toBe(
       "chrome-extension://test-extension/icons/hatena-bookmark.svg"
     )
@@ -81,6 +82,21 @@ describe("insertBadge", () => {
     expect(hover.onEnter).toHaveBeenCalledWith(badge, "https://example.com/c")
     expect(hover.onLeave).toHaveBeenCalledTimes(1)
   })
+
+  it("opens and closes the hover preview from keyboard focus", () => {
+    const target = buildTarget("https://example.com/focus")
+    const hover = noopHover()
+
+    insertBadge(target, 1, hover)
+
+    const badge = target.container.querySelector<HTMLAnchorElement>(".gsplus-hatebu-count")
+    badge?.dispatchEvent(new FocusEvent("focus"))
+    badge?.dispatchEvent(new FocusEvent("blur"))
+
+    expect(hover.onEnter).toHaveBeenCalledTimes(1)
+    expect(hover.onEnter).toHaveBeenCalledWith(badge, "https://example.com/focus")
+    expect(hover.onLeave).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe("insertHnBadge", () => {
@@ -99,6 +115,8 @@ describe("insertHnBadge", () => {
     expect(badge?.querySelector("img")?.src).toBe(
       "chrome-extension://test-extension/icons/hacker-news.svg"
     )
+    expect(badge?.querySelector("img")?.alt).toBe("")
+    expect(badge?.querySelector("img")?.getAttribute("aria-hidden")).toBe("true")
     expect(badge?.textContent).toContain("HN 123 pts")
     expect(badge?.getAttribute("aria-label")).toBe("Hacker News: 123 points")
     expect(badge?.title).toBe("Hacker News: 123 points")
