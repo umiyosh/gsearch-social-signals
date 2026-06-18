@@ -6,7 +6,7 @@ Google検索結果に、各リンクのはてなブックマーク件数（`X us
 
 ## スクリーンショット
 
-![Google検索結果にHatena Bookmark件数とコメントプレビューを表示している画面](docs/assets/google-search-social-signals-serp.png)
+![Google検索結果にHatena Bookmark件数とHacker Newsスコアを表示している画面](docs/assets/google-search-social-signals-serp.png)
 
 ## 機能
 
@@ -99,12 +99,18 @@ make release-tag VERSION=0.1.0
 
 Chrome拡張のmatch patternはTLDワイルドカードをサポートしていないため、`https://www.google.*` のような指定は使いません。`https://*/*` など広い `matches` と `include_globs` の組み合わせでも近い絞り込みはできますが、content scriptの権限警告と審査説明が広くなるため、この拡張では対応するGoogleドメインを明示列挙します。
 
-## Chromeへのインストール手順
+## Chrome Web Store からのインストール
+
+Chrome Web Store 公開後は、ストアページからインストールできます。現在の `0.1.0` は Unlisted beta として提出する想定です。公開URLはリリース後にこの README と Store Listing に反映します。
+
+## 手動インストール手順
 
 1. 上記ビルドを完了させ、`dist/` ディレクトリがあることを確認します。
 2. Chromeで `chrome://extensions/` を開き、右上の「デベロッパーモード」を有効化。
 3. 「パッケージ化されていない拡張機能を読み込む」をクリックし、プロジェクトの `dist/` を選択。
 4. Googleで検索結果を開くと、各結果のリンク付近に `123 users` や `HN 456 pts` のようなバッジが表示されます（0件の結果は非表示）。
+
+Store 提出用 zip を確認する場合は、`make package` で作成される `store-package/gsplus-hatebu-<version>.zip` を使います。zip は Chrome Web Store アップロード用で、通常のローカル開発では展開済みの `dist/` を読み込んでください。
 
 ## プライバシー概要
 

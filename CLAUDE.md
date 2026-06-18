@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Chrome extension (Manifest V3, TypeScript) that overlays Hatena Bookmark counts and Hacker News post counts on Google search results. No runtime dependencies — devDependencies only.
+Chrome extension (Manifest V3, TypeScript) that overlays Hatena Bookmark counts and Hacker News maximum story points on Google search results. No runtime dependencies — devDependencies only.
 
 ## Commands
 
@@ -22,6 +22,8 @@ npm run quality:test    # node --test for scripts/*.test.mjs
 ```
 
 Quality gate before a PR: `make check` (= lint / fmt-check / typecheck / quality-test / lint-quality / test-coverage). Manual smoke test: rebuild, reload the extension at `chrome://extensions/`, open a Google SERP and confirm badges render.
+
+Before Chrome Web Store submission, also run `make package` and check the package rules in `docs/release-management.md`, `docs/remote-hosted-code-audit.md`, and `docs/chrome-web-store-privacy-practices.md`. Public-facing copy must stay aligned across `README.md`, `PRIVACY.md`, `public/manifest.json`, and the Chrome Web Store listing.
 
 Live E2E sweep (real Chrome + chrome-devtools MCP, badge counts vs Hatena API): use the `gsplus-hatebu-e2e` user skill only when the user explicitly asks for it. Never wire it into CI; Google bot detection makes it inherently flaky there.
 
@@ -52,7 +54,7 @@ tsup builds exactly two bundles from `tsup.config.ts`: `dist/background.js` (ser
 The code is split by Chrome extension runtime boundary:
 
 - **`src/content/`** — runs on Google SERPs. `index.ts` is thin boot glue (styles + MutationObserver); the work happens in `searchResults.ts` (DOM discovery), `signals.ts` (per-URL caching/orchestration), `badges.ts` / `overlay.ts` / `styles.ts` (rendering), and `messaging.ts` (the only content-side file that touches `chrome.runtime`). Never fetches external APIs directly.
-- **`src/background/`** — service worker. `index.ts` only wires real fetchers into `handlers.ts` (`createMessageHandler(deps)` — dependency-injected, exhaustively switched, unit-testable). The only place that performs network requests (Hatena and HN Algolia APIs, allowed via `host_permissions` in the manifest).
+- **`src/background/`** — service worker. `index.ts` only wires real fetchers into `handlers.ts` (`createMessageHandler(deps)` — dependency-injected, exhaustively switched, unit-testable). The only place that performs network requests (Hatena and HN Algolia APIs, allowed via `host_permissions` in the manifest). HN requests are capped separately from Hatena requests because they fan out one fetch per URL.
 - **`src/shared/`** — message contracts, URL normalization, and API clients used by both sides.
 - **`src/infra/chrome/`** — `messageRouter.ts` wraps `chrome.runtime.onMessage` and owns the MV3 "return `true` to keep the channel open for async `sendResponse`" protocol, so handlers just return a `Promise` (or `null` for foreign messages).
 
