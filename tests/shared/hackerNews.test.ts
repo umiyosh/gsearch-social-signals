@@ -12,6 +12,17 @@ function mockFetchResponse(payload: unknown, ok = true, status = ok ? 200 : 500)
   )
 }
 
+function mockFetchJsonError(): void {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.reject(new SyntaxError("invalid json"))
+    })
+  )
+}
+
 afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
@@ -52,12 +63,31 @@ describe("fetchHackerNewsSummaries", () => {
     expect(summaries["https://example.com/"]).toMatchObject({ nbHits: 0 })
   })
 
+  it("returns a zero-point summary when the API returns empty hits", async () => {
+    mockFetchResponse({ nbHits: 0, hits: [] })
+
+    const summaries = await fetchHackerNewsSummaries(["https://example.com/empty"])
+    expect(summaries["https://example.com/empty"]).toEqual({
+      nbHits: 0,
+      maxPoints: 0,
+      maxComments: 0
+    })
+  })
+
   it("maps failed requests to null without rejecting", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined)
     mockFetchResponse({}, false)
 
     const summaries = await fetchHackerNewsSummaries(["https://example.com/"])
     expect(summaries["https://example.com/"]).toBeNull()
+  })
+
+  it("maps invalid JSON responses to null without rejecting", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined)
+    mockFetchJsonError()
+
+    const summaries = await fetchHackerNewsSummaries(["https://example.com/invalid-json"])
+    expect(summaries["https://example.com/invalid-json"]).toBeNull()
   })
 })
 

@@ -8,14 +8,26 @@ import {
   resolveRequestedCount
 } from "../../src/shared/hatena"
 
-function mockFetchResponse(payload: unknown, ok = true): void {
+function mockFetchResponse(payload: unknown, ok = true, status = ok ? 200 : 500): void {
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue({
       ok,
-      status: ok ? 200 : 500,
+      status,
       text: () => Promise.resolve(JSON.stringify(payload)),
       json: () => Promise.resolve(payload)
+    })
+  )
+}
+
+function mockFetchText(payloadText: string, ok = true, status = ok ? 200 : 500): void {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok,
+      status,
+      text: () => Promise.resolve(payloadText),
+      json: () => Promise.resolve(JSON.parse(payloadText))
     })
   )
 }
@@ -62,6 +74,21 @@ describe("fetchHatenaCounts", () => {
 
     const counts = await fetchHatenaCounts(["https://example.com/x"])
     expect(counts["https://example.com/x"]).toBeNull()
+  })
+
+  it("marks every url in a batch as null when the API returns 400", async () => {
+    mockFetchResponse({}, false, 400)
+
+    const counts = await fetchHatenaCounts(["https://example.com/bad-request"])
+    expect(counts["https://example.com/bad-request"]).toBeNull()
+  })
+
+  it("marks every url in a batch as null when the API returns invalid JSON", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined)
+    mockFetchText("{not valid json")
+
+    const counts = await fetchHatenaCounts(["https://example.com/invalid-json"])
+    expect(counts["https://example.com/invalid-json"]).toBeNull()
   })
 })
 
