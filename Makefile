@@ -6,8 +6,8 @@ install:
 build:
 	npm run build
 
-package: build
-	@echo "Extension bundle available under dist/"
+package:
+	npm run package:store
 
 clean:
 	npm run clean || true

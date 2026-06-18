@@ -68,7 +68,17 @@ make install
 npm run build   # もしくは make build
 ```
 
-`dist/` に `background.js` と `content.js` が生成され、public配下の資産もコピーされます。配布用の内容確認には `make package` を実行すると簡易メッセージが表示されます。
+`dist/` に `background.js` と `content.js` が生成され、public配下の資産もコピーされます。配布用 zip は `npm run package:store` または `make package` で作成します。
+
+## 配布zip作成
+
+```bash
+npm run package:store   # もしくは make package
+```
+
+`npm run package:store` は `npm run build:store` を実行したうえで、`store-package/gsplus-hatebu-<version>.zip` を作成します。zip は `dist/` の中身だけをルートに配置するため、Chrome Web Store にアップロードする zip のルートには `manifest.json` が存在します。
+
+配布 zip には `.git`、`.env`、`node_modules`、`src`、`tests`、`coverage`、`.DS_Store`、`__MACOSX`、`.map` を含めません。`tsup.config.ts` は `sourcemap: false` のため公開 zip に source map は入りません。minify は審査時の確認しやすさを優先して現時点では無効のままにしています。
 
 ### 対応ドメイン
 
