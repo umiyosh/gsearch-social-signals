@@ -47,7 +47,7 @@ The extension does not intentionally collect or store:
 - Payment or financial information.
 - Location data.
 
-The extension does not use analytics, advertising tracking, or error tracking services.
+The extension does not use analytics, advertising tracking, profiling, credit-worthiness evaluation, or error tracking services.
 
 ## Data Retention
 
@@ -61,7 +61,7 @@ Third-party services listed above may process requests according to their own po
 
 The extension uses browsing activity and website content data only to provide or improve its single purpose: showing public Hatena Bookmark and Hacker News signals on supported Google Search result pages.
 
-The extension transfers data to third parties only as necessary to provide that single purpose. The extension does not sell user data and does not use user data for advertising.
+The extension transfers data to third parties only as necessary to provide that single purpose. The extension does not sell user data and does not use user data for advertising, profiling, credit-worthiness evaluation, or unrelated purposes.
 
 ## User Controls
 
