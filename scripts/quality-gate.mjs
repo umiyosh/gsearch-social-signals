@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// AtodeKiku の quality-gate を TypeScript 専用に移植したもの。
+// GSPlusHatebu の TypeScript quality gate。
 // ESLint warning と knip の検出結果を quality-baseline.json と比較し、
 // 増加 (new/worsened) を exit 1 でブロックするラチェット。
 

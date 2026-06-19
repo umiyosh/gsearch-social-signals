@@ -69,6 +69,64 @@ describe("fetchHatenaCounts", () => {
     expect(counts["https://example.com/b"]).toBeNull()
   })
 
+  it("keeps counts scoped to each batch when more than 50 urls are requested", async () => {
+    const urls = Array.from({ length: 51 }, (_, index) => `https://example.com/${index}`)
+    const firstUrl = urls[0]!
+    const lastFirstBatchUrl = urls[49]!
+    const secondBatchUrl = urls[50]!
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify({ [firstUrl]: 1, [lastFirstBatchUrl]: 49 })),
+        json: () => Promise.resolve({})
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify({ [secondBatchUrl]: 50 })),
+        json: () => Promise.resolve({})
+      })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const counts = await fetchHatenaCounts(urls)
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(counts[firstUrl]).toBe(1)
+    expect(counts[lastFirstBatchUrl]).toBe(49)
+    expect(counts[secondBatchUrl]).toBe(50)
+  })
+
+  it("marks only the failed batch urls as null", async () => {
+    const urls = Array.from({ length: 51 }, (_, index) => `https://example.com/${index}`)
+    const firstUrl = urls[0]!
+    const lastFirstBatchUrl = urls[49]!
+    const secondBatchUrl = urls[50]!
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify({ [firstUrl]: 1 })),
+        json: () => Promise.resolve({})
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve("{}"),
+        json: () => Promise.resolve({})
+      })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const counts = await fetchHatenaCounts(urls)
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(counts[firstUrl]).toBe(1)
+    expect(counts[lastFirstBatchUrl]).toBeNull()
+    expect(counts[secondBatchUrl]).toBeNull()
+  })
+
   it("marks every url in a batch as null when the API fails", async () => {
     mockFetchResponse({}, false)
 
