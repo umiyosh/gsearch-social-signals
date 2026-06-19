@@ -113,6 +113,8 @@ export function requestHnSummaries(
       Object.entries(response.data).forEach(([url, summary]) => {
         apply(url, summary)
       })
+
+      urls.filter((url) => !(url in response.data)).forEach((url) => apply(url, null))
     })
   } catch (error) {
     urls.forEach((url) => settle(url))

@@ -110,10 +110,15 @@ export async function fetchHatenaCounts(urls: readonly string[]): Promise<Hatena
   const normalizedUrls = uniqueUrls.map((url) => normalizedRequestMap.get(url) ?? url)
   const batches = chunkArray(normalizedUrls, MAX_BATCH_SIZE)
   for (const batch of batches) {
+    const batchUrlSet = new Set(batch)
+    const batchOriginalUrls = uniqueUrls.filter((url) =>
+      batchUrlSet.has(normalizedRequestMap.get(url) ?? url)
+    )
+
     try {
       const normalizedMap = normalizeCountKeys(await requestChunk(batch))
 
-      uniqueUrls.forEach((requestedUrl) => {
+      batchOriginalUrls.forEach((requestedUrl) => {
         const normalizedRequest = normalizeForComparison(
           normalizedRequestMap.get(requestedUrl) ?? requestedUrl
         )
@@ -121,7 +126,7 @@ export async function fetchHatenaCounts(urls: readonly string[]): Promise<Hatena
       })
     } catch (error) {
       console.error("Hatena API chunk failed", error)
-      batch.forEach((url) => {
+      batchOriginalUrls.forEach((url) => {
         counts[url] = null
       })
     }

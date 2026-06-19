@@ -1,4 +1,4 @@
-.PHONY: install build dev lint fmt fmt-check typecheck lint-quality quality-baseline quality-test quality-ts test test-coverage check clean package release-check release-tag
+.PHONY: install build dev lint fmt fmt-check typecheck lint-quality quality-baseline quality-test quality-ts test test-coverage check clean package store-assets release-check release-tag
 
 VERSION ?=
 TAG := $(if $(VERSION),$(if $(filter v%,$(VERSION)),$(VERSION),v$(VERSION)),)
@@ -11,6 +11,9 @@ build:
 
 package:
 	npm run package:store
+
+store-assets:
+	npm run store:assets
 
 release-check:
 	@test -n "$(VERSION)" || (echo "Usage: make release-check VERSION=0.1.0"; exit 1)

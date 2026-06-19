@@ -7,6 +7,16 @@ const rootDir = dirname(dirname(fileURLToPath(import.meta.url)))
 const outDir = join(rootDir, "docs", "assets", "store")
 const tmpDir = join(outDir, ".tmp-svg")
 
+function assertImageMagickAvailable() {
+  try {
+    execFileSync("magick", ["-version"], { stdio: "ignore" })
+  } catch {
+    throw new Error("ImageMagick `magick` command is required to generate store assets.")
+  }
+}
+
+assertImageMagickAvailable()
+
 mkdirSync(outDir, { recursive: true })
 mkdirSync(tmpDir, { recursive: true })
 

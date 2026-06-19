@@ -115,14 +115,15 @@ describe("requestHnSummaries", () => {
     const applied: Array<[string, unknown]> = []
 
     requestHnSummaries(
-      ["https://a", "https://b"],
+      ["https://a", "https://b", "https://c"],
       (url, summary) => applied.push([url, summary]),
       vi.fn()
     )
 
     expect(applied).toEqual([
       ["https://a", { nbHits: 4 }],
-      ["https://b", null]
+      ["https://b", null],
+      ["https://c", null]
     ])
   })
 
