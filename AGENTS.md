@@ -24,9 +24,17 @@
 ## Testing Guidelines
 
 - Use Vitest with jsdom for content logic and MSW (or fetch mocks) when simulating the Hatena API.
-- Target ≥80% statement coverage; ensure Google DOM parsing, Hatena API client, and UI injectors each have fixture-backed tests.
+- Target ≥80% statement coverage; ensure Google DOM parsing, Hatena API client, Hacker News API client, message validation, and UI injectors each have fixture-backed tests.
 - Name suites after the feature (`describe('HatenaCountClient', ...)`) and include regression context when fixing bugs.
 - Run `npm run test && npm run lint` before opening PRs; attach failing trace IDs or console logs to bug reports.
+
+## Chrome Web Store Readiness
+
+- Keep `README.md`, `PRIVACY.md`, `public/manifest.json`, `docs/spec.md`, and Store Listing copy consistent whenever public behavior, permissions, or external API usage changes.
+- Before release tagging, run `make check`, `make package`, and `make release-check VERSION=<version>`.
+- Store packages are created with `make package`; the zip must contain `manifest.json` at the archive root and must not include source maps, source files, tests, coverage, `node_modules`, `.env`, `.git`, `.DS_Store`, or `__MACOSX`.
+- Use `docs/release-management.md` for versioning, release artifact, rollback, and Chrome Web Store rollout decisions.
+- Use GitHub Issues as the initial public support path unless the Store Listing is intentionally changed.
 
 ## Commit & Pull Request Guidelines
 
