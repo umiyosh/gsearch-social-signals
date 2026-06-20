@@ -77,7 +77,7 @@ manifest, and visually show the Hatena/Hacker News badge pairing.
 Run this command from the repository root to regenerate promotional images:
 
 ```bash
-node scripts/generate-store-assets.mjs
+npm run store:assets
 ```
 
 The script requires ImageMagick's `magick` command. Store screenshots are

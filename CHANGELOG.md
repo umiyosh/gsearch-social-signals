@@ -17,5 +17,6 @@ All notable changes to this project are documented here.
 
 ### Release Notes
 
+- Public extension name: `Search With Social Signals`.
 - Current intended channel: Unlisted beta.
 - Store submission package: `store-package/gsplus-hatebu-0.1.0.zip`.
