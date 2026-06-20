@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { insertBadge, insertHnBadge, type BadgeHoverHandlers } from "../../src/content/badges"
 import type { SearchResultTarget } from "../../src/content/searchResults"
@@ -30,6 +32,12 @@ beforeEach(() => {
 })
 
 describe("insertBadge", () => {
+  it("uses a bundled Hatena Bookmark icon that visibly includes B!", () => {
+    const icon = readFileSync(resolve(process.cwd(), "public/icons/hatena-bookmark.svg"), "utf8")
+
+    expect(icon).toContain(">B!<")
+  })
+
   it("renders a hatena badge with entry link, icon, and user count", () => {
     const target = buildTarget("https://example.com/article")
 
