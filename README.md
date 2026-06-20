@@ -1,4 +1,4 @@
-# Google検索 with ソーシャルシグナル
+# Search With Social Signals
 
 Google検索結果に、Hatena Bookmark 件数と Hacker News の最大スコアを小さなバッジで表示する Chrome 拡張です。
 
@@ -80,9 +80,9 @@ Chrome Web Store 公開前に手動で試す場合は、このREADME下部の「
 
 ## 非公式拡張です
 
-この拡張は非公式のプロジェクトです。Google、Hatena、Hacker News、Y Combinator、Algolia によって提供・承認・保証されているものではありません。
+Search With Social Signals は非公式のプロジェクトです。Google、Hatena、Hacker News、Y Combinator、Algolia によって提供・承認・保証されているものではありません。
 
-各サービス名、ロゴ、商標はそれぞれの権利者に帰属します。
+Google Search is a trademark of Google LLC. 各サービス名、ロゴ、商標はそれぞれの権利者に帰属します。
 
 ## 困ったとき
 
