@@ -77,7 +77,7 @@ function run(command, args, options = {}) {
 
 function archiveName() {
   const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"))
-  return `gsplus-hatebu-${packageJson.version}.zip`
+  return `${packageJson.name}-${packageJson.version}.zip`
 }
 
 export function packageStore() {

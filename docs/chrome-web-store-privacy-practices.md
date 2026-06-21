@@ -1,8 +1,8 @@
 # Chrome Web Store Privacy Practices Draft
 
-Public URL for now: https://github.com/umiyosh/GSPlusHatebu
+Public URL for now: https://github.com/umiyosh/gsearch-social-signals
 
-Privacy policy URL after merge: https://github.com/umiyosh/GSPlusHatebu/blob/master/PRIVACY.md
+Privacy policy URL after merge: https://github.com/umiyosh/gsearch-social-signals/blob/master/PRIVACY.md
 
 Official references:
 

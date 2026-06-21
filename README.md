@@ -86,7 +86,7 @@ Google Search is a trademark of Google LLC. 各サービス名、ロゴ、商標
 
 ## 困ったとき
 
-不具合や要望は [GitHub Issues](https://github.com/umiyosh/GSPlusHatebu/issues) に登録してください。
+不具合や要望は [GitHub Issues](https://github.com/umiyosh/gsearch-social-signals/issues) に登録してください。
 
 報告時に以下があると確認しやすくなります。
 

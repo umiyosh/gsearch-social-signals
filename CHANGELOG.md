@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## [0.1.2] - 2026-06-22
+
+### Changed
+
+- Repository URL target: `https://github.com/umiyosh/gsearch-social-signals`.
+- Package name: `gsearch-social-signals`.
+- Store submission package: `store-package/gsearch-social-signals-0.1.2.zip`.
+
 ## [0.1.1] - 2026-06-22
 
 ### Changed

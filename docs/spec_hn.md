@@ -2,7 +2,7 @@
 
 ## Status
 
-Hacker News support is implemented in the main GSPlusHatebu extension. This document describes the current behavior and constraints.
+Hacker News support is implemented in the main GSearch With Social Signals extension. This document describes the current behavior and constraints.
 
 ## User-Facing Behavior
 

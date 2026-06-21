@@ -8,15 +8,15 @@
 - `0.2.0`: Public beta.
 - `1.0.0`: Public stable.
 
-The current release candidate is `0.1.1`. This matches the first Chrome Web Store submission target after the public extension name change, so this PR does not move the project to `0.2.0`.
+The current release candidate is `0.1.2`. This matches the first Chrome Web Store submission target after the repository URL and package name change, so this PR does not move the project to `0.2.0`.
 
 Before creating a release tag, run:
 
 ```bash
-make release-check VERSION=0.1.1
+make release-check VERSION=0.1.2
 ```
 
-`make release-tag VERSION=0.1.1` runs the same check before creating and pushing `v0.1.1`.
+`make release-tag VERSION=0.1.2` runs the same check before creating and pushing `v0.1.2`.
 
 ## GitHub Release
 
@@ -68,7 +68,7 @@ Never reuse an already uploaded version number. Chrome Web Store updates require
 
 Public support path:
 
-- GitHub repository: https://github.com/umiyosh/GSPlusHatebu
-- GitHub issues: https://github.com/umiyosh/GSPlusHatebu/issues
+- GitHub repository: https://github.com/umiyosh/gsearch-social-signals
+- GitHub issues: https://github.com/umiyosh/gsearch-social-signals/issues
 
 Use the GitHub issues URL as the Chrome Web Store Support tab URL for the initial Unlisted beta.

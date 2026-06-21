@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "GSearch With Social Signals",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Show Hatena Bookmark counts and Hacker News points on Google Search results.",
-  "homepage_url": "https://github.com/umiyosh/GSPlusHatebu",
+  "homepage_url": "https://github.com/umiyosh/gsearch-social-signals",
   "permissions": [],
   "host_permissions": [
     "https://bookmark.hatenaapis.com/*",
