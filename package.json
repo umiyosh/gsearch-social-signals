@@ -1,6 +1,6 @@
 {
   "name": "gsplus-hatebu",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Chrome extension that shows Hatena Bookmark counts and Hacker News points on Google Search results.",
   "private": true,
   "type": "module",
