@@ -4,7 +4,7 @@ Effective date: 2026-06-18
 
 This privacy policy applies to the Chrome extension "GSearch With Social Signals".
 
-Public project URL: https://github.com/umiyosh/GSPlusHatebu
+Public project URL: https://github.com/umiyosh/gsearch-social-signals
 
 ## Purpose
 
@@ -75,7 +75,7 @@ Users can:
 
 For questions or requests, use the GitHub repository:
 
-https://github.com/umiyosh/GSPlusHatebu
+https://github.com/umiyosh/gsearch-social-signals
 
 ## Changes
 

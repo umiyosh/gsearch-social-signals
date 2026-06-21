@@ -2,7 +2,7 @@
 
 ## Status
 
-This document records the current Hacker News badge behavior after the HN feature was integrated into the main GSPlusHatebu extension.
+This document records the current Hacker News badge behavior after the HN feature was integrated into the main GSearch With Social Signals extension.
 
 The old separate add-on approach is no longer used. HN badges are rendered by the same content script, style sheet, message contract, and background service worker as the Hatena Bookmark badges.
 

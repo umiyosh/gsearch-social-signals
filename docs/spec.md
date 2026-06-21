@@ -352,7 +352,7 @@ Hatena API 連携は以下の方針に従う。
 ## 14. Public Release Notes
 
 - Chrome Web Store 公開名: `GSearch With Social Signals`
-- Public project URL: `https://github.com/umiyosh/GSPlusHatebu`
+- Public project URL: `https://github.com/umiyosh/gsearch-social-signals`
 - Privacy policy: `PRIVACY.md`
 - Store Listing draft: `README.md`
 - Privacy practices draft: `docs/chrome-web-store-privacy-practices.md`
