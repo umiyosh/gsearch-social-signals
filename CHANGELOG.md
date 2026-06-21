@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here.
 
+## [0.1.1] - 2026-06-22
+
+### Changed
+
+- Public extension name: `GSearch With Social Signals`.
+- Store submission package: `store-package/gsplus-hatebu-0.1.1.zip`.
+
 ## [0.1.0] - 2026-06-18
 
 ### Added

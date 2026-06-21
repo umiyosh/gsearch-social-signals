@@ -85,7 +85,7 @@ function promoSmall() {
     <svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
       ${rect(0, 0, 440, 280, { fill: "#ffffff" })}
       ${rect(26, 26, 388, 228, { fill: "#f8fafd", stroke: "#dfe3ea", radius: 18 })}
-      ${text(52, 73, "Search With", { size: 22, weight: 700 })}
+      ${text(52, 73, "GSearch With", { size: 22, weight: 700 })}
       ${text(52, 101, "Social Signals", { size: 22, weight: 700 })}
       ${rect(52, 124, 300, 38, { fill: "#ffffff", stroke: "#dadce0", radius: 19 })}
       ${text(74, 149, "public web research", { size: 15, fill: colors.muted })}
@@ -99,7 +99,7 @@ function promoMarquee() {
     <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560">
       ${rect(0, 0, 1400, 560, { fill: "#ffffff" })}
       ${rect(80, 70, 1240, 420, { fill: "#f8fafd", stroke: "#dfe3ea", radius: 28 })}
-      ${text(150, 173, "Search With Social Signals", { size: 48, weight: 700 })}
+      ${text(150, 173, "GSearch With Social Signals", { size: 48, weight: 700 })}
       ${text(154, 230, "Hatena Bookmark counts and Hacker News points on Google Search results", { size: 25, fill: colors.muted })}
       ${rect(154, 285, 680, 70, { fill: "#ffffff", stroke: "#dadce0", radius: 35 })}
       ${text(196, 329, "browser extension social signals", { size: 24, fill: colors.muted })}
