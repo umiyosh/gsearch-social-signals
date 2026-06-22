@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "GSearch With Social Signals",
+    "description": "Extension name shown in Chrome and Chrome Web Store."
+  },
+  "appDescription": {
+    "message": "Show Hatena Bookmark counts and Hacker News points on Google Search results.",
+    "description": "Short extension description shown in Chrome and Chrome Web Store."
+  },
+  "actionDefaultTitle": {
+    "message": "GSearch With Social Signals",
+    "description": "Toolbar action title."
+  }
+}

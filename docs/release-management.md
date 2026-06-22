@@ -8,15 +8,15 @@
 - `0.2.0`: Public beta.
 - `1.0.0`: Public stable.
 
-The current release candidate is `0.1.2`. This matches the first Chrome Web Store submission target after the repository URL and package name change, so this PR does not move the project to `0.2.0`.
+The current release candidate is `0.1.3`. This patch release localizes the Chrome Web Store listing metadata while staying within the Unlisted beta line, so it does not move the project to `0.2.0`.
 
 Before creating a release tag, run:
 
 ```bash
-make release-check VERSION=0.1.2
+make release-check VERSION=0.1.3
 ```
 
-`make release-tag VERSION=0.1.2` runs the same check before creating and pushing `v0.1.2`.
+`make release-tag VERSION=0.1.3` runs the same check before creating and pushing `v0.1.3`.
 
 ## GitHub Release
 

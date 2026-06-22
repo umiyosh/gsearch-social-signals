@@ -130,6 +130,8 @@
 
 - `manifest_version: 3`
 - 必須フィールド: `name`, `version`, `description`
+- `default_locale: en`
+- `name`, `description`, `action.default_title` は `_locales/en` / `_locales/ja` の `messages.json` でローカライズする。
 - **背景スクリプト**
   - `"background": { "service_worker": "<ビルド済みbackgroundスクリプト>", "type": "module" }`
 
