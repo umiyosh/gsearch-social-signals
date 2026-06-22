@@ -88,6 +88,8 @@ Google Search is a trademark of Google LLC. 各サービス名、ロゴ、商標
 
 不具合や要望は [GitHub Issues](https://github.com/umiyosh/gsearch-social-signals/issues) に登録してください。
 
+よくある質問は [Support and FAQ](docs/support.md) にまとめています。
+
 報告時に以下があると確認しやすくなります。
 
 - 検索した Google ドメイン
@@ -117,4 +119,6 @@ make package
 - [実装仕様](docs/spec.md)
 - [Hacker News 連携仕様](docs/spec_hn.md)
 - [リリース管理](docs/release-management.md)
+- [Support and FAQ](docs/support.md)
+- [運用手順](docs/operations.md)
 - [Chrome Web Store Privacy practices](docs/chrome-web-store-privacy-practices.md)

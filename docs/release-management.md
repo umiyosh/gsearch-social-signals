@@ -70,5 +70,7 @@ Public support path:
 
 - GitHub repository: https://github.com/umiyosh/gsearch-social-signals
 - GitHub issues: https://github.com/umiyosh/gsearch-social-signals/issues
+- Support and FAQ: `docs/support.md`
+- Operations runbook: `docs/operations.md`
 
 Use the GitHub issues URL as the Chrome Web Store Support tab URL for the initial Unlisted beta.
