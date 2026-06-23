@@ -1,5 +1,7 @@
 # GSearch With Social Signals
 
+[![CI](https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml/badge.svg)](https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml)
+
 Google検索結果に、Hatena Bookmark 件数と Hacker News の最大スコアを小さなバッジで表示する Chrome 拡張です。
 
 検索順位や検索結果の本文は変更しません。リンク先を開く前に、そのページが日本語圏・英語圏の技術コミュニティでどれくらい参照されているかを確認するための補助ツールです。
