@@ -30,7 +30,7 @@ Instead, the skill uses the user's existing Chrome profile through chrome-devtoo
 - The extension is installed and enabled in local Chrome.
 - chrome-devtools MCP can control the user's Chrome session.
 - The target build has been loaded or reloaded in `chrome://extensions/` before verification.
-- If Google returns `/sorry`, CAPTCHA, or popup-blocking interruptions, the workflow stops and reports partial results.
+- If Google returns `/sorry`, CAPTCHA, popup-blocking interruptions, or tool errors, the workflow stops, performs best-effort cleanup for pages and storage it created, and reports partial results.
 
 ## Limits
 

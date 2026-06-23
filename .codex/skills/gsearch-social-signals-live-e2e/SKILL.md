@@ -42,6 +42,7 @@ Visit page 2 for the first five keywords unless the user says otherwise. To keep
 - Do not touch the user's existing tabs. Operate only on pages opened by this workflow: the test page and the probe popup.
 - Stop immediately if Google returns `/sorry` or CAPTCHA. Report partial results instead of trying to bypass it.
 - Keep each `evaluate_script` batch to 6 SERP pages or fewer to avoid timeouts.
+- If CAPTCHA, popup blocking, tool errors, or other interruptions occur, still run best-effort cleanup for pages and storage created by this workflow before reporting.
 - At the end, remove `gsplusE2E`, `gsplusE2EDataset`, `gsplusFn`, and `gsplusDrv` from google.com `localStorage`, clear `window.name`, and close only pages opened by the workflow.
 
 ## Architecture Notes
@@ -165,7 +166,7 @@ Run at most 6 pages per `evaluate_script` call:
 }
 ```
 
-If any result contains `captcha: true`, stop the crawl and report partial results. If the result contains `blocked: true`, ask the user to allow popups for google.com and rerun only after permission is granted.
+If any result contains `captcha: true`, stop the crawl, run best-effort cleanup, and report partial results. If the result contains `blocked: true`, run best-effort cleanup, ask the user to allow popups for google.com, and rerun only after permission is granted.
 
 ### 3. Finalize Data and Put It in `window.name`
 
@@ -544,6 +545,8 @@ If `renderedHnBadges` is 0 for the whole run, the run is not sufficient for HN v
 Even if all URLs pass, prove the comparators are not trivially passing. Pick 3 URLs with displayed Hatena badges and 1-3 URLs with displayed HN badges when available, modify the displayed value by `+1`, and confirm the corresponding Hatena or HN comparison reports mismatches using the same comparison page.
 
 ### 7. Clean Up
+
+Run this step at the normal end of the workflow and also on a best-effort basis after CAPTCHA, popup blocking, tool errors, or other interruptions.
 
 1. Navigate back to google.com.
 2. Run cleanup:
