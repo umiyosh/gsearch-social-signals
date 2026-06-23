@@ -1,0 +1,47 @@
+name: HN score mismatch
+description: Report a Hacker News points badge that differs from the expected HN story.
+title: "HN score mismatch: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The extension displays the highest positive Hacker News story score found through Hacker News Search / Algolia for the normalized URL.
+  - type: input
+    id: result_url
+    attributes:
+      label: Search result URL
+      placeholder: https://example.com/article
+    validations:
+      required: true
+  - type: input
+    id: shown_score
+    attributes:
+      label: HN score shown by the extension
+      placeholder: HN 128 pts
+    validations:
+      required: true
+  - type: input
+    id: expected_story
+    attributes:
+      label: Expected Hacker News story or Algolia result
+      placeholder: https://news.ycombinator.com/item?id=12345678
+  - type: textarea
+    id: mismatch
+    attributes:
+      label: What seems wrong?
+      placeholder: The extension shows 42 pts, but the highest matching story has 128 points.
+    validations:
+      required: true
+  - type: input
+    id: google_domain
+    attributes:
+      label: Google domain
+      placeholder: google.com
+  - type: input
+    id: chrome_version
+    attributes:
+      label: Chrome version
+  - type: input
+    id: extension_version
+    attributes:
+      label: Extension version

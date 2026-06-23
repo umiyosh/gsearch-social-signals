@@ -1,0 +1,51 @@
+name: Google SERP layout broken
+description: Report badges that overlap, appear in the wrong place, or break after a Google Search layout change.
+title: "Google SERP layout broken: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when the badges are inserted into the wrong place, overlap Google Search text, or stop fitting the result layout.
+  - type: input
+    id: google_domain
+    attributes:
+      label: Google domain
+      description: "Example: google.com, google.co.jp"
+      placeholder: google.co.jp
+    validations:
+      required: true
+  - type: input
+    id: search_query
+    attributes:
+      label: Search query
+      description: Include the query only if it is safe to share publicly.
+      placeholder: browser extension social signals
+  - type: textarea
+    id: visible_problem
+    attributes:
+      label: What looks broken?
+      description: Describe where the badge appears and what it overlaps or misses.
+      placeholder: The HN badge appears inside the title line and overlaps the result text.
+    validations:
+      required: true
+  - type: textarea
+    id: affected_urls
+    attributes:
+      label: Affected result URLs
+      description: Paste the affected public search result URLs if possible.
+      placeholder: https://example.com/article
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Attach a screenshot with private information removed.
+  - type: input
+    id: chrome_version
+    attributes:
+      label: Chrome version
+      placeholder: Chrome 149.0.7827.116
+  - type: input
+    id: extension_version
+    attributes:
+      label: Extension version
+      placeholder: 0.1.3

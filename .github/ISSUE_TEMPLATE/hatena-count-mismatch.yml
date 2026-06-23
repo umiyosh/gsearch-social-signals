@@ -1,0 +1,52 @@
+name: Hatena count mismatch
+description: Report a Hatena Bookmark count that differs from the Hatena entry page.
+title: "Hatena count mismatch: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when the `X users` badge is shown but the count does not match Hatena Bookmark.
+  - type: input
+    id: result_url
+    attributes:
+      label: Search result URL
+      placeholder: https://example.com/article
+    validations:
+      required: true
+  - type: input
+    id: google_domain
+    attributes:
+      label: Google domain
+      placeholder: google.co.jp
+  - type: input
+    id: shown_count
+    attributes:
+      label: Count shown by the extension
+      placeholder: 24 users
+    validations:
+      required: true
+  - type: input
+    id: hatena_count
+    attributes:
+      label: Count shown by Hatena Bookmark
+      placeholder: 25 users
+    validations:
+      required: true
+  - type: input
+    id: hatena_entry_url
+    attributes:
+      label: Hatena entry URL
+      placeholder: https://b.hatena.ne.jp/entry/s/example.com/article
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Include whether the page URL redirects, has tracking parameters, or appears multiple times in the search results.
+  - type: input
+    id: chrome_version
+    attributes:
+      label: Chrome version
+  - type: input
+    id: extension_version
+    attributes:
+      label: Extension version

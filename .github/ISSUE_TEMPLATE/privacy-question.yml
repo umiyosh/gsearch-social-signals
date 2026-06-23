@@ -1,0 +1,33 @@
+name: Privacy question
+description: Ask a question about URL handling, third-party APIs, or data retention.
+title: "Privacy question: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please read the privacy policy first: https://github.com/umiyosh/gsearch-social-signals/blob/master/PRIVACY.md
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - Search result URLs
+        - Search queries
+        - Browsing history
+        - Third-party APIs
+        - Browser cache
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      placeholder: What would you like to clarify?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Include only information that is safe to share publicly.

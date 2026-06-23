@@ -1,0 +1,60 @@
+name: Badge not displayed
+description: Report a missing Hatena or Hacker News badge.
+title: "Badge not displayed: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The extension intentionally hides zero-count Hatena results and non-positive Hacker News results. Use this when you expected a positive badge.
+  - type: dropdown
+    id: missing_badge
+    attributes:
+      label: Missing badge
+      options:
+        - Hatena Bookmark
+        - Hacker News
+        - Both
+    validations:
+      required: true
+  - type: input
+    id: result_url
+    attributes:
+      label: Search result URL
+      placeholder: https://example.com/article
+    validations:
+      required: true
+  - type: input
+    id: google_domain
+    attributes:
+      label: Google domain
+      placeholder: google.com
+    validations:
+      required: true
+  - type: input
+    id: search_query
+    attributes:
+      label: Search query
+      description: Include the query only if it is safe to share publicly.
+  - type: textarea
+    id: expected_signal
+    attributes:
+      label: Why did you expect a badge?
+      description: Link to the Hatena entry page, HN story, or Algolia result if possible.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I confirmed the extension is enabled.
+        - label: I confirmed the page is a supported Google Search result page.
+        - label: I reloaded the Google Search result page.
+  - type: input
+    id: chrome_version
+    attributes:
+      label: Chrome version
+  - type: input
+    id: extension_version
+    attributes:
+      label: Extension version

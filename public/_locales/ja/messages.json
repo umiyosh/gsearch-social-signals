@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "GSearch With Social Signals",
+    "description": "Chrome と Chrome Web Store に表示する拡張機能名。"
+  },
+  "appDescription": {
+    "message": "Google検索結果にはてなブックマーク数とHacker Newsポイントを表示します。",
+    "description": "Chrome と Chrome Web Store に表示する短い説明。"
+  },
+  "actionDefaultTitle": {
+    "message": "GSearch With Social Signals",
+    "description": "ツールバーアクションのタイトル。"
+  }
+}
