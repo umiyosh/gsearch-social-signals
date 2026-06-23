@@ -1,0 +1,4 @@
+interface:
+  display_name: "GSearch Social Signals Live E2E"
+  short_description: "Live Google SERP badge verification"
+  default_prompt: "Use $gsearch-social-signals-live-e2e to verify GSearch With Social Signals badges against live Google SERPs."

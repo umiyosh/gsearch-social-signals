@@ -101,6 +101,14 @@ Google Search is a trademark of Google LLC. 各サービス名、ロゴ、商標
 - バッジが出なかった、または表示が崩れた検索結果URL
 - Chrome のバージョン
 
+## Live E2E verification
+
+This repository includes an optional Codex agent skill for live E2E verification against real Google Search result pages.
+
+It is intentionally not part of CI because Google Search may return bot detection or CAPTCHA in clean automated environments.
+
+See [Live E2E verification](docs/live-e2e.md).
+
 ## 手動で試す場合
 
 通常の利用ではこの手順は不要です。Chrome Web Store 公開前の確認や、開発中の最新版を試す場合だけ使います。

@@ -36,6 +36,13 @@
 - Use `docs/release-management.md` for versioning, release artifact, rollback, and Chrome Web Store rollout decisions.
 - Use GitHub Issues as the initial public support path unless the Store Listing is intentionally changed.
 
+## Repository Codex Skills
+
+- `gsearch-social-signals-live-e2e`
+  - Real Google SERP に対して Hatena Bookmark / Hacker News バッジ表示を検証する live E2E skill。
+  - Google bot detection / CAPTCHA のため CI では実行しない。
+  - 実行する場合は `.codex/skills/gsearch-social-signals-live-e2e/SKILL.md` を参照する。
+
 ## Commit & Pull Request Guidelines
 
 - Follow Conventional Commits (`feat(content): add DOM parser`). Keep subjects ≤72 chars and explain behavior changes or rationales in the body.
