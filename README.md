@@ -1,28 +1,24 @@
-<div align="center">
-  <img src="public/icons/icon128.png" alt="GSearch With Social Signals のアプリアイコン" width="88" height="88">
+<h1>
+  <img src="public/icons/icon128.png" width="32" height="32" alt=""> GSearch With Social Signals
+</h1>
 
-  <h1>GSearch With Social Signals</h1>
+**Google検索結果に、Hatena Bookmark件数と Hacker News スコアを表示する Chrome 拡張です。**
 
-  <p><strong>Google検索結果に、Hatena Bookmark件数と Hacker Newsスコアを重ねて表示する Chrome 拡張。</strong></p>
+検索順位、タイトル、スニペット、広告枠は変更しません。  
+リンクを開く前に、そのページが日本語圏・英語圏の技術コミュニティでどれくらい参照されているかを確認できます。
 
-  <p>
-    検索順位や検索結果の本文は変更せず、<br>
-    リンクを開く前に技術コミュニティでの注目度を確認できます。
-  </p>
-
-  <p>
-    <a href="https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml"><img src="https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-    <a href="https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng"><img src="https://img.shields.io/badge/chrome%20web%20store-unlisted-lightgrey" alt="Chrome Web Store"></a>
-    <a href="https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng"><img src="https://img.shields.io/chrome-web-store/v/kfllkjdhkdlffnibokeeajcmdkidcfng?label=version" alt="Chrome Web Store version"></a>
-  </p>
-</div>
+<p>
+  <img alt="search ranking: not modified" src="https://img.shields.io/badge/search%20ranking-not%20modified-brightgreen">
+  <img alt="backend: none" src="https://img.shields.io/badge/backend-none-blue">
+  <img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-blue">
+  <img alt="version: v0.1.3" src="https://img.shields.io/badge/version-v0.1.3-orange">
+</p>
 
 ---
 
-<p align="center">
-  <img src="docs/assets/google-search-social-signals-serp.png" alt="Google検索結果に Hatena Bookmark と Hacker News のバッジが表示されているスクリーンショット" width="760">
-</p>
+## 開く前にソーシャルシグナルを見る
+
+<img src="docs/assets/store/screenshot-hatena-hn-badges.png" alt="Google検索結果に Hatena Bookmark と Hacker News のバッジが表示されているスクリーンショット" width="860">
 
 ## できること
 
@@ -39,6 +35,11 @@
 - 検索結果を開く前に、コミュニティでの注目度や議論の有無をざっと確認したい。
 
 ## 使い方
+
+<p>
+  <a href="https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng"><img src="https://img.shields.io/badge/chrome%20web%20store-unlisted-lightgrey" alt="Chrome Web Store: unlisted"></a>
+  <a href="https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng"><img src="https://img.shields.io/chrome-web-store/v/kfllkjdhkdlffnibokeeajcmdkidcfng?label=chrome%20web%20store" alt="Chrome Web Store version"></a>
+</p>
 
 1. Chrome Web Store から拡張をインストールします。
 2. 対応している Google 検索ページで検索します。
