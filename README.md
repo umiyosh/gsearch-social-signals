@@ -4,6 +4,10 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/kfllkjdhkdlffnibokeeajcmdkidcfng?label=chrome%20web%20store)](https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng)
 
+<p align="center">
+  <img src="public/icons/icon128.png" alt="GSearch With Social Signals のアプリアイコン" width="96" height="96">
+</p>
+
 Google検索結果に、Hatena Bookmark 件数と Hacker News の最大スコアを小さなバッジで表示する Chrome 拡張です。
 
 検索順位や検索結果の本文は変更しません。リンク先を開く前に、そのページが日本語圏・英語圏の技術コミュニティでどれくらい参照されているかを確認するための補助ツールです。
