@@ -7,12 +7,9 @@
 検索順位、タイトル、スニペット、広告枠は変更しません。  
 リンクを開く前に、そのページが日本語圏・英語圏の技術コミュニティでどれくらい参照されているかを確認できます。
 
-<p>
-  <img alt="search ranking: not modified" src="https://img.shields.io/badge/search%20ranking-not%20modified-brightgreen">
-  <img alt="backend: none" src="https://img.shields.io/badge/backend-none-blue">
-  <img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-blue">
-  <img alt="version: v0.1.3" src="https://img.shields.io/badge/version-v0.1.3-orange">
-</p>
+[![CI](https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml/badge.svg)](https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/kfllkjdhkdlffnibokeeajcmdkidcfng?label=chrome%20web%20store)](https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng)
 
 ---
 
@@ -36,7 +33,7 @@
 
 ## 使い方
 
-1. Chrome Web Store から拡張をインストールします。
+1. [Chrome Web Store](https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng) から拡張をインストールします。
 2. 対応している Google 検索ページで検索します。
 3. 検索結果の近くに表示される Hatena / HN バッジを確認します。
 4. 詳細を見たい場合は、バッジをクリックして Hatena Bookmark または Hacker News のページを開きます。
