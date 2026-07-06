@@ -1,18 +1,28 @@
-# GSearch With Social Signals
+<div align="center">
+  <img src="public/icons/icon128.png" alt="GSearch With Social Signals のアプリアイコン" width="88" height="88">
 
-[![CI](https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml/badge.svg)](https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/kfllkjdhkdlffnibokeeajcmdkidcfng?label=chrome%20web%20store)](https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng)
+  <h1>GSearch With Social Signals</h1>
+
+  <p><strong>Google検索結果に、Hatena Bookmark件数と Hacker Newsスコアを重ねて表示する Chrome 拡張。</strong></p>
+
+  <p>
+    検索順位や検索結果の本文は変更せず、<br>
+    リンクを開く前に技術コミュニティでの注目度を確認できます。
+  </p>
+
+  <p>
+    <a href="https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml"><img src="https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+    <a href="https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng"><img src="https://img.shields.io/badge/chrome%20web%20store-unlisted-lightgrey" alt="Chrome Web Store"></a>
+    <a href="https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng"><img src="https://img.shields.io/chrome-web-store/v/kfllkjdhkdlffnibokeeajcmdkidcfng?label=version" alt="Chrome Web Store version"></a>
+  </p>
+</div>
+
+---
 
 <p align="center">
-  <img src="public/icons/icon128.png" alt="GSearch With Social Signals のアプリアイコン" width="96" height="96">
+  <img src="docs/assets/google-search-social-signals-serp.png" alt="Google検索結果に Hatena Bookmark と Hacker News のバッジが表示されているスクリーンショット" width="760">
 </p>
-
-Google検索結果に、Hatena Bookmark 件数と Hacker News の最大スコアを小さなバッジで表示する Chrome 拡張です。
-
-検索順位や検索結果の本文は変更しません。リンク先を開く前に、そのページが日本語圏・英語圏の技術コミュニティでどれくらい参照されているかを確認するための補助ツールです。
-
-![Google検索結果に Hatena Bookmark と Hacker News のバッジが表示されているスクリーンショット](docs/assets/google-search-social-signals-serp.png)
 
 ## できること
 
