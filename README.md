@@ -1,14 +1,20 @@
-# GSearch With Social Signals
+<h1>
+  <img src="public/icons/icon128.png" width="32" height="32" alt=""> GSearch With Social Signals
+</h1>
+
+**Google検索結果に、Hatena Bookmark件数と Hacker News スコアを表示する Chrome 拡張です。**
+
+リンクを開く前に、そのページが日本語圏・英語圏の技術コミュニティでどれくらい参照されているかを確認できます。
 
 [![CI](https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml/badge.svg)](https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/kfllkjdhkdlffnibokeeajcmdkidcfng?label=chrome%20web%20store)](https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng)
 
-Google検索結果に、Hatena Bookmark 件数と Hacker News の最大スコアを小さなバッジで表示する Chrome 拡張です。
+---
 
-検索順位や検索結果の本文は変更しません。リンク先を開く前に、そのページが日本語圏・英語圏の技術コミュニティでどれくらい参照されているかを確認するための補助ツールです。
+## 開く前にソーシャルシグナルを見る
 
-![Google検索結果に Hatena Bookmark と Hacker News のバッジが表示されているスクリーンショット](docs/assets/google-search-social-signals-serp.png)
+<img src="docs/assets/store/screenshot-hatena-hn-badges.png" alt="Google検索結果に Hatena Bookmark と Hacker News のバッジが表示されているスクリーンショット" width="860">
 
 ## できること
 
@@ -26,7 +32,7 @@ Google検索結果に、Hatena Bookmark 件数と Hacker News の最大スコア
 
 ## 使い方
 
-1. Chrome Web Store から拡張をインストールします。
+1. [Chrome Web Store](https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng) から拡張をインストールします。
 2. 対応している Google 検索ページで検索します。
 3. 検索結果の近くに表示される Hatena / HN バッジを確認します。
 4. 詳細を見たい場合は、バッジをクリックして Hatena Bookmark または Hacker News のページを開きます。
