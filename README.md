@@ -36,11 +36,6 @@
 
 ## 使い方
 
-<p>
-  <a href="https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng"><img src="https://img.shields.io/badge/chrome%20web%20store-unlisted-lightgrey" alt="Chrome Web Store: unlisted"></a>
-  <a href="https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng"><img src="https://img.shields.io/chrome-web-store/v/kfllkjdhkdlffnibokeeajcmdkidcfng?label=chrome%20web%20store" alt="Chrome Web Store version"></a>
-</p>
-
 1. Chrome Web Store から拡張をインストールします。
 2. 対応している Google 検索ページで検索します。
 3. 検索結果の近くに表示される Hatena / HN バッジを確認します。
