@@ -4,7 +4,6 @@
 
 **Google検索結果に、Hatena Bookmark件数と Hacker News スコアを表示する Chrome 拡張です。**
 
-検索順位、タイトル、スニペット、広告枠は変更しません。  
 リンクを開く前に、そのページが日本語圏・英語圏の技術コミュニティでどれくらい参照されているかを確認できます。
 
 [![CI](https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml/badge.svg)](https://github.com/umiyosh/gsearch-social-signals/actions/workflows/ci.yml)
