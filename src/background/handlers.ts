@@ -1,5 +1,6 @@
 import type { HatenaBookmarkSummary, HatenaCountMap } from "../shared/hatena"
 import type { HackerNewsSummary } from "../shared/hackerNews"
+import type { HatenaEntryFetchTiming } from "../shared/diagnostics"
 import {
   MESSAGE_TYPES,
   err,
@@ -7,13 +8,17 @@ import {
   ok,
   type HackerNewsResponse,
   type HatenaCountsResponse,
+  type HatenaEntryRequest,
   type HatenaEntryResponse,
   type HnSummaryMap
 } from "../shared/messages"
 
 export interface BackgroundDeps {
   fetchHatenaCounts: (urls: readonly string[]) => Promise<HatenaCountMap>
-  fetchHatenaEntry: (url: string) => Promise<HatenaBookmarkSummary[]>
+  fetchHatenaEntry: (
+    url: string,
+    reportTiming?: (timing: HatenaEntryFetchTiming) => void
+  ) => Promise<HatenaBookmarkSummary[]>
   fetchHackerNewsSummaries: (urls: readonly string[]) => Promise<HnSummaryMap>
   hnCache: Map<string, HackerNewsSummary | null>
 }
@@ -64,13 +69,39 @@ async function handleCounts(deps: BackgroundDeps, urls: string[]): Promise<Haten
   }
 }
 
-async function handleEntry(deps: BackgroundDeps, url: string): Promise<HatenaEntryResponse> {
+async function handleEntry(
+  deps: BackgroundDeps,
+  request: HatenaEntryRequest
+): Promise<HatenaEntryResponse> {
+  const { url, diagnostics } = request
   if (!isHttpUrl(url)) {
     return ok([])
   }
 
   try {
-    return ok(await deps.fetchHatenaEntry(url))
+    if (!diagnostics) {
+      return ok(await deps.fetchHatenaEntry(url))
+    }
+
+    const backgroundStartedAt = performance.now()
+    const backgroundReceivedDelayMs = Math.max(0, Date.now() - diagnostics.sentAtEpochMs)
+    let fetchTiming: HatenaEntryFetchTiming | undefined
+    const data = await deps.fetchHatenaEntry(url, (timing) => {
+      fetchTiming = timing
+    })
+    if (!fetchTiming) {
+      return ok(data)
+    }
+    return {
+      ok: true,
+      data,
+      diagnostics: {
+        requestId: diagnostics.requestId,
+        backgroundReceivedDelayMs,
+        backgroundTotalMs: performance.now() - backgroundStartedAt,
+        fetch: fetchTiming
+      }
+    }
   } catch (error: unknown) {
     console.error("Failed to fetch Hatena entry details", error)
     return err(error)
@@ -114,7 +145,7 @@ export function createMessageHandler(deps: BackgroundDeps) {
       case MESSAGE_TYPES.COUNT_REQUEST:
         return handleCounts(deps, message.urls)
       case MESSAGE_TYPES.ENTRY_REQUEST:
-        return handleEntry(deps, message.url)
+        return handleEntry(deps, message)
       case MESSAGE_TYPES.HN_REQUEST:
         return handleHackerNews(deps, message.urls)
       default: {

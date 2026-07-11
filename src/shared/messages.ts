@@ -1,5 +1,10 @@
 import type { HatenaBookmarkSummary, HatenaCountMap } from "./hatena"
 import type { HackerNewsSummary } from "./hackerNews"
+import {
+  isEntryDiagnosticsRequest,
+  type EntryDiagnosticsRequest,
+  type EntryDiagnosticsResponse
+} from "./diagnostics"
 
 export const MESSAGE_TYPES = {
   COUNT_REQUEST: "GSPLUS_HATEBU_REQUEST_COUNTS",
@@ -15,6 +20,7 @@ export type HatenaCountsRequest = {
 export type HatenaEntryRequest = {
   type: typeof MESSAGE_TYPES.ENTRY_REQUEST
   url: string
+  diagnostics?: EntryDiagnosticsRequest
 }
 
 export type HackerNewsRequest = {
@@ -31,7 +37,9 @@ export type ExtensionResponse<T> = Ok<T> | Err
 export type HnSummaryMap = Record<string, HackerNewsSummary | null>
 
 export type HatenaCountsResponse = ExtensionResponse<HatenaCountMap>
-export type HatenaEntryResponse = ExtensionResponse<HatenaBookmarkSummary[]>
+export type HatenaEntryResponse = ExtensionResponse<HatenaBookmarkSummary[]> & {
+  diagnostics?: EntryDiagnosticsResponse
+}
 export type HackerNewsResponse = ExtensionResponse<HnSummaryMap>
 
 export function ok<T>(data: T): Ok<T> {
@@ -56,7 +64,10 @@ export function isHatenaCountsRequest(value: unknown): value is HatenaCountsRequ
 
 export function isHatenaEntryRequest(value: unknown): value is HatenaEntryRequest {
   return (
-    isRecord(value) && value.type === MESSAGE_TYPES.ENTRY_REQUEST && typeof value.url === "string"
+    isRecord(value) &&
+    value.type === MESSAGE_TYPES.ENTRY_REQUEST &&
+    typeof value.url === "string" &&
+    (value.diagnostics === undefined || isEntryDiagnosticsRequest(value.diagnostics))
   )
 }
 

@@ -4,7 +4,7 @@ import {
   requestHatenaCounts,
   requestHnSummaries
 } from "../../src/content/messaging"
-import { MESSAGE_TYPES, err, ok } from "../../src/shared/messages"
+import { MESSAGE_TYPES, err, isHatenaEntryRequest, ok } from "../../src/shared/messages"
 
 type ChromeStub = {
   runtime?: {
@@ -191,7 +191,12 @@ describe("requestEntryBookmarks", () => {
 
   it("logs one structured round-trip record for diagnostic requests", async () => {
     const sent: unknown[] = []
-    const info = vi.spyOn(console, "info").mockImplementation(() => undefined)
+    let logLabel: unknown
+    let logDetails: unknown
+    vi.spyOn(console, "info").mockImplementation((label: unknown, details: unknown) => {
+      logLabel = label
+      logDetails = details
+    })
     stubChrome({
       id: "ext",
       onSend: (message) => sent.push(message),
@@ -212,25 +217,27 @@ describe("requestEntryBookmarks", () => {
 
     await requestEntryBookmarks("https://example.com/article?secret=1", { diagnostics: true })
 
-    expect(sent).toEqual([
-      {
-        type: MESSAGE_TYPES.ENTRY_REQUEST,
-        url: "https://example.com/article?secret=1",
-        diagnostics: {
-          requestId: expect.any(String),
-          sentAtEpochMs: expect.any(Number)
-        }
-      }
-    ])
-    expect(info).toHaveBeenCalledWith(
-      "[GSPLUS_DIAGNOSTICS]",
-      expect.objectContaining({
-        event: "hatena-entry",
-        extensionVersion: "0.1.3",
-        target: "https://example.com/article",
-        roundTripMs: expect.any(Number),
-        background: expect.objectContaining({ requestId: expect.any(String) })
-      })
-    )
+    expect(sent).toHaveLength(1)
+    const request = sent[0]
+    expect(isHatenaEntryRequest(request)).toBe(true)
+    if (!isHatenaEntryRequest(request) || !request.diagnostics) {
+      throw new Error("diagnostic request was not sent")
+    }
+    expect(request.url).toBe("https://example.com/article?secret=1")
+    expect(request.diagnostics.requestId.length).toBeGreaterThan(0)
+    expect(typeof request.diagnostics.sentAtEpochMs).toBe("number")
+
+    expect(logLabel).toBe("[GSPLUS_DIAGNOSTICS]")
+    expect(logDetails).toMatchObject({
+      event: "hatena-entry",
+      requestId: request.diagnostics.requestId,
+      extensionVersion: "0.1.3",
+      target: "https://example.com/article",
+      background: { requestId: request.diagnostics.requestId }
+    })
+    if (typeof logDetails !== "object" || logDetails === null) {
+      throw new Error("diagnostic log details were not recorded")
+    }
+    expect(typeof (logDetails as Record<string, unknown>).roundTripMs).toBe("number")
   })
 })

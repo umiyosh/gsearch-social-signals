@@ -7,6 +7,7 @@ import {
   normalizeCountKeys,
   resolveRequestedCount
 } from "../../src/shared/hatena"
+import type { HatenaEntryFetchTiming } from "../../src/shared/diagnostics"
 
 function mockFetchResponse(payload: unknown, ok = true, status = ok ? 200 : 500): void {
   vi.stubGlobal(
@@ -191,17 +192,19 @@ describe("fetchHatenaEntry", () => {
         { user: "bob", comment: " " }
       ]
     })
-    const reportTiming = vi.fn()
+    let reportedTiming: HatenaEntryFetchTiming | undefined
+    const reportTiming = (timing: HatenaEntryFetchTiming): void => {
+      reportedTiming = timing
+    }
 
     const bookmarks = await fetchHatenaEntry("https://example.com/entry", reportTiming)
 
     expect(bookmarks).toEqual([{ user: "alice", comment: "useful" }])
-    expect(reportTiming).toHaveBeenCalledWith({
-      fetchHeadersMs: expect.any(Number),
-      bodyParseMs: expect.any(Number),
-      filterMs: expect.any(Number),
-      totalMs: expect.any(Number)
-    })
+    expect(reportedTiming).toBeDefined()
+    expect(typeof reportedTiming?.fetchHeadersMs).toBe("number")
+    expect(typeof reportedTiming?.bodyParseMs).toBe("number")
+    expect(typeof reportedTiming?.filterMs).toBe("number")
+    expect(typeof reportedTiming?.totalMs).toBe("number")
   })
 })
 

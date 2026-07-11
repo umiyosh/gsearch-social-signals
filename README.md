@@ -135,6 +135,7 @@ make package
 開発・公開作業の詳細は以下にあります。
 
 - [実装仕様](docs/spec.md)
+- [診断ビルド](docs/diagnostics.md)
 - [Hacker News 連携仕様](docs/spec_hn.md)
 - [リリース管理](docs/release-management.md)
 - [Support and FAQ](docs/support.md)

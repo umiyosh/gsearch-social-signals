@@ -10,6 +10,15 @@ import {
 } from "../shared/messages"
 import type { HatenaBookmarkSummary } from "../shared/hatena"
 import type { HackerNewsSummary } from "../shared/hackerNews"
+import {
+  BUILD_COMMIT_SHA,
+  DIAGNOSTICS_ENABLED,
+  sanitizeDiagnosticTarget
+} from "../shared/diagnostics"
+
+export interface EntryRequestOptions {
+  diagnostics?: boolean
+}
 
 function runtimeAvailable(): boolean {
   return Boolean(chrome.runtime?.id)
@@ -123,13 +132,23 @@ export function requestHnSummaries(
   }
 }
 
-export function requestEntryBookmarks(url: string): Promise<HatenaBookmarkSummary[] | null> {
+export function requestEntryBookmarks(
+  url: string,
+  options: EntryRequestOptions = {}
+): Promise<HatenaBookmarkSummary[] | null> {
   if (!runtimeAvailable()) {
     return Promise.resolve(null)
   }
 
   return new Promise((resolve) => {
-    const request = { type: MESSAGE_TYPES.ENTRY_REQUEST, url }
+    const diagnosticsEnabled = options.diagnostics ?? DIAGNOSTICS_ENABLED
+    const requestStartedAt = diagnosticsEnabled ? performance.now() : 0
+    const diagnostics = diagnosticsEnabled
+      ? { requestId: crypto.randomUUID(), sentAtEpochMs: Date.now() }
+      : undefined
+    const request = diagnostics
+      ? { type: MESSAGE_TYPES.ENTRY_REQUEST, url, diagnostics }
+      : { type: MESSAGE_TYPES.ENTRY_REQUEST, url }
     chrome.runtime.sendMessage(request, (response: HatenaEntryResponse | undefined) => {
       if (chrome.runtime.lastError) {
         console.error("Failed to load Hatena entry", chrome.runtime.lastError)
@@ -149,6 +168,25 @@ export function requestEntryBookmarks(url: string): Promise<HatenaBookmarkSummar
         console.error("Hatena entry fetch failed", response.error)
         resolve([])
         return
+      }
+
+      if (diagnostics && response.diagnostics) {
+        const roundTripMs = performance.now() - requestStartedAt
+        console.info("[GSPLUS_DIAGNOSTICS]", {
+          event: "hatena-entry",
+          requestId: diagnostics.requestId,
+          extensionVersion: chrome.runtime.getManifest().version,
+          buildCommit: BUILD_COMMIT_SHA,
+          target: sanitizeDiagnosticTarget(url),
+          roundTripMs,
+          runtimeDeliveryMs: Math.max(
+            0,
+            roundTripMs -
+              response.diagnostics.backgroundReceivedDelayMs -
+              response.diagnostics.backgroundTotalMs
+          ),
+          background: response.diagnostics
+        })
       }
 
       resolve(response.data)
