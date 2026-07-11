@@ -4,12 +4,13 @@ import {
   requestHatenaCounts,
   requestHnSummaries
 } from "../../src/content/messaging"
-import { err, ok } from "../../src/shared/messages"
+import { MESSAGE_TYPES, err, ok } from "../../src/shared/messages"
 
 type ChromeStub = {
   runtime?: {
     id?: string | undefined
     lastError?: { message: string } | undefined
+    getManifest?: () => { version: string }
     sendMessage: (message: unknown, callback: (response: unknown) => void) => void
   }
 }
@@ -18,17 +19,21 @@ function stubChrome(options: {
   id?: string | undefined
   lastError?: { message: string } | undefined
   respond?: unknown
+  respondWith?: ((message: unknown) => unknown) | undefined
   throwOnSend?: boolean | undefined
+  onSend?: ((message: unknown) => void) | undefined
 }): void {
   const stub: ChromeStub = {
     runtime: {
       id: options.id,
       lastError: options.lastError,
+      getManifest: () => ({ version: "0.1.3" }),
       sendMessage: (message, callback) => {
         if (options.throwOnSend) {
           throw new Error("send failed")
         }
-        callback(options.respond)
+        options.onSend?.(message)
+        callback(options.respondWith ? options.respondWith(message) : options.respond)
       }
     }
   }
@@ -173,5 +178,59 @@ describe("requestEntryBookmarks", () => {
   it("maps error envelopes to an empty list to preserve overlay wording", async () => {
     stubChrome({ id: "ext", respond: err("boom") })
     await expect(requestEntryBookmarks("https://a")).resolves.toEqual([])
+  })
+
+  it("keeps the production request envelope unchanged when diagnostics are disabled", async () => {
+    const sent: unknown[] = []
+    stubChrome({ id: "ext", respond: ok([]), onSend: (message) => sent.push(message) })
+
+    await requestEntryBookmarks("https://a", { diagnostics: false })
+
+    expect(sent).toEqual([{ type: MESSAGE_TYPES.ENTRY_REQUEST, url: "https://a" }])
+  })
+
+  it("logs one structured round-trip record for diagnostic requests", async () => {
+    const sent: unknown[] = []
+    const info = vi.spyOn(console, "info").mockImplementation(() => undefined)
+    stubChrome({
+      id: "ext",
+      onSend: (message) => sent.push(message),
+      respondWith: (message) => {
+        const request = message as { diagnostics: { requestId: string } }
+        return {
+          ok: true,
+          data: [{ user: "alice", comment: "great" }],
+          diagnostics: {
+            requestId: request.diagnostics.requestId,
+            backgroundReceivedDelayMs: 2,
+            backgroundTotalMs: 20,
+            fetch: { fetchHeadersMs: 12, bodyParseMs: 3, filterMs: 1, totalMs: 16 }
+          }
+        }
+      }
+    })
+
+    await requestEntryBookmarks("https://example.com/article?secret=1", { diagnostics: true })
+
+    expect(sent).toEqual([
+      {
+        type: MESSAGE_TYPES.ENTRY_REQUEST,
+        url: "https://example.com/article?secret=1",
+        diagnostics: {
+          requestId: expect.any(String),
+          sentAtEpochMs: expect.any(Number)
+        }
+      }
+    ])
+    expect(info).toHaveBeenCalledWith(
+      "[GSPLUS_DIAGNOSTICS]",
+      expect.objectContaining({
+        event: "hatena-entry",
+        extensionVersion: "0.1.3",
+        target: "https://example.com/article",
+        roundTripMs: expect.any(Number),
+        background: expect.objectContaining({ requestId: expect.any(String) })
+      })
+    )
   })
 })

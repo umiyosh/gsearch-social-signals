@@ -108,6 +108,53 @@ describe("createMessageHandler", () => {
 
       expect(response).toEqual({ ok: false, error: "entry down" })
     })
+
+    it("returns background and fetch timings for diagnostic requests", async () => {
+      const bookmarks = [{ user: "alice", comment: "nice" }]
+      const fetchHatenaEntry = vi.fn(
+        async (
+          _url: string,
+          reportTiming?: (timing: {
+            fetchHeadersMs: number
+            bodyParseMs: number
+            filterMs: number
+            totalMs: number
+          }) => void
+        ) => {
+          reportTiming?.({
+            fetchHeadersMs: 12,
+            bodyParseMs: 3,
+            filterMs: 1,
+            totalMs: 16
+          })
+          return bookmarks
+        }
+      )
+      const handler = createMessageHandler(buildDeps({ fetchHatenaEntry }))
+
+      const response = await handler({
+        type: MESSAGE_TYPES.ENTRY_REQUEST,
+        url: "https://a",
+        diagnostics: { requestId: "entry-1", sentAtEpochMs: Date.now() }
+      })
+
+      expect(fetchHatenaEntry).toHaveBeenCalledWith("https://a", expect.any(Function))
+      expect(response).toEqual({
+        ok: true,
+        data: bookmarks,
+        diagnostics: {
+          requestId: "entry-1",
+          backgroundReceivedDelayMs: expect.any(Number),
+          backgroundTotalMs: expect.any(Number),
+          fetch: {
+            fetchHeadersMs: 12,
+            bodyParseMs: 3,
+            filterMs: 1,
+            totalMs: 16
+          }
+        }
+      })
+    })
   })
 })
 
