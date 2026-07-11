@@ -8,6 +8,13 @@ import {
 import { MESSAGE_TYPES } from "../../src/shared/messages"
 import type { HatenaEntryResponse } from "../../src/shared/messages"
 import type { HackerNewsSummary } from "../../src/shared/hackerNews"
+import type { HatenaEntryFetchTiming } from "../../src/shared/diagnostics"
+
+const diagnosticResponseHeaders = {
+  xCache: "Hit from cloudfront",
+  age: "41",
+  xAmzCfPop: "NRT57-P4"
+}
 
 function buildDeps(overrides: Partial<BackgroundDeps> = {}): BackgroundDeps {
   return {
@@ -113,30 +120,13 @@ describe("createMessageHandler", () => {
     it("returns background and fetch timings for diagnostic requests", async () => {
       const bookmarks = [{ user: "alice", comment: "nice" }]
       const fetchHatenaEntry = vi.fn(
-        (
-          _url: string,
-          reportTiming?: (timing: {
-            fetchHeadersMs: number
-            bodyParseMs: number
-            filterMs: number
-            totalMs: number
-            responseHeaders: {
-              xCache: string | null
-              age: string | null
-              xAmzCfPop: string | null
-            }
-          }) => void
-        ) => {
+        (_url: string, reportTiming?: (timing: HatenaEntryFetchTiming) => void) => {
           reportTiming?.({
             fetchHeadersMs: 12,
             bodyParseMs: 3,
             filterMs: 1,
             totalMs: 16,
-            responseHeaders: {
-              xCache: "Hit from cloudfront",
-              age: "41",
-              xAmzCfPop: "NRT57-P4"
-            }
+            responseHeaders: diagnosticResponseHeaders
           })
           return Promise.resolve(bookmarks)
         }
@@ -160,11 +150,7 @@ describe("createMessageHandler", () => {
             bodyParseMs: 3,
             filterMs: 1,
             totalMs: 16,
-            responseHeaders: {
-              xCache: "Hit from cloudfront",
-              age: "41",
-              xAmzCfPop: "NRT57-P4"
-            }
+            responseHeaders: diagnosticResponseHeaders
           }
         }
       })

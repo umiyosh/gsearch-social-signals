@@ -32,9 +32,12 @@ Google 検索結果の DevTools Console で `[GSPLUS_DIAGNOSTICS]` をfilterし�
 - `fetch.fetchHeadersMs`: Hatena APIのresponse header受信まで。
 - `fetch.bodyParseMs`: JSON bodyの解析。
 - `fetch.filterMs`: コメントありブックマークの抽出。
+- `fetch.responseHeaders.xCache`: CloudFrontのcache hit/miss情報。
+- `fetch.responseHeaders.age`: cache生成後の経過秒数。
+- `fetch.responseHeaders.xAmzCfPop`: 応答したCloudFront edge location。
 - `runtimeDeliveryMs`: background処理以外にかかったruntime message配送・response cloneの概算。
 
-`target`はoriginとpathnameだけです。Google検索語、URL query/hash、コメント本文、Hatenaユーザー名は出力しません。
+response headerは上記3項目だけを許可リストで取得します。`target`はoriginとpathnameだけです。Google検索語、URL query/hash、コメント本文、Hatenaユーザー名は出力しません。
 
 ## 終了
 

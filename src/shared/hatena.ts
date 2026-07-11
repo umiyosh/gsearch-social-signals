@@ -187,7 +187,12 @@ export async function fetchHatenaEntry(
       fetchHeadersMs,
       bodyParseMs,
       filterMs: performance.now() - filterStartedAt,
-      totalMs: performance.now() - totalStartedAt
+      totalMs: performance.now() - totalStartedAt,
+      responseHeaders: {
+        xCache: response.headers.get("x-cache"),
+        age: response.headers.get("age"),
+        xAmzCfPop: response.headers.get("x-amz-cf-pop")
+      }
     })
   }
   return summaries

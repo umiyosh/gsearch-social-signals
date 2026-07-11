@@ -8,6 +8,11 @@ export interface HatenaEntryFetchTiming {
   bodyParseMs: number
   filterMs: number
   totalMs: number
+  responseHeaders: {
+    xCache: string | null
+    age: string | null
+    xAmzCfPop: string | null
+  }
 }
 
 export interface EntryDiagnosticsResponse {
