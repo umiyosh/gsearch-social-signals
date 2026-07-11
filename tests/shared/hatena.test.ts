@@ -161,6 +161,17 @@ describe("fetchHatenaCounts", () => {
 })
 
 describe("fetchHatenaEntry", () => {
+  it("uses the browser default cache for entry previews", async () => {
+    mockFetchResponse({ bookmarks: [] })
+
+    await fetchHatenaEntry("https://example.com/entry")
+
+    expect(fetch).toHaveBeenCalledWith(expect.any(String), {
+      method: "GET",
+      cache: "default"
+    })
+  })
+
   it("returns bookmarks that carry non-empty comments", async () => {
     mockFetchResponse({
       bookmarks: [
