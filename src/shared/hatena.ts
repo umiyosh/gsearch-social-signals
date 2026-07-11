@@ -151,7 +151,7 @@ export async function fetchHatenaEntry(
 
   const response = await fetch(endpoint.toString(), {
     method: "GET",
-    cache: "no-cache"
+    cache: "default"
   })
   const fetchHeadersMs = reportTiming ? performance.now() - totalStartedAt : 0
 
