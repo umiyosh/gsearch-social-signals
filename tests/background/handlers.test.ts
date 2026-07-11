@@ -6,7 +6,15 @@ import {
   type BackgroundDeps
 } from "../../src/background/handlers"
 import { MESSAGE_TYPES } from "../../src/shared/messages"
+import type { HatenaEntryResponse } from "../../src/shared/messages"
 import type { HackerNewsSummary } from "../../src/shared/hackerNews"
+import type { HatenaEntryFetchTiming } from "../../src/shared/diagnostics"
+
+const diagnosticResponseHeaders = {
+  xCache: "Hit from cloudfront",
+  age: "41",
+  xAmzCfPop: "NRT57-P4"
+}
 
 function buildDeps(overrides: Partial<BackgroundDeps> = {}): BackgroundDeps {
   return {
@@ -107,6 +115,48 @@ describe("createMessageHandler", () => {
       const response = await handler({ type: MESSAGE_TYPES.ENTRY_REQUEST, url: "https://a" })
 
       expect(response).toEqual({ ok: false, error: "entry down" })
+    })
+
+    it("returns background and fetch timings for diagnostic requests", async () => {
+      const bookmarks = [{ user: "alice", comment: "nice" }]
+      const fetchHatenaEntry = vi.fn(
+        (_url: string, reportTiming?: (timing: HatenaEntryFetchTiming) => void) => {
+          reportTiming?.({
+            fetchHeadersMs: 12,
+            bodyParseMs: 3,
+            filterMs: 1,
+            totalMs: 16,
+            responseHeaders: diagnosticResponseHeaders
+          })
+          return Promise.resolve(bookmarks)
+        }
+      )
+      const handler = createMessageHandler(buildDeps({ fetchHatenaEntry }))
+
+      const response = await handler({
+        type: MESSAGE_TYPES.ENTRY_REQUEST,
+        url: "https://a",
+        diagnostics: { requestId: "entry-1", sentAtEpochMs: Date.now() }
+      })
+
+      expect(fetchHatenaEntry).toHaveBeenCalledWith("https://a", expect.any(Function))
+      expect(response).toMatchObject({
+        ok: true,
+        data: bookmarks,
+        diagnostics: {
+          requestId: "entry-1",
+          fetch: {
+            fetchHeadersMs: 12,
+            bodyParseMs: 3,
+            filterMs: 1,
+            totalMs: 16,
+            responseHeaders: diagnosticResponseHeaders
+          }
+        }
+      })
+      const diagnosticResponse = response as HatenaEntryResponse
+      expect(typeof diagnosticResponse.diagnostics?.backgroundReceivedDelayMs).toBe("number")
+      expect(typeof diagnosticResponse.diagnostics?.backgroundTotalMs).toBe("number")
     })
   })
 })

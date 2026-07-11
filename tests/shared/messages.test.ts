@@ -44,6 +44,30 @@ describe("isHatenaEntryRequest", () => {
     expect(isHatenaEntryRequest({ type: MESSAGE_TYPES.COUNT_REQUEST, url: "x" })).toBe(false)
     expect(isHatenaEntryRequest(null)).toBe(false)
   })
+
+  it("accepts valid diagnostics metadata and rejects malformed metadata", () => {
+    expect(
+      isHatenaEntryRequest({
+        type: MESSAGE_TYPES.ENTRY_REQUEST,
+        url: "https://example.com/",
+        diagnostics: { requestId: "entry-1", sentAtEpochMs: 1_700_000_000_000 }
+      })
+    ).toBe(true)
+    expect(
+      isHatenaEntryRequest({
+        type: MESSAGE_TYPES.ENTRY_REQUEST,
+        url: "https://example.com/",
+        diagnostics: { requestId: "", sentAtEpochMs: 1_700_000_000_000 }
+      })
+    ).toBe(false)
+    expect(
+      isHatenaEntryRequest({
+        type: MESSAGE_TYPES.ENTRY_REQUEST,
+        url: "https://example.com/",
+        diagnostics: { requestId: "entry-1", sentAtEpochMs: "now" }
+      })
+    ).toBe(false)
+  })
 })
 
 describe("isHackerNewsRequest", () => {

@@ -10,9 +10,13 @@ export default defineConfig({
   clean: true,
   splitting: false,
   treeshake: true,
+  define: {
+    GSPLUS_DIAGNOSTICS: JSON.stringify(process.env.GSPLUS_DIAGNOSTICS === "1"),
+    GSPLUS_COMMIT_SHA: JSON.stringify(process.env.GSPLUS_COMMIT_SHA ?? "unknown")
+  },
   minify: false,
   target: "chrome110",
-  outDir: "dist",
+  outDir: process.env.GSPLUS_OUT_DIR ?? "dist",
   skipNodeModulesBundle: true,
   dts: false
 })

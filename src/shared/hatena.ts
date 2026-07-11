@@ -1,4 +1,5 @@
 import { normalizeRequestUrl, normalizeUrl, normalizeForComparison, stripQueryString } from "./url"
+import type { HatenaEntryFetchTiming } from "./diagnostics"
 
 export type HatenaCountMap = Record<string, number | null>
 
@@ -135,28 +136,36 @@ export async function fetchHatenaCounts(urls: readonly string[]): Promise<Hatena
   return counts
 }
 
-export async function fetchHatenaEntry(url: string): Promise<HatenaBookmarkSummary[]> {
+export async function fetchHatenaEntry(
+  url: string,
+  reportTiming?: (timing: HatenaEntryFetchTiming) => void
+): Promise<HatenaBookmarkSummary[]> {
   const normalized = normalizeUrl(url)
   if (!normalized) {
     return []
   }
 
+  const totalStartedAt = reportTiming ? performance.now() : 0
   const endpoint = new URL(ENTRY_ENDPOINT)
   endpoint.searchParams.set("url", normalized)
 
   const response = await fetch(endpoint.toString(), {
     method: "GET",
-    cache: "no-cache"
+    cache: "default"
   })
+  const fetchHeadersMs = reportTiming ? performance.now() - totalStartedAt : 0
 
   if (!response.ok) {
     throw new Error(`Hatena entry API failed with status ${response.status}`)
   }
 
+  const bodyParseStartedAt = reportTiming ? performance.now() : 0
   const payload: unknown = await response.json()
+  const bodyParseMs = reportTiming ? performance.now() - bodyParseStartedAt : 0
   const bookmarks = isRecord(payload) && Array.isArray(payload.bookmarks) ? payload.bookmarks : []
 
-  return bookmarks.flatMap((bookmark: unknown): HatenaBookmarkSummary[] => {
+  const filterStartedAt = reportTiming ? performance.now() : 0
+  const summaries = bookmarks.flatMap((bookmark: unknown): HatenaBookmarkSummary[] => {
     if (!isRecord(bookmark) || typeof bookmark.comment !== "string") {
       return []
     }
@@ -173,4 +182,18 @@ export async function fetchHatenaEntry(url: string): Promise<HatenaBookmarkSumma
       }
     ]
   })
+  if (reportTiming) {
+    reportTiming({
+      fetchHeadersMs,
+      bodyParseMs,
+      filterMs: performance.now() - filterStartedAt,
+      totalMs: performance.now() - totalStartedAt,
+      responseHeaders: {
+        xCache: response.headers.get("x-cache"),
+        age: response.headers.get("age"),
+        xAmzCfPop: response.headers.get("x-amz-cf-pop")
+      }
+    })
+  }
+  return summaries
 }

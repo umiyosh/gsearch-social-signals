@@ -4,12 +4,13 @@ import {
   requestHatenaCounts,
   requestHnSummaries
 } from "../../src/content/messaging"
-import { err, ok } from "../../src/shared/messages"
+import { MESSAGE_TYPES, err, isHatenaEntryRequest, ok } from "../../src/shared/messages"
 
 type ChromeStub = {
   runtime?: {
     id?: string | undefined
     lastError?: { message: string } | undefined
+    getManifest?: () => { version: string }
     sendMessage: (message: unknown, callback: (response: unknown) => void) => void
   }
 }
@@ -18,17 +19,21 @@ function stubChrome(options: {
   id?: string | undefined
   lastError?: { message: string } | undefined
   respond?: unknown
+  respondWith?: ((message: unknown) => unknown) | undefined
   throwOnSend?: boolean | undefined
+  onSend?: ((message: unknown) => void) | undefined
 }): void {
   const stub: ChromeStub = {
     runtime: {
       id: options.id,
       lastError: options.lastError,
+      getManifest: () => ({ version: "0.1.3" }),
       sendMessage: (message, callback) => {
         if (options.throwOnSend) {
           throw new Error("send failed")
         }
-        callback(options.respond)
+        options.onSend?.(message)
+        callback(options.respondWith ? options.respondWith(message) : options.respond)
       }
     }
   }
@@ -173,5 +178,85 @@ describe("requestEntryBookmarks", () => {
   it("maps error envelopes to an empty list to preserve overlay wording", async () => {
     stubChrome({ id: "ext", respond: err("boom") })
     await expect(requestEntryBookmarks("https://a")).resolves.toEqual([])
+  })
+
+  it("keeps the production request envelope unchanged when diagnostics are disabled", async () => {
+    const sent: unknown[] = []
+    stubChrome({ id: "ext", respond: ok([]), onSend: (message) => sent.push(message) })
+
+    await requestEntryBookmarks("https://a", { diagnostics: false })
+
+    expect(sent).toEqual([{ type: MESSAGE_TYPES.ENTRY_REQUEST, url: "https://a" }])
+  })
+
+  it("logs one structured round-trip record for diagnostic requests", async () => {
+    const sent: unknown[] = []
+    let logLabel: unknown
+    let logDetails: unknown
+    vi.spyOn(console, "info").mockImplementation((label: unknown, details: unknown) => {
+      logLabel = label
+      logDetails = details
+    })
+    stubChrome({
+      id: "ext",
+      onSend: (message) => sent.push(message),
+      respondWith: (message) => {
+        const request = message as { diagnostics: { requestId: string } }
+        return {
+          ok: true,
+          data: [{ user: "alice", comment: "great" }],
+          diagnostics: {
+            requestId: request.diagnostics.requestId,
+            backgroundReceivedDelayMs: 2,
+            backgroundTotalMs: 20,
+            fetch: {
+              fetchHeadersMs: 12,
+              bodyParseMs: 3,
+              filterMs: 1,
+              totalMs: 16,
+              responseHeaders: {
+                xCache: "Hit from cloudfront",
+                age: "41",
+                xAmzCfPop: "NRT57-P4"
+              }
+            }
+          }
+        }
+      }
+    })
+
+    await requestEntryBookmarks("https://example.com/article?secret=1", { diagnostics: true })
+
+    expect(sent).toHaveLength(1)
+    const request = sent[0]
+    expect(isHatenaEntryRequest(request)).toBe(true)
+    if (!isHatenaEntryRequest(request) || !request.diagnostics) {
+      throw new Error("diagnostic request was not sent")
+    }
+    expect(request.url).toBe("https://example.com/article?secret=1")
+    expect(request.diagnostics.requestId.length).toBeGreaterThan(0)
+    expect(typeof request.diagnostics.sentAtEpochMs).toBe("number")
+
+    expect(logLabel).toBe("[GSPLUS_DIAGNOSTICS]")
+    expect(logDetails).toMatchObject({
+      event: "hatena-entry",
+      requestId: request.diagnostics.requestId,
+      extensionVersion: "0.1.3",
+      target: "https://example.com/article",
+      background: {
+        requestId: request.diagnostics.requestId,
+        fetch: {
+          responseHeaders: {
+            xCache: "Hit from cloudfront",
+            age: "41",
+            xAmzCfPop: "NRT57-P4"
+          }
+        }
+      }
+    })
+    if (typeof logDetails !== "object" || logDetails === null) {
+      throw new Error("diagnostic log details were not recorded")
+    }
+    expect(typeof (logDetails as Record<string, unknown>).roundTripMs).toBe("number")
   })
 })
