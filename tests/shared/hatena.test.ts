@@ -9,12 +9,21 @@ import {
 } from "../../src/shared/hatena"
 import type { HatenaEntryFetchTiming } from "../../src/shared/diagnostics"
 
-function mockFetchResponse(payload: unknown, ok = true, status = ok ? 200 : 500): void {
+function mockFetchResponse(
+  payload: unknown,
+  ok = true,
+  status = ok ? 200 : 500,
+  headers: Record<string, string> = {}
+): void {
+  const normalizedHeaders = new Map(
+    Object.entries(headers).map(([name, value]) => [name.toLowerCase(), value])
+  )
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue({
       ok,
       status,
+      headers: { get: (name: string) => normalizedHeaders.get(name.toLowerCase()) ?? null },
       text: () => Promise.resolve(JSON.stringify(payload)),
       json: () => Promise.resolve(payload)
     })
@@ -186,12 +195,21 @@ describe("fetchHatenaEntry", () => {
   })
 
   it("reports fetch, parse, filter, and total timings without changing bookmarks", async () => {
-    mockFetchResponse({
-      bookmarks: [
-        { user: "alice", comment: " useful " },
-        { user: "bob", comment: " " }
-      ]
-    })
+    mockFetchResponse(
+      {
+        bookmarks: [
+          { user: "alice", comment: " useful " },
+          { user: "bob", comment: " " }
+        ]
+      },
+      true,
+      200,
+      {
+        "x-cache": "Hit from cloudfront",
+        age: "41",
+        "x-amz-cf-pop": "NRT57-P4"
+      }
+    )
     let reportedTiming: HatenaEntryFetchTiming | undefined
     const reportTiming = (timing: HatenaEntryFetchTiming): void => {
       reportedTiming = timing
@@ -205,6 +223,26 @@ describe("fetchHatenaEntry", () => {
     expect(typeof reportedTiming?.bodyParseMs).toBe("number")
     expect(typeof reportedTiming?.filterMs).toBe("number")
     expect(typeof reportedTiming?.totalMs).toBe("number")
+    expect(reportedTiming?.responseHeaders).toEqual({
+      xCache: "Hit from cloudfront",
+      age: "41",
+      xAmzCfPop: "NRT57-P4"
+    })
+  })
+
+  it("reports null for diagnostic response headers that are absent", async () => {
+    mockFetchResponse({ bookmarks: [] })
+    let reportedTiming: HatenaEntryFetchTiming | undefined
+
+    await fetchHatenaEntry("https://example.com/entry", (timing) => {
+      reportedTiming = timing
+    })
+
+    expect(reportedTiming?.responseHeaders).toEqual({
+      xCache: null,
+      age: null,
+      xAmzCfPop: null
+    })
   })
 })
 

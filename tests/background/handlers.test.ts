@@ -120,13 +120,23 @@ describe("createMessageHandler", () => {
             bodyParseMs: number
             filterMs: number
             totalMs: number
+            responseHeaders: {
+              xCache: string | null
+              age: string | null
+              xAmzCfPop: string | null
+            }
           }) => void
         ) => {
           reportTiming?.({
             fetchHeadersMs: 12,
             bodyParseMs: 3,
             filterMs: 1,
-            totalMs: 16
+            totalMs: 16,
+            responseHeaders: {
+              xCache: "Hit from cloudfront",
+              age: "41",
+              xAmzCfPop: "NRT57-P4"
+            }
           })
           return Promise.resolve(bookmarks)
         }
@@ -149,7 +159,12 @@ describe("createMessageHandler", () => {
             fetchHeadersMs: 12,
             bodyParseMs: 3,
             filterMs: 1,
-            totalMs: 16
+            totalMs: 16,
+            responseHeaders: {
+              xCache: "Hit from cloudfront",
+              age: "41",
+              xAmzCfPop: "NRT57-P4"
+            }
           }
         }
       })

@@ -209,7 +209,17 @@ describe("requestEntryBookmarks", () => {
             requestId: request.diagnostics.requestId,
             backgroundReceivedDelayMs: 2,
             backgroundTotalMs: 20,
-            fetch: { fetchHeadersMs: 12, bodyParseMs: 3, filterMs: 1, totalMs: 16 }
+            fetch: {
+              fetchHeadersMs: 12,
+              bodyParseMs: 3,
+              filterMs: 1,
+              totalMs: 16,
+              responseHeaders: {
+                xCache: "Hit from cloudfront",
+                age: "41",
+                xAmzCfPop: "NRT57-P4"
+              }
+            }
           }
         }
       }
@@ -233,7 +243,16 @@ describe("requestEntryBookmarks", () => {
       requestId: request.diagnostics.requestId,
       extensionVersion: "0.1.3",
       target: "https://example.com/article",
-      background: { requestId: request.diagnostics.requestId }
+      background: {
+        requestId: request.diagnostics.requestId,
+        fetch: {
+          responseHeaders: {
+            xCache: "Hit from cloudfront",
+            age: "41",
+            xAmzCfPop: "NRT57-P4"
+          }
+        }
+      }
     })
     if (typeof logDetails !== "object" || logDetails === null) {
       throw new Error("diagnostic log details were not recorded")
