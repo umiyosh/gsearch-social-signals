@@ -183,6 +183,26 @@ describe("fetchHatenaEntry", () => {
 
     await expect(fetchHatenaEntry("https://example.com/entry")).rejects.toThrowError()
   })
+
+  it("reports fetch, parse, filter, and total timings without changing bookmarks", async () => {
+    mockFetchResponse({
+      bookmarks: [
+        { user: "alice", comment: " useful " },
+        { user: "bob", comment: " " }
+      ]
+    })
+    const reportTiming = vi.fn()
+
+    const bookmarks = await fetchHatenaEntry("https://example.com/entry", reportTiming)
+
+    expect(bookmarks).toEqual([{ user: "alice", comment: "useful" }])
+    expect(reportTiming).toHaveBeenCalledWith({
+      fetchHeadersMs: expect.any(Number),
+      bodyParseMs: expect.any(Number),
+      filterMs: expect.any(Number),
+      totalMs: expect.any(Number)
+    })
+  })
 })
 
 describe("buildCandidateKeys", () => {
