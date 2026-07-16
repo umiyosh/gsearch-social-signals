@@ -1,13 +1,38 @@
 name: CI
 
 on:
+  push:
+    branches:
+      - master
   pull_request:
+    branches:
+      - master
     types:
       - opened
       - synchronize
       - reopened
 
 jobs:
+  node-20-compatibility:
+    name: Node 20 compatibility
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run quality gates and build
+        run: make ci
+
   lint:
     runs-on: ubuntu-latest
 

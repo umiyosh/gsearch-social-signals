@@ -124,6 +124,12 @@ npm install
 npm run build
 ```
 
+Node.js 20 以上が必要です。Pull Request 前に、GitHub Actions と同じ品質ゲートとビルドをまとめて確認できます。
+
+```bash
+make ci
+```
+
 その後、Chrome の `chrome://extensions/` を開き、デベロッパーモードを有効にして `dist/` を「パッケージ化されていない拡張機能」として読み込みます。
 
 配布用zipを作る場合は次を実行します。
