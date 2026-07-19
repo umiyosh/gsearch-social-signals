@@ -138,3 +138,56 @@ describe("discoverSearchResults", () => {
     ).toBe(null)
   })
 })
+
+describe("discoverSearchResults on DuckDuckGo", () => {
+  it("extracts organic web results using their title links", () => {
+    document.body.innerHTML = readSerpFixture("duckduckgo-serp.html")
+
+    const targets = discoverSearchResults(document)
+
+    expect(targets.map((target) => target.url)).toEqual([
+      "https://example.com/direct?ref=ddg",
+      "https://second.example/story"
+    ])
+    expect(targets.map((target) => target.anchor.id)).toEqual([
+      "ddg-direct-link",
+      "ddg-second-link"
+    ])
+    expect(targets.map((target) => target.container.id)).toEqual([
+      "ddg-organic-direct",
+      "ddg-organic-second"
+    ])
+  })
+
+  it("excludes ads, internal surfaces, and results without a title link", () => {
+    document.body.innerHTML = readSerpFixture("duckduckgo-serp.html")
+
+    discoverSearchResults(document)
+
+    expect(document.getElementById("ddg-ad")?.getAttribute("data-gsplus-hatebu")).toBe(null)
+    expect(
+      document.getElementById("ddg-related-searches")?.getAttribute("data-gsplus-hatebu")
+    ).toBe(null)
+    expect(document.getElementById("ddg-missing-title")?.getAttribute("data-gsplus-hatebu")).toBe(
+      null
+    )
+  })
+
+  it("extracts a dynamically added result from the root list item", () => {
+    const container = document.createElement("li")
+    container.dataset.layout = "organic"
+    container.innerHTML = `
+      <article data-testid="result" data-nrn="result">
+        <h2>
+          <a data-testid="result-title-a" href="https://dynamic.example/ddg">Dynamic result</a>
+        </h2>
+      </article>
+    `
+    document.body.appendChild(container)
+
+    const targets = discoverSearchResults(container)
+
+    expect(targets.map((target) => target.url)).toEqual(["https://dynamic.example/ddg"])
+    expect(targets[0]?.container).toBe(container)
+  })
+})

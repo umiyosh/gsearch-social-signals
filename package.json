@@ -1,7 +1,7 @@
 {
   "name": "gsearch-social-signals",
   "version": "0.1.3",
-  "description": "Chrome extension that shows Hatena Bookmark counts and Hacker News points on Google Search results.",
+  "description": "Chrome extension that shows Hatena Bookmark counts and Hacker News points on Google and DuckDuckGo results.",
   "private": true,
   "type": "module",
   "scripts": {

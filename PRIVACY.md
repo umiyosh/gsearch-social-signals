@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Effective date: 2026-06-18
+Effective date: 2026-07-19
 
 This privacy policy applies to the Chrome extension "GSearch With Social Signals".
 
@@ -8,19 +8,19 @@ Public project URL: https://github.com/umiyosh/gsearch-social-signals
 
 ## Purpose
 
-The extension adds public social signals to supported Google Search result pages. It shows Hatena Bookmark counts and Hacker News points next to search result links so that users can judge how much public attention a page has received.
+The extension adds public social signals to supported Google Search and DuckDuckGo web result pages. It shows Hatena Bookmark counts and Hacker News points next to search result links so that users can judge how much public attention a page has received.
 
-The extension does not change Google Search ranking or replace search results.
+The extension does not change search ranking, replace search results, or add badges to advertisements and search-provider navigation surfaces.
 
 ## Data Processed
 
-The extension processes the following data on supported Google Search result pages:
+The extension processes the following data on supported Google Search and DuckDuckGo web result pages:
 
-- Link URLs shown in Google Search results.
-- The Google Search result page DOM structure needed to find result links and place badges.
+- Link URLs shown in supported search results.
+- The search result page DOM structure needed to find organic result links and place badges.
 - The URL associated with a Hatena badge when the user hovers or focuses that badge to open the comment preview.
 
-The set of search result URLs can reveal or suggest the user's search intent. For that reason, this policy treats those URLs as privacy-sensitive browsing activity data even though the extension does not directly send the Google search query string.
+The set of search result URLs can reveal or suggest the user's search intent. For that reason, this policy treats those URLs as privacy-sensitive browsing activity data even though the extension does not directly send the Google or DuckDuckGo search query string.
 
 ## Data Sent to External Services
 
@@ -38,9 +38,9 @@ The developer does not operate a server for this extension and does not store ex
 
 The extension does not intentionally collect or store:
 
-- Google search query strings.
+- Google or DuckDuckGo search query strings.
 - Page body text outside the link URLs needed for the feature.
-- Google account information.
+- Search-provider account information.
 - Cookies.
 - Form input contents.
 - Authentication information.
@@ -61,7 +61,7 @@ Third-party services listed above may process requests according to their own po
 
 ## Chrome Web Store Limited Use
 
-The extension uses browsing activity and website content data only to provide or improve its single purpose: showing public Hatena Bookmark and Hacker News signals on supported Google Search result pages.
+The extension uses browsing activity and website content data only to provide or improve its single purpose: showing public Hatena Bookmark and Hacker News signals on supported Google Search and DuckDuckGo web result pages.
 
 The extension transfers data to third parties only as necessary to provide that single purpose. The extension does not sell user data and does not use user data for advertising, profiling, credit-worthiness evaluation, or unrelated purposes.
 

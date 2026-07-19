@@ -2,7 +2,7 @@
   <img src="public/icons/icon128.png" width="32" height="32" alt=""> GSearch With Social Signals
 </h1>
 
-**Google検索結果に、Hatena Bookmark件数と Hacker News スコアを表示する Chrome 拡張です。**
+**Google と DuckDuckGo の検索結果に、Hatena Bookmark件数と Hacker News スコアを表示する Chrome 拡張です。**
 
 リンクを開く前に、そのページが日本語圏・英語圏の技術コミュニティでどれくらい参照されているかを確認できます。
 
@@ -18,12 +18,12 @@
 
 ## できること
 
-- Google検索結果のリンク付近に Hatena Bookmark 件数を `123 users` のように表示します。
+- Google / DuckDuckGo の検索結果リンク付近に Hatena Bookmark 件数を `123 users` のように表示します。
 - Hacker News で話題になったURLには、最も高い story score を `HN 456 pts` のように表示します。
 - Hatena バッジにマウスを重ねる、またはキーボードフォーカスすると、コメント付きブックマークのプレビューを表示します。
 - 0件、または正のスコアがない結果にはバッジを表示しません。
 - オプションを有効にすると、Hatena と HN のどちらにも正のシグナルがない検索結果を非表示にできます。初期値は OFF です。
-- Google検索の順位、タイトル、スニペット、広告枠は変更しません。
+- 検索サービス側の順位、タイトル、スニペット、広告枠は変更しません。
 
 ## こんなときに便利です
 
@@ -34,7 +34,7 @@
 ## 使い方
 
 1. [Chrome Web Store](https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng) から拡張をインストールします。
-2. 対応している Google 検索ページで検索します。
+2. 対応している Google または DuckDuckGo のWeb検索ページで検索します。
 3. 検索結果の近くに表示される Hatena / HN バッジを確認します。
 4. 詳細を見たい場合は、バッジをクリックして Hatena Bookmark または Hacker News のページを開きます。
 
@@ -64,10 +64,11 @@ Chrome の拡張機能メニューから GSearch With Social Signals の「オ�
 - クリックすると、該当する Hacker News story または検索結果を開きます。
 - 正の score が見つからない場合は表示しません。
 
-## 対応している Google 検索
+## 対応している検索
 
-現在は以下の Google 検索結果ページに対応しています。
+現在は以下の通常Web検索結果ページに対応しています。
 
+- DuckDuckGo (`duckduckgo.com`)
 - `google.com`
 - `google.co.jp`
 - `google.co.uk`
@@ -78,7 +79,7 @@ Chrome の拡張機能メニューから GSearch With Social Signals の「オ�
 - `google.com.sg`
 - `google.com.tw`
 
-対象は通常の検索結果ページです。Google の内部ページ、アカウント画面、設定画面、その他のサービス画面には注入しません。
+DuckDuckGo の画像・動画・ニュースなどWeb以外の検索タブは対象外です。広告、関連検索、検索サービスの内部導線にはバッジを付けません。
 
 対応してほしい Google 地域ドメインがある場合は、GitHub Issues から知らせてください。
 
@@ -91,15 +92,15 @@ Chrome の拡張機能メニューから GSearch With Social Signals の「オ�
 - Hatena Bookmark API
 - Hacker News Search / Algolia API
 
-開発者は独自のサーバーを運用せず、検索結果URL、検索語、閲覧履歴、Google アカウント情報を保存しません。拡張の処理に使う一時的なキャッシュはブラウザ内のメモリ上に置かれ、ページ遷移やブラウザの状態に応じて破棄されます。フィルターの ON / OFF 設定だけを `chrome.storage.sync` に保存します。
+開発者は独自のサーバーを運用せず、検索結果URL、検索語、閲覧履歴、検索サービスのアカウント情報を保存しません。拡張の処理に使う一時的なキャッシュはブラウザ内のメモリ上に置かれ、ページ遷移やブラウザの状態に応じて破棄されます。フィルターの ON / OFF 設定だけを `chrome.storage.sync` に保存します。
 
 詳細は [Privacy Policy](PRIVACY.md) を確認してください。
 
 ## 非公式拡張です
 
-GSearch With Social Signals は非公式のプロジェクトです。Google、Hatena、Hacker News、Y Combinator、Algolia によって提供・承認・保証されているものではありません。
+GSearch With Social Signals は非公式のプロジェクトです。Google、DuckDuckGo、Hatena、Hacker News、Y Combinator、Algolia によって提供・承認・保証されているものではありません。
 
-Google Search is a trademark of Google LLC. 各サービス名、ロゴ、商標はそれぞれの権利者に帰属します。
+Google Search is a trademark of Google LLC. DuckDuckGo および各サービス名、ロゴ、商標はそれぞれの権利者に帰属します。
 
 ## 困ったとき
 
@@ -109,7 +110,7 @@ Google Search is a trademark of Google LLC. 各サービス名、ロゴ、商標
 
 報告時に以下があると確認しやすくなります。
 
-- 検索した Google ドメイン
+- 検索サービスとドメイン
 - 検索語
 - バッジが出なかった、または表示が崩れた検索結果URL
 - Chrome のバージョン
