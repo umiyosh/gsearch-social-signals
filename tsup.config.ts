@@ -3,7 +3,8 @@ import { defineConfig } from "tsup"
 export default defineConfig({
   entry: {
     background: "src/background/index.ts",
-    content: "src/content/index.ts"
+    content: "src/content/index.ts",
+    options: "src/options/index.ts"
   },
   format: ["esm"],
   sourcemap: false,

@@ -1,5 +1,5 @@
-import type { HatenaBookmarkSummary, HatenaCountMap } from "./hatena"
-import type { HackerNewsSummary } from "./hackerNews"
+import { HATENA_COUNT_UNAVAILABLE, type HatenaBookmarkSummary, type HatenaCountMap } from "./hatena"
+import { HACKER_NEWS_SUMMARY_UNAVAILABLE, type HackerNewsSummaryMap } from "./hackerNews"
 import {
   isEntryDiagnosticsRequest,
   type EntryDiagnosticsRequest,
@@ -34,7 +34,7 @@ export type Ok<T> = { ok: true; data: T }
 export type Err = { ok: false; error: string }
 export type ExtensionResponse<T> = Ok<T> | Err
 
-export type HnSummaryMap = Record<string, HackerNewsSummary | null>
+export type HnSummaryMap = HackerNewsSummaryMap
 
 export type HatenaCountsResponse = ExtensionResponse<HatenaCountMap>
 export type HatenaEntryResponse = ExtensionResponse<HatenaBookmarkSummary[]> & {
@@ -82,7 +82,9 @@ export function isExtensionRequest(value: unknown): value is ExtensionRequest {
 export function isCountMap(value: unknown): value is HatenaCountMap {
   return (
     isRecord(value) &&
-    Object.values(value).every((count) => count === null || typeof count === "number")
+    Object.values(value).every(
+      (count) => count === null || count === HATENA_COUNT_UNAVAILABLE || typeof count === "number"
+    )
   )
 }
 
@@ -104,7 +106,10 @@ export function isHnSummaryMap(value: unknown): value is HnSummaryMap {
   return (
     isRecord(value) &&
     Object.values(value).every(
-      (summary) => summary === null || (isRecord(summary) && typeof summary.nbHits === "number")
+      (summary) =>
+        summary === null ||
+        summary === HACKER_NEWS_SUMMARY_UNAVAILABLE ||
+        (isRecord(summary) && typeof summary.nbHits === "number")
     )
   )
 }

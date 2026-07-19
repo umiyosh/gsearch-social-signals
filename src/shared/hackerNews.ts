@@ -8,6 +8,13 @@ export interface HackerNewsSummary {
   topStoryUrl?: string
 }
 
+export const HACKER_NEWS_SUMMARY_UNAVAILABLE = "unavailable" as const
+export type HackerNewsSummaryResult =
+  | HackerNewsSummary
+  | null
+  | typeof HACKER_NEWS_SUMMARY_UNAVAILABLE
+export type HackerNewsSummaryMap = Record<string, HackerNewsSummaryResult>
+
 const HN_ENDPOINT = "https://hn.algolia.com/api/v1/search"
 const HITS_PER_PAGE = 50
 const MAX_CONCURRENT_REQUESTS = 4
@@ -100,9 +107,6 @@ async function fetchHackerNewsSummary(url: string): Promise<HackerNewsSummary | 
   }
 
   if (!response.ok) {
-    if (response.status === 400) {
-      return null
-    }
     throw new Error(`HN API responded with ${response.status}`)
   }
 
@@ -137,9 +141,9 @@ async function runWithConcurrency<T>(
 
 export async function fetchHackerNewsSummaries(
   urls: readonly string[]
-): Promise<Record<string, HackerNewsSummary | null>> {
+): Promise<HackerNewsSummaryMap> {
   const uniqueUrls = [...new Set(urls)]
-  const summaries: Record<string, HackerNewsSummary | null> = {}
+  const summaries: HackerNewsSummaryMap = {}
   let failedRequests = 0
   let firstError: unknown = null
 
@@ -149,7 +153,7 @@ export async function fetchHackerNewsSummaries(
     } catch (error) {
       failedRequests += 1
       firstError ??= error
-      summaries[url] = null
+      summaries[url] = HACKER_NEWS_SUMMARY_UNAVAILABLE
     }
   })
 

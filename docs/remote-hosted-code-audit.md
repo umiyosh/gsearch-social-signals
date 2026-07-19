@@ -46,7 +46,7 @@ Commands run against `dist/` after `npm run build`:
 
 - `grep -R "eval(" dist`: no matches.
 - `grep -R "new Function" dist`: no matches.
-- `grep -R "<script" dist`: no matches.
+- `grep -R "<script" dist`: matches only the local `options.js` module referenced by `options.html`.
 - `grep -R "https://" dist`: matches only API endpoints, user navigation destinations, manifest metadata, host permissions, content script match patterns, and web-accessible-resource match patterns.
 
 Additional checks:

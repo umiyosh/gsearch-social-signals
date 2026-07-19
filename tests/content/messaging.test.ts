@@ -5,6 +5,8 @@ import {
   requestHnSummaries
 } from "../../src/content/messaging"
 import { MESSAGE_TYPES, err, isHatenaEntryRequest, ok } from "../../src/shared/messages"
+import { HATENA_COUNT_UNAVAILABLE } from "../../src/shared/hatena"
+import { HACKER_NEWS_SUMMARY_UNAVAILABLE } from "../../src/shared/hackerNews"
 
 type ChromeStub = {
   runtime?: {
@@ -70,7 +72,16 @@ describe("requestHatenaCounts", () => {
     expect(apply).not.toHaveBeenCalled()
   })
 
-  it("applies null when the runtime is unavailable", () => {
+  it("maps unavailable Hatena results to an unknown signal", () => {
+    stubChrome({ id: "ext", respond: ok({ "https://a": HATENA_COUNT_UNAVAILABLE }) })
+    const apply = vi.fn()
+
+    requestHatenaCounts(["https://a"], apply, vi.fn())
+
+    expect(apply).toHaveBeenCalledWith("https://a", undefined)
+  })
+
+  it("applies undefined when the runtime is unavailable", () => {
     stubChrome({ id: undefined })
     const applied: Array<[string, number | null | undefined]> = []
     const settled: string[] = []
@@ -81,11 +92,11 @@ describe("requestHatenaCounts", () => {
       (url) => settled.push(url)
     )
 
-    expect(applied).toEqual([["https://a", null]])
+    expect(applied).toEqual([["https://a", undefined]])
     expect(settled).toEqual(["https://a"])
   })
 
-  it("applies null on lastError, invalid envelopes, and error envelopes", () => {
+  it("applies undefined on lastError, invalid envelopes, and error envelopes", () => {
     for (const options of [
       { id: "ext", respond: ok({}), lastError: { message: "gone" } },
       { id: "ext", respond: { bogus: true } },
@@ -94,11 +105,11 @@ describe("requestHatenaCounts", () => {
       stubChrome(options)
       const applied: Array<[string, number | null | undefined]> = []
       requestHatenaCounts(["https://a"], (url, count) => applied.push([url, count]), vi.fn())
-      expect(applied).toEqual([["https://a", null]])
+      expect(applied).toEqual([["https://a", undefined]])
     }
   })
 
-  it("applies null when sendMessage throws synchronously", () => {
+  it("applies undefined when sendMessage throws synchronously", () => {
     stubChrome({ id: "ext", throwOnSend: true })
     const applied: Array<[string, number | null | undefined]> = []
     const settled: string[] = []
@@ -109,7 +120,7 @@ describe("requestHatenaCounts", () => {
       (url) => settled.push(url)
     )
 
-    expect(applied).toEqual([["https://a", null]])
+    expect(applied).toEqual([["https://a", undefined]])
     expect(settled).toEqual(["https://a"])
   })
 })
@@ -138,7 +149,16 @@ describe("requestHnSummaries", () => {
     expect(apply).not.toHaveBeenCalled()
   })
 
-  it("applies null on unavailable runtime, errors, and invalid envelopes", () => {
+  it("maps unavailable HN results to an unknown signal", () => {
+    stubChrome({ id: "ext", respond: ok({ "https://a": HACKER_NEWS_SUMMARY_UNAVAILABLE }) })
+    const apply = vi.fn()
+
+    requestHnSummaries(["https://a"], apply, vi.fn())
+
+    expect(apply).toHaveBeenCalledWith("https://a", undefined)
+  })
+
+  it("applies undefined on unavailable runtime, errors, and invalid envelopes", () => {
     for (const options of [
       { id: undefined },
       { id: "ext", respond: ok({}), lastError: { message: "gone" } },
@@ -149,7 +169,7 @@ describe("requestHnSummaries", () => {
       stubChrome(options)
       const applied: Array<[string, unknown]> = []
       requestHnSummaries(["https://a"], (url, summary) => applied.push([url, summary]), vi.fn())
-      expect(applied).toEqual([["https://a", null]])
+      expect(applied).toEqual([["https://a", undefined]])
     }
   })
 })

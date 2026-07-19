@@ -6,15 +6,20 @@ import {
   presentOverlay,
   scheduleOverlayHide
 } from "../../src/content/overlay"
-import { createSignalPipeline, type SignalPipelineDeps } from "../../src/content/signals"
+import {
+  createSignalPipeline,
+  type SignalPipeline,
+  type SignalPipelineDeps
+} from "../../src/content/signals"
 import type { SearchResultTarget } from "../../src/content/searchResults"
+import { FILTERED_RESULT_CLASS } from "../../src/content/styles"
 
 type CountRequest = SignalPipelineDeps["requestHatenaCounts"]
 type HnRequest = SignalPipelineDeps["requestHnSummaries"]
 type EntryRequest = SignalPipelineDeps["requestEntryBookmarks"]
 
 let deps: SignalPipelineDeps
-let queueTargets: (targets: SearchResultTarget[]) => void
+let queueTargets: SignalPipeline
 let requestHatenaCounts: ReturnType<
   typeof vi.fn<Parameters<CountRequest>, ReturnType<CountRequest>>
 >
@@ -42,6 +47,18 @@ function lastCountsCall(): {
   const call = requestHatenaCounts.mock.calls.at(-1)
   if (!call) {
     throw new Error("requestHatenaCounts was not called")
+  }
+  return { urls: call[0], apply: call[1], settle: call[2] }
+}
+
+function lastHnCall(): {
+  urls: string[]
+  apply: Parameters<HnRequest>[1]
+  settle: Parameters<HnRequest>[2]
+} {
+  const call = requestHnSummaries.mock.calls.at(-1)
+  if (!call) {
+    throw new Error("requestHnSummaries was not called")
   }
   return { urls: call[0], apply: call[1], settle: call[2] }
 }
@@ -157,6 +174,76 @@ describe("queueTargets", () => {
 
     expect(target.container.querySelector(".gsplus-hatebu-count")?.textContent).toContain("5 users")
     expect(target.container.querySelector(".gsplus-hn-count")).toBeNull()
+  })
+
+  it("hides a result only after both signal requests succeed without a positive signal", () => {
+    const target = buildTarget("https://signals.example/none")
+    queueTargets.setFilterEnabled(true)
+
+    queueTargets([target])
+    lastCountsCall().apply(target.url, 0)
+
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+
+    lastHnCall().apply(target.url, null)
+
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
+  })
+
+  it("keeps a result visible when either signal is positive", () => {
+    const hatenaTarget = buildTarget("https://signals.example/hatena-positive")
+    const hnTarget = buildTarget("https://signals.example/hn-positive")
+    queueTargets.setFilterEnabled(true)
+
+    queueTargets([hatenaTarget, hnTarget])
+    lastCountsCall().apply(hatenaTarget.url, 3)
+    lastHnCall().apply(hatenaTarget.url, null)
+    lastCountsCall().apply(hnTarget.url, 0)
+    lastHnCall().apply(hnTarget.url, { nbHits: 1, maxPoints: 7 })
+
+    expect(hatenaTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+    expect(hnTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+  })
+
+  it("fails open when either signal request has an unknown result", () => {
+    const target = buildTarget("https://signals.example/unknown")
+    queueTargets.setFilterEnabled(true)
+
+    queueTargets([target])
+    lastCountsCall().apply(target.url, undefined)
+    lastHnCall().apply(target.url, null)
+
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+  })
+
+  it("restores hidden results when the filter is disabled", () => {
+    const target = buildTarget("https://signals.example/toggle")
+    queueTargets.setFilterEnabled(true)
+    queueTargets([target])
+    lastCountsCall().apply(target.url, 0)
+    lastHnCall().apply(target.url, null)
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
+
+    queueTargets.setFilterEnabled(false)
+
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+  })
+})
+
+describe("dynamic result filtering", () => {
+  it("applies cached filtering decisions to added results", () => {
+    const url = "https://signals.example/dynamic"
+    const first = buildTarget(url)
+    queueTargets.setFilterEnabled(true)
+    queueTargets([first])
+    lastCountsCall().apply(url, 0)
+    lastHnCall().apply(url, null)
+
+    const second = buildTarget(url)
+    queueTargets([second])
+
+    expect(first.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
+    expect(second.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
   })
 })
 

@@ -1,7 +1,10 @@
 import { normalizeRequestUrl, normalizeUrl, normalizeForComparison, stripQueryString } from "./url"
 import type { HatenaEntryFetchTiming } from "./diagnostics"
 
-export type HatenaCountMap = Record<string, number | null>
+export const HATENA_COUNT_UNAVAILABLE = "unavailable" as const
+type HatenaCountResult = number | null | typeof HATENA_COUNT_UNAVAILABLE
+export type HatenaCountMap = Record<string, HatenaCountResult>
+type HatenaApiCountMap = Record<string, number | null>
 
 export interface HatenaBookmarkSummary {
   user: string
@@ -44,7 +47,7 @@ export function buildCandidateKeys(normalizedRequest: string): string[] {
   ]
 }
 
-export function normalizeCountKeys(chunkCounts: HatenaCountMap): Map<string, number> {
+export function normalizeCountKeys(chunkCounts: HatenaApiCountMap): Map<string, number> {
   const normalized = new Map<string, number>()
   Object.entries(chunkCounts).forEach(([key, value]) => {
     normalized.set(normalizeForComparison(key), value ?? 0)
@@ -62,7 +65,7 @@ export function resolveRequestedCount(
   return matched !== undefined ? (normalizedCounts.get(matched) ?? 0) : null
 }
 
-async function requestChunk(urls: readonly string[]): Promise<HatenaCountMap> {
+async function requestChunk(urls: readonly string[]): Promise<HatenaApiCountMap> {
   if (urls.length === 0) {
     return {}
   }
@@ -128,7 +131,7 @@ export async function fetchHatenaCounts(urls: readonly string[]): Promise<Hatena
     } catch (error) {
       console.error("Hatena API chunk failed", error)
       batchOriginalUrls.forEach((url) => {
-        counts[url] = null
+        counts[url] = HATENA_COUNT_UNAVAILABLE
       })
     }
   }

@@ -148,7 +148,8 @@
     - `https://b.hatena.ne.jp/*`: Hatena entry / コメント情報取得とエントリーページリンク。
     - `https://hn.algolia.com/*`: Hacker News Search API によるURL言及・score取得。
   - `https://news.ycombinator.com/*` は fetch しないため宣言しない。HN story はユーザークリック時の通常遷移先として扱う。
-  - `"permissions"` は空配列を維持し、不要な `tabs` / `activeTab` / `scripting` / `storage` を追加しない。
+  - `"permissions"` はフィルター設定の永続化に必要な `storage` のみを宣言し、不要な `tabs` / `activeTab` / `scripting` は追加しない。
+  - `"options_ui"` で同梱の `options.html` を指定し、設定画面をタブで開く。
 
 - **アイコン**
   - extension icon と action icon は 16 / 32 / 48 / 128px を指定する。
@@ -278,6 +279,15 @@ DOM抽出ロジックは `src/content/searchResults.ts` に集約し、Google側
 - ノード追加イベントで、新規に現れた結果要素に対してのみ抽出・問い合わせ・UI挿入を行う。
 - 既に処理した要素に対しては、`data-gsplus-hatebu` 等でスキップする。
 
+### 9.6 ソーシャルシグナルフィルター
+
+- Options page の `Show only results with social signals` で ON / OFF を切り替える。初期値は OFF とする。
+- 設定は `chrome.storage.sync` に boolean として保存し、content script は `chrome.storage.onChanged` で変更を反映する。
+- ON の場合、Hatena count と HN summary の両方が正常に完了し、どちらにも正のシグナルがない検索結果だけに拡張固有の非表示 class を付ける。
+- 片方でも正のシグナルがある場合、または API エラー・runtime error・不正 response により片方でも判定不能な場合は表示を維持する（fail-open）。
+- OFF に戻した場合は拡張固有の非表示 class を外し、Google 側の表示状態は変更しない。
+- URL ごとの取得結果を page-local cache へ保持し、MutationObserver で追加された同一 URL の結果にも同じ判定を適用する。
+
 ---
 
 ## 10. Hatena API との連携仕様
@@ -314,6 +324,7 @@ Hatena API 連携は以下の方針に従う。
 - 外部favicon取得をやめる場合は、公式faviconの同梱可否を確認したうえで拡張内アセット化し、`chrome.runtime.getURL()` と必要最小限の `web_accessible_resources` で参照する。
 - コンテンツスクリプトからは外部ドメインへ直接通信せず、必ず Background を通す。
 - ユーザーの個人情報や機密情報を収集しない。
+- 永続化する拡張設定はソーシャルシグナルフィルターの boolean のみに限定する。
 - ログ出力は開発時のみ詳細設定し、本番ビルドでは必要最低限に抑える。
 
 ---
@@ -349,6 +360,10 @@ Hatena API 連携は以下の方針に従う。
 5. **パフォーマンス**
    - 大量の検索結果（継続スクロールで増やした場合）でもブラウザが重くならないこと。
 
+6. **フィルター**
+   - 初期値 OFF、Hatena のみ正、HN のみ正、両方正、両方なし、片方の取得失敗を検証する。
+   - ON / OFF の即時反映、保存後の再読み込み、MutationObserver で追加された結果への適用を検証する。
+
 ---
 
 ## 14. Public Release Notes
@@ -365,8 +380,8 @@ Hatena API 連携は以下の方針に従う。
 
 ## 15. 将来拡張・オプション
 
-- **オプションページの追加**
-  - 「表示をON/OFFする」「0件も表示する」「クリックでHatenaエントリページに飛ぶかどうか」などの設定を持たせる拡張。
+- **フィルター条件の高度化**
+  - Hatena / HN ごとの最小値や対象シグナルを選べる詳細設定。
 
 - **UIの高度化**
   - 件数に応じた色分け（ある閾値以上は強調する等）。

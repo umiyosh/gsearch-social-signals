@@ -53,7 +53,9 @@ The extension does not use analytics, advertising tracking, profiling, credit-wo
 
 The developer does not retain user data on a developer-controlled server.
 
-The extension uses in-memory caches in the browser to avoid repeated API requests for the same URLs during the current browser session or extension service worker lifetime. These caches are not written to `chrome.storage` or other persistent extension storage by this extension.
+The extension uses in-memory caches in the browser to avoid repeated API requests for the same URLs during the current browser session or extension service worker lifetime. Search result URLs and API responses in these caches are not written to persistent extension storage.
+
+The extension stores one boolean preference in `chrome.storage.sync`: whether search results without positive Hatena Bookmark or Hacker News signals should be hidden. It does not store search result URLs, search queries, browsing history, or API responses in `chrome.storage`.
 
 Third-party services listed above may process requests according to their own policies.
 
@@ -67,6 +69,7 @@ The extension transfers data to third parties only as necessary to provide that 
 
 Users can:
 
+- Turn the social signal filter on or off from the extension's options page.
 - Disable the extension from Chrome's extension management page.
 - Remove the extension from Chrome.
 - Review the extension permissions from Chrome's extension management page.
