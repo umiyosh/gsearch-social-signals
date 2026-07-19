@@ -156,14 +156,17 @@ describe("fetchHackerNewsSummaries request control", () => {
     })
   })
 
-  it("limits concurrent HN requests to four", async () => {
+  it("limits concurrent HN requests to four across simultaneous batches and preserves FIFO", async () => {
     const releaseFetches: Array<() => void> = []
+    const startedUrls: string[] = []
     let activeRequests = 0
     let maxActiveRequests = 0
 
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => {
+      vi.fn((requestUrl: string | URL | Request) => {
+        const endpoint = new URL(requestUrl.toString())
+        startedUrls.push(endpoint.searchParams.get("query") ?? "")
         activeRequests += 1
         maxActiveRequests = Math.max(maxActiveRequests, activeRequests)
 
@@ -184,29 +187,55 @@ describe("fetchHackerNewsSummaries request control", () => {
       })
     )
 
-    const request = fetchHackerNewsSummaries([
-      "https://example.com/1",
-      "https://example.com/2",
-      "https://example.com/3",
-      "https://example.com/4",
-      "https://example.com/5",
-      "https://example.com/6"
-    ])
+    const urls = Array.from({ length: 6 }, (_, index) => `https://example.com/${index + 1}`)
+    const requests = urls.map((url) => fetchHackerNewsSummaries([url]))
 
     await vi.waitFor(() => {
-      expect(releaseFetches).toHaveLength(4)
+      expect(startedUrls).toHaveLength(4)
     })
+    expect(startedUrls).toEqual(urls.slice(0, 4))
     expect(maxActiveRequests).toBe(4)
 
-    releaseFetches.splice(0).forEach((releaseFetch) => releaseFetch())
+    releaseFetches.shift()?.()
 
     await vi.waitFor(() => {
-      expect(releaseFetches).toHaveLength(2)
+      expect(startedUrls).toHaveLength(5)
     })
+    expect(startedUrls[4]).toBe(urls[4])
+
+    releaseFetches.shift()?.()
+
+    await vi.waitFor(() => {
+      expect(startedUrls).toHaveLength(6)
+    })
+    expect(startedUrls[5]).toBe(urls[5])
+
     releaseFetches.splice(0).forEach((releaseFetch) => releaseFetch())
-    await request
+    await Promise.all(requests)
 
     expect(maxActiveRequests).toBe(4)
+  })
+
+  it("retries an aborted HN request before marking it unavailable", async () => {
+    vi.useFakeTimers()
+    vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new DOMException("The operation was aborted.", "AbortError"))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ nbHits: 0, hits: [] })
+      })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const request = fetchHackerNewsSummaries(["https://example.com/retry"])
+    await vi.runAllTimersAsync()
+
+    await expect(request).resolves.toEqual({
+      "https://example.com/retry": { nbHits: 0, maxPoints: 0, maxComments: 0 }
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })
 

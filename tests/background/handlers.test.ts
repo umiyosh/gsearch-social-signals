@@ -7,7 +7,10 @@ import {
 } from "../../src/background/handlers"
 import { MESSAGE_TYPES } from "../../src/shared/messages"
 import type { HatenaEntryResponse } from "../../src/shared/messages"
-import type { HackerNewsSummary } from "../../src/shared/hackerNews"
+import {
+  HACKER_NEWS_SUMMARY_UNAVAILABLE,
+  type HackerNewsSummary
+} from "../../src/shared/hackerNews"
 import type { HatenaEntryFetchTiming } from "../../src/shared/diagnostics"
 
 const diagnosticResponseHeaders = {
@@ -174,6 +177,25 @@ describe("hacker news request", () => {
     expect(first).toEqual({ ok: true, data: { "https://a": { nbHits: 5 } } })
     expect(second).toEqual(first)
     expect(fetchHackerNewsSummaries).toHaveBeenCalledTimes(1)
+  })
+
+  it("does not cache unavailable HN results so a later request can retry", async () => {
+    const fetchHackerNewsSummaries = vi
+      .fn()
+      .mockResolvedValueOnce({ "https://a": HACKER_NEWS_SUMMARY_UNAVAILABLE })
+      .mockResolvedValueOnce({ "https://a": { nbHits: 0 } })
+    const handler = createMessageHandler(buildDeps({ fetchHackerNewsSummaries }))
+    const request = { type: MESSAGE_TYPES.HN_REQUEST, urls: ["https://a"] }
+
+    const first = await handler(request)
+    const second = await handler(request)
+
+    expect(first).toEqual({
+      ok: true,
+      data: { "https://a": HACKER_NEWS_SUMMARY_UNAVAILABLE }
+    })
+    expect(second).toEqual({ ok: true, data: { "https://a": { nbHits: 0 } } })
+    expect(fetchHackerNewsSummaries).toHaveBeenCalledTimes(2)
   })
 
   it("answers null for urls that were filtered out", async () => {
