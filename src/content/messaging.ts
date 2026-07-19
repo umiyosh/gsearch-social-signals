@@ -9,7 +9,8 @@ import {
   type HatenaEntryResponse
 } from "../shared/messages"
 import type { HatenaBookmarkSummary } from "../shared/hatena"
-import type { HackerNewsSummary } from "../shared/hackerNews"
+import { HATENA_COUNT_UNAVAILABLE } from "../shared/hatena"
+import { HACKER_NEWS_SUMMARY_UNAVAILABLE, type HackerNewsSummary } from "../shared/hackerNews"
 import {
   BUILD_COMMIT_SHA,
   DIAGNOSTICS_ENABLED,
@@ -37,7 +38,7 @@ export function requestHatenaCounts(
     console.debug("Hatena counts skipped: runtime unavailable")
     urls.forEach((url) => {
       settle(url)
-      apply(url, null)
+      apply(url, undefined)
     })
     return
   }
@@ -49,24 +50,24 @@ export function requestHatenaCounts(
 
       if (chrome.runtime.lastError) {
         console.error("Failed to retrieve Hatena counts", chrome.runtime.lastError)
-        urls.forEach((url) => apply(url, null))
+        urls.forEach((url) => apply(url, undefined))
         return
       }
 
       if (!isExtensionResponse(response, isCountMap)) {
         console.warn("Unexpected Hatena response", response)
-        urls.forEach((url) => apply(url, null))
+        urls.forEach((url) => apply(url, undefined))
         return
       }
 
       if (!response.ok) {
         console.error("Hatena counts fetch failed", response.error)
-        urls.forEach((url) => apply(url, null))
+        urls.forEach((url) => apply(url, undefined))
         return
       }
 
       Object.entries(response.data).forEach(([url, count]) => {
-        apply(url, count)
+        apply(url, count === HATENA_COUNT_UNAVAILABLE ? undefined : count)
       })
 
       urls.filter((url) => !(url in response.data)).forEach((url) => apply(url, null))
@@ -74,7 +75,7 @@ export function requestHatenaCounts(
   } catch (error) {
     urls.forEach((url) => settle(url))
     console.error("Unhandled error while requesting Hatena counts", error)
-    urls.forEach((url) => apply(url, null))
+    urls.forEach((url) => apply(url, undefined))
   }
 }
 
@@ -91,7 +92,7 @@ export function requestHnSummaries(
     console.debug("HN summaries skipped: runtime unavailable")
     urls.forEach((url) => {
       settle(url)
-      apply(url, null)
+      apply(url, undefined)
     })
     return
   }
@@ -103,24 +104,24 @@ export function requestHnSummaries(
 
       if (chrome.runtime.lastError) {
         console.error("Failed to retrieve HN summaries", chrome.runtime.lastError)
-        urls.forEach((url) => apply(url, null))
+        urls.forEach((url) => apply(url, undefined))
         return
       }
 
       if (!isExtensionResponse(response, isHnSummaryMap)) {
         console.warn("Unexpected HN response", response)
-        urls.forEach((url) => apply(url, null))
+        urls.forEach((url) => apply(url, undefined))
         return
       }
 
       if (!response.ok) {
         console.error("HN summaries fetch failed", response.error)
-        urls.forEach((url) => apply(url, null))
+        urls.forEach((url) => apply(url, undefined))
         return
       }
 
       Object.entries(response.data).forEach(([url, summary]) => {
-        apply(url, summary)
+        apply(url, summary === HACKER_NEWS_SUMMARY_UNAVAILABLE ? undefined : summary)
       })
 
       urls.filter((url) => !(url in response.data)).forEach((url) => apply(url, null))
@@ -128,7 +129,7 @@ export function requestHnSummaries(
   } catch (error) {
     urls.forEach((url) => settle(url))
     console.error("Unhandled error while requesting HN summaries", error)
-    urls.forEach((url) => apply(url, null))
+    urls.forEach((url) => apply(url, undefined))
   }
 }
 

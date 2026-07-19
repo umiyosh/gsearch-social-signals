@@ -38,9 +38,11 @@ Required to fetch public Hatena Bookmark entry/comment information for the URL w
 
 Required to send Google Search result URLs to the Hacker News Search / Algolia API and display the highest matching public Hacker News story score as an `HN 456 pts` badge.
 
-### No extension API permissions
+### `storage`
 
-`permissions` is intentionally empty. The extension does not request `tabs`, `activeTab`, `scripting`, `storage`, or other Chrome extension API permissions.
+Required to persist the user's boolean preference for hiding search results without positive social signals and to apply changes across supported Google Search pages. The extension does not store search result URLs, search queries, browsing history, or API responses in `chrome.storage`.
+
+The extension does not request `tabs`, `activeTab`, `scripting`, or other unrelated Chrome extension API permissions.
 
 ### Supported Google Search pages
 
@@ -127,7 +129,7 @@ Use this explanation:
 
 Use this statement where the dashboard asks how data is handled:
 
-> The developer does not store user data. The extension does not send data to a developer-operated server. In-memory caches may exist in the browser tab or extension service worker only to avoid repeated API requests and are not persisted with `chrome.storage`.
+> The developer does not store user data on a developer-operated server. In-memory caches may exist in the browser tab or extension service worker only to avoid repeated API requests. The extension stores one boolean filter preference in `chrome.storage.sync`; it does not persist search result URLs, search queries, browsing history, or API responses.
 
 ## Advertising, Sale, and Profiling
 
@@ -147,5 +149,5 @@ Use this statement in the Privacy practices certification and keep it consistent
 - Privacy practices and `PRIVACY.md` both list Hatena Bookmark API, Hatena Bookmark entry API, and Hacker News Search / Algolia.
 - Privacy practices and `PRIVACY.md` both state that third-party transfer is necessary to provide the user-facing feature.
 - Privacy practices and `PRIVACY.md` both state that the developer does not operate a server or retain user data.
-- Privacy practices and `PRIVACY.md` both state that browser caches are in-memory only and not persisted with `chrome.storage`.
+- Privacy practices and `PRIVACY.md` both state that browser caches are in-memory only and that only the boolean filter preference is persisted with `chrome.storage.sync`.
 - Privacy practices, README, and Store listing copy all describe the same single purpose: displaying public social signals on Google Search results.

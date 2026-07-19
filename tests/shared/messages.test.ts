@@ -11,6 +11,8 @@ import {
   isHnSummaryMap,
   ok
 } from "../../src/shared/messages"
+import { HATENA_COUNT_UNAVAILABLE } from "../../src/shared/hatena"
+import { HACKER_NEWS_SUMMARY_UNAVAILABLE } from "../../src/shared/hackerNews"
 
 describe("isHatenaCountsRequest", () => {
   it("accepts a well-formed counts request", () => {
@@ -83,8 +85,14 @@ describe("isHackerNewsRequest", () => {
 })
 
 describe("payload validators", () => {
-  it("isCountMap accepts numeric or null values only", () => {
-    expect(isCountMap({ "https://a": 1, "https://b": null })).toBe(true)
+  it("isCountMap accepts numeric, null, or unavailable values only", () => {
+    expect(
+      isCountMap({
+        "https://a": 1,
+        "https://b": null,
+        "https://c": HATENA_COUNT_UNAVAILABLE
+      })
+    ).toBe(true)
     expect(isCountMap({ "https://a": "1" })).toBe(false)
     expect(isCountMap([1])).toBe(false)
     expect(isCountMap(null)).toBe(false)
@@ -102,8 +110,14 @@ describe("payload validators", () => {
     expect(isBookmarkSummaryList({})).toBe(false)
   })
 
-  it("isHnSummaryMap accepts null or nbHits-bearing summaries", () => {
-    expect(isHnSummaryMap({ "https://a": null, "https://b": { nbHits: 3 } })).toBe(true)
+  it("isHnSummaryMap accepts null, unavailable, or nbHits-bearing summaries", () => {
+    expect(
+      isHnSummaryMap({
+        "https://a": null,
+        "https://b": { nbHits: 3 },
+        "https://c": HACKER_NEWS_SUMMARY_UNAVAILABLE
+      })
+    ).toBe(true)
     expect(isHnSummaryMap({ "https://a": { points: 3 } })).toBe(false)
     expect(isHnSummaryMap(null)).toBe(false)
   })

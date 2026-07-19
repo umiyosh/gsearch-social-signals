@@ -4,6 +4,7 @@ import {
   chunkArray,
   fetchHatenaCounts,
   fetchHatenaEntry,
+  HATENA_COUNT_UNAVAILABLE,
   normalizeCountKeys,
   resolveRequestedCount
 } from "../../src/shared/hatena"
@@ -108,7 +109,7 @@ describe("fetchHatenaCounts", () => {
     expect(counts[secondBatchUrl]).toBe(50)
   })
 
-  it("marks only the failed batch urls as null", async () => {
+  it("marks only the failed batch urls as unavailable", async () => {
     const urls = Array.from({ length: 51 }, (_, index) => `https://example.com/${index}`)
     const firstUrl = urls[0]!
     const lastFirstBatchUrl = urls[49]!
@@ -134,29 +135,29 @@ describe("fetchHatenaCounts", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(counts[firstUrl]).toBe(1)
     expect(counts[lastFirstBatchUrl]).toBeNull()
-    expect(counts[secondBatchUrl]).toBeNull()
+    expect(counts[secondBatchUrl]).toBe(HATENA_COUNT_UNAVAILABLE)
   })
 
-  it("marks every url in a batch as null when the API fails", async () => {
+  it("marks every url in a batch as unavailable when the API fails", async () => {
     mockFetchResponse({}, false)
 
     const counts = await fetchHatenaCounts(["https://example.com/x"])
-    expect(counts["https://example.com/x"]).toBeNull()
+    expect(counts["https://example.com/x"]).toBe(HATENA_COUNT_UNAVAILABLE)
   })
 
-  it("marks every url in a batch as null when the API returns 400", async () => {
+  it("marks every url in a batch as unavailable when the API returns 400", async () => {
     mockFetchResponse({}, false, 400)
 
     const counts = await fetchHatenaCounts(["https://example.com/bad-request"])
-    expect(counts["https://example.com/bad-request"]).toBeNull()
+    expect(counts["https://example.com/bad-request"]).toBe(HATENA_COUNT_UNAVAILABLE)
   })
 
-  it("marks every url in a batch as null when the API returns invalid JSON", async () => {
+  it("marks every url in a batch as unavailable when the API returns invalid JSON", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined)
     mockFetchText("{not valid json")
 
     const counts = await fetchHatenaCounts(["https://example.com/invalid-json"])
-    expect(counts["https://example.com/invalid-json"]).toBeNull()
+    expect(counts["https://example.com/invalid-json"]).toBe(HATENA_COUNT_UNAVAILABLE)
   })
 })
 

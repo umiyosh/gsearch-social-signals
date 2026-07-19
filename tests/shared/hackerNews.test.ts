@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { fetchHackerNewsSummaries, HN_REQUEST_TIMEOUT_MS } from "../../src/shared/hackerNews"
+import {
+  fetchHackerNewsSummaries,
+  HACKER_NEWS_SUMMARY_UNAVAILABLE,
+  HN_REQUEST_TIMEOUT_MS
+} from "../../src/shared/hackerNews"
 
 function mockFetchResponse(payload: unknown, ok = true, status = ok ? 200 : 500): void {
   vi.stubGlobal(
@@ -75,20 +79,20 @@ describe("fetchHackerNewsSummaries", () => {
     })
   })
 
-  it("maps failed requests to null without rejecting", async () => {
+  it("maps failed requests to unavailable without rejecting", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined)
     mockFetchResponse({}, false)
 
     const summaries = await fetchHackerNewsSummaries(["https://example.com/"])
-    expect(summaries["https://example.com/"]).toBeNull()
+    expect(summaries["https://example.com/"]).toBe(HACKER_NEWS_SUMMARY_UNAVAILABLE)
   })
 
-  it("maps invalid JSON responses to null without rejecting", async () => {
+  it("maps invalid JSON responses to unavailable without rejecting", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined)
     mockFetchJsonError()
 
     const summaries = await fetchHackerNewsSummaries(["https://example.com/invalid-json"])
-    expect(summaries["https://example.com/invalid-json"]).toBeNull()
+    expect(summaries["https://example.com/invalid-json"]).toBe(HACKER_NEWS_SUMMARY_UNAVAILABLE)
   })
 })
 
@@ -103,9 +107,9 @@ describe("fetchHackerNewsSummaries request control", () => {
       "https://example.com/c"
     ])
 
-    expect(summaries["https://example.com/a"]).toBeNull()
-    expect(summaries["https://example.com/b"]).toBeNull()
-    expect(summaries["https://example.com/c"]).toBeNull()
+    expect(summaries["https://example.com/a"]).toBe(HACKER_NEWS_SUMMARY_UNAVAILABLE)
+    expect(summaries["https://example.com/b"]).toBe(HACKER_NEWS_SUMMARY_UNAVAILABLE)
+    expect(summaries["https://example.com/c"]).toBe(HACKER_NEWS_SUMMARY_UNAVAILABLE)
     expect(consoleError).toHaveBeenCalledTimes(1)
     expect(consoleError).toHaveBeenCalledWith(
       "Failed to fetch Hacker News summaries",
@@ -147,7 +151,9 @@ describe("fetchHackerNewsSummaries request control", () => {
     const request = fetchHackerNewsSummaries(["https://example.com/slow"])
     await vi.advanceTimersByTimeAsync(HN_REQUEST_TIMEOUT_MS)
 
-    await expect(request).resolves.toEqual({ "https://example.com/slow": null })
+    await expect(request).resolves.toEqual({
+      "https://example.com/slow": HACKER_NEWS_SUMMARY_UNAVAILABLE
+    })
   })
 
   it("limits concurrent HN requests to four", async () => {
@@ -261,10 +267,10 @@ describe("fetchHackerNewsSummaries URL matching", () => {
     })
   })
 
-  it("treats HN 400 responses as missing summaries", async () => {
+  it("treats HN 400 responses as unavailable", async () => {
     mockFetchResponse({}, false, 400)
 
     const summaries = await fetchHackerNewsSummaries(["https://example.com/"])
-    expect(summaries["https://example.com/"]).toBeNull()
+    expect(summaries["https://example.com/"]).toBe(HACKER_NEWS_SUMMARY_UNAVAILABLE)
   })
 })

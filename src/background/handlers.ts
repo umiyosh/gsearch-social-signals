@@ -1,5 +1,5 @@
 import type { HatenaBookmarkSummary, HatenaCountMap } from "../shared/hatena"
-import type { HackerNewsSummary } from "../shared/hackerNews"
+import type { HackerNewsSummaryResult } from "../shared/hackerNews"
 import type { HatenaEntryFetchTiming } from "../shared/diagnostics"
 import {
   MESSAGE_TYPES,
@@ -20,7 +20,7 @@ export interface BackgroundDeps {
     reportTiming?: (timing: HatenaEntryFetchTiming) => void
   ) => Promise<HatenaBookmarkSummary[]>
   fetchHackerNewsSummaries: (urls: readonly string[]) => Promise<HnSummaryMap>
-  hnCache: Map<string, HackerNewsSummary | null>
+  hnCache: Map<string, HackerNewsSummaryResult>
 }
 
 // content script からの入力はページ DOM 由来で攻撃者の影響を受けうる。

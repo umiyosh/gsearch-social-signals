@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GSearch With Social Signals settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>GSearch With Social Signals</h1>
+      <label class="setting">
+        <input id="hide-results-without-signals" type="checkbox" disabled />
+        <span>
+          <strong>Show only results with social signals</strong>
+          <small>
+            Hide a result after both Hatena Bookmark and Hacker News report no positive signal.
+            Results stay visible if either request fails.
+          </small>
+        </span>
+      </label>
+      <p id="save-status" class="status" role="status" aria-live="polite"></p>
+    </main>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

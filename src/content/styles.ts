@@ -10,10 +10,15 @@ export const OVERLAY_BODY_CLASS = "gsplus-hatebu-overlay__body"
 export const OVERLAY_USER_CLASS = "gsplus-hatebu-overlay__user"
 export const OVERLAY_COMMENT_CLASS = "gsplus-hatebu-overlay__comment"
 export const OVERLAY_EMPTY_CLASS = "gsplus-hatebu-overlay__empty"
+export const FILTERED_RESULT_CLASS = "gsplus-filtered-result"
 
 const STYLE_ELEMENT_ID = "gsplus-hatebu-style"
 
 const STYLE_TEXT = `
+    .${FILTERED_RESULT_CLASS} {
+      display: none !important;
+    }
+
     .${BADGE_CLASS} {
       font-size: 0.875rem;
       color: #0079a8;

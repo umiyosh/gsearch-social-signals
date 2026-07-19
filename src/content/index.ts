@@ -9,6 +9,7 @@ import {
   scheduleOverlayHide
 } from "./overlay"
 import { createSignalPipeline } from "./signals"
+import { loadSettings, watchSettings, type ExtensionSettings } from "../shared/settings"
 
 const queueTargets = createSignalPipeline({
   requestHatenaCounts,
@@ -21,6 +22,10 @@ const queueTargets = createSignalPipeline({
   scheduleOverlayHide,
   cancelOverlayHide
 })
+
+function applySettings(settings: ExtensionSettings): void {
+  queueTargets.setFilterEnabled(settings.hideResultsWithoutSocialSignals)
+}
 
 function scan(root: ParentNode = document): void {
   const targets = discoverSearchResults(root)
@@ -53,6 +58,8 @@ function observeSearchResults(
 
 function boot(): MutationObserver | null {
   ensureStyles()
+  watchSettings(applySettings)
+  void loadSettings().then(applySettings)
   scan(document)
   return observeSearchResults()
 }
