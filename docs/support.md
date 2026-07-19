@@ -11,7 +11,7 @@
 - Hatena Bookmark は `0 users` の場合は表示しません。
 - Hacker News は、正の points を持つ一致 story が見つからない場合は表示しません。
 
-すべての検索結果にバッジを追加すると Google 検索結果が読みづらくなるため、意味のあるシグナルがある場合だけ表示します。
+すべての検索結果にバッジを追加すると検索結果が読みづらくなるため、意味のあるシグナルがある場合だけ表示します。
 
 ### なぜ HN 投稿数ではなく points を表示するのですか？
 
@@ -25,7 +25,7 @@ Hacker News では、同じ URL が複数の story やコメントで言及さ�
 
 検索クエリ文字列を Hatena Bookmark や Hacker News Search / Algolia に送ることは意図していません。
 
-バッジ表示のために、拡張は対応している Google 検索結果ページに表示された検索結果 URL を読み取り、その URL を以下へ送信します。
+バッジ表示のために、拡張は対応している Google / DuckDuckGo 検索結果ページに表示された検索結果 URL を読み取り、その URL を以下へ送信します。
 
 - Hatena Bookmark API
 - Hacker News Search / Algolia
@@ -36,13 +36,13 @@ Hacker News では、同じ URL が複数の story やコメントで言及さ�
 
 保存しません。
 
-開発者はこの拡張用のサーバーを運用しておらず、検索結果 URL、検索クエリ、閲覧履歴、Google アカウント情報を保存しません。
+開発者はこの拡張用のサーバーを運用しておらず、検索結果 URL、検索クエリ、閲覧履歴、検索サービスのアカウント情報を保存しません。
 
 拡張はブラウザ内のメモリキャッシュを使いますが、これは開発者のサーバーへ送信されません。
 
-### 対応している Google ドメインはどれですか？
+### 対応している検索サービスはどれですか？
 
-現在は以下の Google 検索結果ページに対応しています。
+DuckDuckGo の通常Web検索（`duckduckgo.com`）と、以下の Google 検索結果ページに対応しています。
 
 - `google.com`
 - `google.co.jp`
@@ -54,7 +54,7 @@ Hacker News では、同じ URL が複数の story やコメントで言及さ�
 - `google.com.sg`
 - `google.com.tw`
 
-関係のないウェブサイト、Google アカウント画面、設定画面、その他の Google サービス画面では動作しません。
+DuckDuckGo の画像・動画・ニュースなどWeb以外のタブ、広告、関連検索、検索サービスのアカウント画面や設定画面では動作しません。
 
 ## 不具合や質問を報告する
 
@@ -64,7 +64,7 @@ https://github.com/umiyosh/gsearch-social-signals/issues
 
 報告内容に近いテンプレートを選んでください。
 
-- Google SERP layout broken
+- Google / DuckDuckGo SERP layout broken
 - Hatena count mismatch
 - HN score mismatch
 - Badge not displayed
@@ -72,7 +72,7 @@ https://github.com/umiyosh/gsearch-social-signals/issues
 
 表示崩れや件数違いを報告するときは、可能な範囲で以下を含めてください。
 
-- Google ドメイン
+- 検索サービスとドメイン
 - 検索語。ただし公開して問題ない場合だけ
 - 対象の検索結果 URL
 - Chrome バージョン

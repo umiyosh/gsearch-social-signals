@@ -94,4 +94,52 @@ describe("content script boot", () => {
 
     observers.forEach((observer) => observer.disconnect())
   })
+
+  it("processes DuckDuckGo results added by continuous scroll", async () => {
+    document.head.innerHTML = ""
+    document.body.innerHTML = ""
+    const messages: unknown[] = []
+    stubChrome(messages)
+    const NativeMutationObserver = globalThis.MutationObserver
+    const observers: MutationObserver[] = []
+    vi.stubGlobal(
+      "MutationObserver",
+      class extends NativeMutationObserver {
+        constructor(callback: MutationCallback) {
+          super(callback)
+          observers.push(this)
+        }
+      }
+    )
+
+    await import("../../src/content/index")
+    const result = document.createElement("li")
+    result.dataset.layout = "organic"
+    result.innerHTML = `
+      <article data-testid="result" data-nrn="result">
+        <h2>
+          <a data-testid="result-title-a" href="https://dynamic.example/duckduckgo">
+            Dynamic DuckDuckGo result
+          </a>
+        </h2>
+      </article>
+    `
+
+    document.body.appendChild(result)
+
+    await vi.waitFor(() => {
+      expect(messages).toContainEqual({
+        type: MESSAGE_TYPES.COUNT_REQUEST,
+        urls: ["https://dynamic.example/duckduckgo"]
+      })
+    })
+    expect(messages).toContainEqual({
+      type: MESSAGE_TYPES.HN_REQUEST,
+      urls: ["https://dynamic.example/duckduckgo"]
+    })
+    expect(result.querySelector("h2")?.firstElementChild?.className).toBe("gsplus-signal-container")
+    expect(result.querySelector(".gsplus-hatebu-count__text")?.textContent).toBe("3 users")
+
+    observers.forEach((observer) => observer.disconnect())
+  })
 })

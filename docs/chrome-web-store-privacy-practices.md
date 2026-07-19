@@ -14,11 +14,11 @@ Official references:
 
 Use this in the Chrome Web Store Privacy practices "Single purpose" field:
 
-> Google検索結果に表示されるリンクURLについて、公開されている Hatena Bookmark 件数と Hacker News score を検索結果上にバッジ表示すること。
+> Google と DuckDuckGo のWeb検索結果に表示されるリンクURLについて、公開されている Hatena Bookmark 件数と Hacker News score を検索結果上にバッジ表示すること。
 
 English fallback:
 
-> Display public Hatena Bookmark counts and Hacker News scores next to links on supported Google Search result pages.
+> Display public Hatena Bookmark counts and Hacker News scores next to links on supported Google Search and DuckDuckGo web result pages.
 
 This is intentionally narrow. The extension does not provide analytics, advertising, tracking, ranking changes, account sync, or general browsing history features.
 
@@ -28,7 +28,7 @@ Use these explanations for the permissions shown in the Chrome Web Store Develop
 
 ### `https://bookmark.hatenaapis.com/*`
 
-Required to send Google Search result URLs to the Hatena Bookmark count API and display the public bookmark count as a `123 users` badge.
+Required to send supported search result URLs to the Hatena Bookmark count API and display the public bookmark count as a `123 users` badge.
 
 ### `https://b.hatena.ne.jp/*`
 
@@ -36,17 +36,17 @@ Required to fetch public Hatena Bookmark entry/comment information for the URL w
 
 ### `https://hn.algolia.com/*`
 
-Required to send Google Search result URLs to the Hacker News Search / Algolia API and display the highest matching public Hacker News story score as an `HN 456 pts` badge.
+Required to send supported search result URLs to the Hacker News Search / Algolia API and display the highest matching public Hacker News story score as an `HN 456 pts` badge.
 
 ### `storage`
 
-Required to persist the user's boolean preference for hiding search results without positive social signals and to apply changes across supported Google Search pages. The extension does not store search result URLs, search queries, browsing history, or API responses in `chrome.storage`.
+Required to persist the user's boolean preference for hiding search results without positive social signals and to apply changes across supported Google Search and DuckDuckGo pages. The extension does not store search result URLs, search queries, browsing history, or API responses in `chrome.storage`.
 
 The extension does not request `tabs`, `activeTab`, `scripting`, or other unrelated Chrome extension API permissions.
 
-### Supported Google Search pages
+### Supported search pages
 
-The content script is limited to supported Google Search result pages:
+The content script is limited to supported Google Search result pages and DuckDuckGo, whose web search uses the root path with query parameters:
 
 - `https://www.google.com/search*`
 - `https://www.google.co.jp/search*`
@@ -57,8 +57,9 @@ The content script is limited to supported Google Search result pages:
 - `https://www.google.com.hk/search*`
 - `https://www.google.com.sg/search*`
 - `https://www.google.com.tw/search*`
+- `https://duckduckgo.com/*`
 
-Do not use broad patterns such as `<all_urls>` or `https://www.google.*`.
+Do not use broad patterns such as `<all_urls>` or `https://www.google.*`. On DuckDuckGo, the DOM parser processes only organic web results and excludes advertisements and non-result surfaces.
 
 ## Remote Code
 
@@ -76,15 +77,15 @@ Disclose that the extension handles user data. Do not select "This item does not
 
 The extension handles the following data only for its single purpose:
 
-- Google Search result link URLs.
-- The Google Search result page DOM structure needed to identify organic result links and place badges.
+- Supported search result link URLs.
+- The supported search result page DOM structure needed to identify organic result links and place badges.
 - The URL associated with a Hatena badge when the user hovers or focuses that badge.
 
 The set of search result URLs can reveal or suggest the user's search intent, so it should be disclosed honestly as privacy-sensitive browsing activity / website content data.
 
 Recommended data type selections:
 
-- Web browsing activity: yes, because the extension reads and sends the URLs of search results shown on supported Google Search pages.
+- Web browsing activity: yes, because the extension reads and sends the URLs of search results shown on supported Google Search and DuckDuckGo pages.
 - Website content: yes, because the extension reads the search result page DOM enough to identify result links and place badges.
 
 Do not select these categories:
@@ -97,7 +98,7 @@ Do not select these categories:
 - Location.
 - User-generated content.
 
-The extension does not intentionally collect Google account information, cookies, form inputs, full page contents outside the result-link data needed for the feature, or the raw Google search query string.
+The extension does not intentionally collect search-provider account information, cookies, form inputs, full page contents outside the result-link data needed for the feature, or raw Google or DuckDuckGo search query strings.
 
 ## Data Use
 
@@ -141,7 +142,7 @@ Use this statement in the data use certification:
 
 Use this statement in the Privacy practices certification and keep it consistent with `PRIVACY.md`:
 
-> The extension's use of browsing activity and website content data complies with the Chrome Web Store User Data Policy, including the Limited Use requirements. Data is used only to provide or improve the single purpose of showing public Hatena Bookmark and Hacker News signals on supported Google Search result pages. Data is transferred to third parties only when necessary to provide that feature. Data is not sold and is not used for advertising, profiling, or unrelated purposes.
+> The extension's use of browsing activity and website content data complies with the Chrome Web Store User Data Policy, including the Limited Use requirements. Data is used only to provide or improve the single purpose of showing public Hatena Bookmark and Hacker News signals on supported Google Search and DuckDuckGo web result pages. Data is transferred to third parties only when necessary to provide that feature. Data is not sold and is not used for advertising, profiling, or unrelated purposes.
 
 ## Consistency Checklist
 
@@ -150,4 +151,4 @@ Use this statement in the Privacy practices certification and keep it consistent
 - Privacy practices and `PRIVACY.md` both state that third-party transfer is necessary to provide the user-facing feature.
 - Privacy practices and `PRIVACY.md` both state that the developer does not operate a server or retain user data.
 - Privacy practices and `PRIVACY.md` both state that browser caches are in-memory only and that only the boolean filter preference is persisted with `chrome.storage.sync`.
-- Privacy practices, README, and Store listing copy all describe the same single purpose: displaying public social signals on Google Search results.
+- Privacy practices, README, and Store listing copy all describe the same single purpose: displaying public social signals on Google Search and DuckDuckGo web results.

@@ -8,7 +8,7 @@ The old separate add-on approach is no longer used. HN badges are rendered by th
 
 ## Current Behavior
 
-- HN badges are inserted into the shared social signal container for each discovered Google Search result.
+- HN badges are inserted into the shared social signal container for each discovered Google or DuckDuckGo web result.
 - Hatena and HN badges can appear together. If Hatena has no count but HN has positive points, the HN badge can appear by itself.
 - HN badges use the bundled `icons/hacker-news.svg` asset through `chrome.runtime.getURL()`.
 - HN badges are links with `target="_blank"` and `rel="noopener noreferrer"`.

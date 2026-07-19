@@ -1,13 +1,21 @@
 # Live E2E verification
 
-GSearch With Social Signals depends on the live Google Search result page DOM. Google changes SERP markup through product updates, A/B tests, and regional variations, so DOM change detection is an important part of release and support work.
+GSearch With Social Signals depends on the live Google Search and DuckDuckGo web result DOM. Search providers change SERP markup through product updates, A/B tests, and regional variations, so DOM change detection is an important part of release and support work.
 
 This repository includes a repository-local Codex agent skill for live E2E verification:
 
 - Skill: `gsearch-social-signals-live-e2e`
 - Location: `.codex/skills/gsearch-social-signals-live-e2e/SKILL.md`
 
-The workflow opens real Google SERPs in the user's local Chrome profile and checks that Hatena Bookmark and Hacker News badges render next to eligible search results. It also compares rendered values with the external APIs used by the extension.
+The repository-local skill opens real Google SERPs in the user's local Chrome profile and checks that Hatena Bookmark and Hacker News badges render next to eligible search results. It also compares rendered values with the external APIs used by the extension. DuckDuckGo changes use the manual Chrome checklist below in addition to that Google regression gate.
+
+## DuckDuckGo Checklist
+
+- Open a normal DuckDuckGo web result page after reloading the target `dist/` build.
+- Confirm positive Hatena and HN badges appear inside organic `li[data-layout="organic"]` results.
+- Confirm `li[data-layout="ad"]`, related searches, maps, and non-web tabs have no extension badges.
+- Scroll to the bottom and confirm newly added organic results are processed once.
+- Toggle the saved social-signal filter and confirm API failures remain fail-open.
 
 ## What It Checks
 

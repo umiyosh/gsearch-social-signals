@@ -6,7 +6,7 @@ Hacker News support is implemented in the main GSearch With Social Signals exten
 
 ## User-Facing Behavior
 
-- Each supported Google Search result URL can show an HN badge in the form `HN <maxPoints> pts`.
+- Each supported Google or DuckDuckGo web result URL can show an HN badge in the form `HN <maxPoints> pts`.
 - `maxPoints` is the maximum positive `points` value among Hacker News stories whose `url` matches the normalized search result URL.
 - `nbHits` is kept as response metadata but is not the visible count.
 - `maxComments` and `topStoryId` are kept as summary metadata.

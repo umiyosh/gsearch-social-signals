@@ -1,6 +1,6 @@
 # Remote Hosted Code Audit
 
-Date: 2026-06-18
+Date: 2026-07-19
 
 ## Policy Basis
 
@@ -58,4 +58,4 @@ Additional checks:
 
 Previously the content script loaded Hatena and Hacker News favicons from external URLs. Images are not RHC, but they add external requests and make `dist/` `https://` auditing noisier.
 
-Decision: bundle local SVG icon assets and load them with `chrome.runtime.getURL()`. The assets are exposed only to the supported Google Search origins through `web_accessible_resources`.
+Decision: bundle local SVG icon assets and load them with `chrome.runtime.getURL()`. The assets are exposed only to the supported Google Search and DuckDuckGo origins through `web_accessible_resources`.

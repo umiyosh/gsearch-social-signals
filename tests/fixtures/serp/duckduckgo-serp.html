@@ -1,0 +1,48 @@
+<ol class="react-results--main">
+  <li id="ddg-ad" data-layout="ad">
+    <article data-testid="ad" data-nrn="result">
+      <h2>
+        <a data-testid="result-title-a" href="https://duckduckgo.com/y.js?ad_domain=example.com">
+          Sponsored result
+        </a>
+      </h2>
+    </article>
+  </li>
+
+  <li id="ddg-organic-direct" data-layout="organic">
+    <article data-testid="result" data-nrn="result">
+      <a href="https://wrong.example/context-menu">Context menu link</a>
+      <h2>
+        <a
+          id="ddg-direct-link"
+          data-testid="result-title-a"
+          href="https://example.com/direct?ref=ddg"
+        >
+          Direct result
+        </a>
+      </h2>
+    </article>
+  </li>
+
+  <li id="ddg-organic-second" data-layout="organic">
+    <article data-testid="result" data-nrn="result">
+      <h2>
+        <a id="ddg-second-link" data-testid="result-title-a" href="https://second.example/story">
+          Second result
+        </a>
+      </h2>
+    </article>
+  </li>
+
+  <li id="ddg-related-searches" data-layout="related_searches">
+    <article>
+      <h2><a href="https://related.example/ignored">Related searches</a></h2>
+    </article>
+  </li>
+
+  <li id="ddg-missing-title" data-layout="organic">
+    <article data-testid="result" data-nrn="result">
+      <a href="https://fallback.example/ignored">Non-title link</a>
+    </article>
+  </li>
+</ol>

@@ -1,8 +1,8 @@
-# Design Doc: Google検索結果に公開ソーシャルシグナルを表示するChrome拡張
+# Design Doc: 検索結果に公開ソーシャルシグナルを表示するChrome拡張
 
 ## 1. 概要
 
-本ドキュメントは、「Google検索結果ページに、各結果URLの Hatena Bookmark 件数（`X users`）と Hacker News 最大スコア（`HN X pts`）を表示する」Chrome拡張の現行仕様である。
+本ドキュメントは、「Google と DuckDuckGo のWeb検索結果ページに、各結果URLの Hatena Bookmark 件数（`X users`）と Hacker News 最大スコア（`HN X pts`）を表示する」Chrome拡張の現行仕様である。
 公開前の source of truth として、技術スタック、アーキテクチャ、権限、データフロー、公開時の注意点を記録する。
 
 ---
@@ -11,7 +11,7 @@
 
 ### 2.1 ゴール
 
-- GoogleのWeb検索結果ページ上で、各検索結果に対応するURLの Hatena Bookmark 件数を表示する。
+- Google と DuckDuckGo のWeb検索結果ページ上で、各検索結果に対応するURLの Hatena Bookmark 件数を表示する。
 - Hacker News Search API / Algolia から、各検索結果URLに対応するstory群の最大 positive points を表示する。
 - Hatena 件数は `X users`、HN は `HN X pts` として表示する。
 - 0件または positive score がないURLについては、UI上に何も追加しない（＝0は非表示）。
@@ -21,7 +21,9 @@
 
 ### 2.2 非ゴール
 
-- Google以外の検索エンジン（Bing, DuckDuckGo など）への対応。
+- Bing など、Google / DuckDuckGo 以外の検索エンジンへの対応。
+- DuckDuckGo の画像・動画・ニュースなどWeb以外の検索タブへの対応。
+- bot detection、CAPTCHA、rate limit を回避する仕組み。
 - はてなブックマークへの新規投稿、編集、ホットエントリ閲覧などのユーザーアクション機能。
 - 派手なカスタムUI（ポップアップ、詳細オーバーレイ、グラフ表示など）。
 - Hacker News のスレッド一覧オーバーレイや要約ポップアップ。
@@ -32,7 +34,7 @@
 
 ## 3. ユースケース
 
-- ユーザーが Chrome で Google 検索を行う。
+- ユーザーが Chrome で Google または DuckDuckGo のWeb検索を行う。
 - 検索結果一覧が表示されると、各結果のタイトル付近に `123 users` や `HN 456 pts` のようなバッジが表示される。
 - ユーザーは、国内技術コミュニティの Hatena Bookmark 件数と国際技術コミュニティの HN score を補助シグナルとして参照できる。
 
@@ -43,12 +45,13 @@
 ### 4.1 機能要件
 
 1. **対象ページ**
-   - URL が明示列挙した Google 検索ドメイン（例: `https://www.google.com/search*`, `https://www.google.co.jp/search*`）に一致する場合だけ、検索結果ページに対して拡張機能を有効化する。
+   - URL が明示列挙した Google 検索ドメイン（例: `https://www.google.com/search*`, `https://www.google.co.jp/search*`）または `https://duckduckgo.com/*` に一致する場合だけ、拡張機能を有効化する。
+   - DuckDuckGo では通常Web検索結果のDOMだけを処理し、Web以外の検索タブは処理しない。
    - Chrome 拡張の match pattern は TLD ワイルドカードをサポートしないため、`https://www.google.*` のような指定は使わない。
 
 2. **検索結果の検出**
    - 検索結果ページ内から「外部サイトへの結果リンク」を列挙する。
-   - 内部リンク（Google自身のURL、広告枠など）は極力除外する。
+   - 検索サービスの内部導線、広告枠、関連検索などは除外する。
 
 3. **Hatena Bookmark 件数の取得**
    - 列挙したURLに対して、はてなブックマークの件数を一括で取得する。
@@ -65,7 +68,7 @@
    - UIは最小限の装飾（小さめの灰色テキスト、適度なマージン）に留める。
 
 6. **動的変化への追従**
-   - Googleの「もっと見る」「継続スクロール」による追加結果表示にも、MutationObserver による再スキャンで対応する。
+   - Google / DuckDuckGo の継続スクロールによる追加結果表示にも、MutationObserver による再スキャンで対応する。
 
 ### 4.2 非機能要件
 
@@ -78,7 +81,7 @@
 
 - **可読性・保守性**
   - TypeScript で型安全に実装する。
-  - Google側DOM構造に依存する処理は、変更に対応しやすいよう一箇所に集約する。
+  - 検索サービス側DOM構造に依存する処理は、変更に対応しやすいよう一箇所に集約する。
 
 - **セキュリティ**
   - Manifest V3 のポリシーに従い、最小限の権限のみ要求する。
@@ -106,8 +109,8 @@
 2. **Background Service Worker**
    - 役割: Hatena API / Hacker News Search API への通信、入力再検証、Content Script とのメッセージ仲介。
 
-3. **Content Script (Google Search 用)**
-   - 役割: Google検索結果ページのDOMからURLを抽出し、Backgroundに問い合わせ、結果をUIとして描画する。外部APIは直接 fetch しない。
+3. **Content Script (対応検索サービス用)**
+   - 役割: Google / DuckDuckGo 検索結果ページのDOMからURLを抽出し、Backgroundに問い合わせ、結果をUIとして描画する。外部APIは直接 fetch しない。
 
 4. **共通モジュール（任意）**
    - メッセージ型定義、URL正規化、Hatena APIクライアント、Hacker News APIクライアント等を共通化。
@@ -137,6 +140,7 @@
 
 - **コンテンツスクリプト**
   - 検索結果ページにマッチする `matches` 配列（例: `https://www.google.com/search*`, `https://www.google.co.jp/search*`）を、対応する Google ドメインごとに明示列挙する。
+  - DuckDuckGo は検索クエリをルートパスのquery parameterで受け取るため、`https://duckduckgo.com/*` を明示する。DOM解析では通常Web検索のオーガニック結果だけを対象にする。
   - `https://www.google.*` は Chrome の match pattern として無効なため使わない。
   - `https://*/*` など広い `matches` と `include_globs` で疑似的に絞る案は、content script の権限警告と審査説明が広くなるため採用しない。
   - `matches` の path を `/search*` にして、検索結果ページへ限定する。
@@ -217,18 +221,23 @@ Background は `isExtensionRequest` を通過しないメッセージを無視�
 
 ### 9.1 責務
 
-- Google検索結果ページ上のDOMから、各検索結果の**外部リンクURL**と**対応するDOM要素**を抽出する。
+- Google / DuckDuckGo 検索結果ページ上のDOMから、各検索結果の**外部リンクURL**と**対応するDOM要素**を抽出する。
 - 抽出したURL一覧をBackgroundに送信し、結果を受け取る。
 - 受け取った件数を元に、適切な位置に `X users` のUIを挿入する。
 - 動的に追加された検索結果（可能であれば）にも対応する。
 
 ### 9.2 DOM抽出戦略
 
-GoogleのDOM構造は変わりやすいため、以下の点に注意して実装する:
+検索サービスのDOM構造は変わりやすいため、以下の点に注意して実装する:
 
 - 検索結果のコンテナは概ね `div#search` 配下に存在する。
 - 一般的なオーガニック検索結果は:
   - タイトル部分に `h3` があり、その内側または近傍に `<a href="...">` のリンクがある。
+
+- DuckDuckGo の通常Web検索結果は:
+  - 結果全体が `li[data-layout="organic"]` であり、その直下に `article[data-testid="result"][data-nrn="result"]` がある。
+  - 主リンクは `a[data-testid="result-title-a"]` である。
+  - `li[data-layout="ad"]` / `article[data-testid="ad"]` は広告として除外する。
 
 - セレクタの設計方針:
   - コンテナ (`#search`) を起点に `a[href]` をパターンマッチする。
@@ -239,7 +248,7 @@ GoogleのDOM構造は変わりやすいため、以下の点に注意して実�
   - URL文字列
   - URLを表示している`<a>`要素（または、その親の結果ブロック要素）への参照
 
-DOM抽出ロジックは `src/content/searchResults.ts` に集約し、Google側の構造変更時にその部分だけ差し替えれば済む構造にする。
+DOM抽出ロジックは `src/content/searchResults.ts` に集約し、検索サービス側の構造変更時にその部分だけ差し替えれば済む構造にする。
 
 ### 9.3 UI挿入戦略
 
@@ -285,7 +294,7 @@ DOM抽出ロジックは `src/content/searchResults.ts` に集約し、Google側
 - 設定は `chrome.storage.sync` に boolean として保存し、content script は `chrome.storage.onChanged` で変更を反映する。
 - ON の場合、Hatena count と HN summary の両方が正常に完了し、どちらにも正のシグナルがない検索結果だけに拡張固有の非表示 class を付ける。
 - 片方でも正のシグナルがある場合、または API エラー・runtime error・不正 response により片方でも判定不能な場合は表示を維持する（fail-open）。
-- OFF に戻した場合は拡張固有の非表示 class を外し、Google 側の表示状態は変更しない。
+- OFF に戻した場合は拡張固有の非表示 class を外し、検索サービス側の表示状態は変更しない。
 - URL ごとの取得結果を page-local cache へ保持し、MutationObserver で追加された同一 URL の結果にも同じ判定を適用する。
 
 ---
@@ -345,7 +354,7 @@ Hatena API 連携は以下の方針に従う。
 以下の観点で動作確認を行う。
 
 1. **基本シナリオ**
-   - 通常のGoogle検索（PC版）でページを開き、各検索結果に `X users` が表示されること。
+   - 通常の Google / DuckDuckGo Web検索（PC版）でページを開き、正のシグナルがある各検索結果に `X users` / `HN X pts` が表示されること。
    - ブックマーク数が多いURLで、実際のHatenaページと件数が整合していること。
 
 2. **0件のシナリオ**
@@ -355,7 +364,7 @@ Hatena API 連携は以下の方針に従う。
    - ネットワークを切る、API URLをわざと間違えるなどして、UIが壊れずに検索結果だけは正常に見えること。
 
 4. **DOM変更耐性**
-   - 異なるGoogleレイアウト（日本語・英語、ライトテーマ／ダークテーマ）で動作確認し、セレクタが安定しているか検証する。
+   - Google の異なるレイアウトと DuckDuckGo の通常Web検索で動作確認し、広告・内部導線を処理せずセレクタが安定しているか検証する。
 
 5. **パフォーマンス**
    - 大量の検索結果（継続スクロールで増やした場合）でもブラウザが重くならないこと。

@@ -36,7 +36,8 @@
         "https://www.google.com.au/search*",
         "https://www.google.com.hk/search*",
         "https://www.google.com.sg/search*",
-        "https://www.google.com.tw/search*"
+        "https://www.google.com.tw/search*",
+        "https://duckduckgo.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"
@@ -54,7 +55,8 @@
         "https://www.google.com.au/*",
         "https://www.google.com.hk/*",
         "https://www.google.com.sg/*",
-        "https://www.google.com.tw/*"
+        "https://www.google.com.tw/*",
+        "https://duckduckgo.com/*"
       ]
     }
   ],

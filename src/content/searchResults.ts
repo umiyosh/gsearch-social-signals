@@ -8,13 +8,17 @@ export interface SearchResultTarget {
 
 export const MAX_SERP_TARGETS_PER_SCAN = 40
 
-const RESULT_CONTAINER_SELECTOR = [
+const GOOGLE_RESULT_CONTAINER_SELECTOR = [
   "div.g",
   "div.MjjYud",
   "div[data-sokoban-grid]",
   'div[jscontroller="SC7lYd"]',
   'div[jscontroller="TFQHme"]'
 ].join(", ")
+
+const DUCKDUCKGO_RESULT_ARTICLE_SELECTOR = 'article[data-testid="result"][data-nrn="result"]'
+const DUCKDUCKGO_ORGANIC_CONTAINER_SELECTOR = 'li[data-layout="organic"]'
+const DUCKDUCKGO_TITLE_LINK_SELECTOR = 'a[data-testid="result-title-a"][href]'
 
 const EXCLUDED_SERP_SURFACE_SELECTOR = [
   "[data-text-ad]",
@@ -36,6 +40,16 @@ function isExcludedSerpSurface(container: HTMLElement): boolean {
 function findPrimaryAnchor(
   container: HTMLElement
 ): { anchor: HTMLAnchorElement; url: string } | null {
+  if (container.matches(DUCKDUCKGO_ORGANIC_CONTAINER_SELECTOR)) {
+    const anchor = container.querySelector<HTMLAnchorElement>(DUCKDUCKGO_TITLE_LINK_SELECTOR)
+    if (!anchor) {
+      return null
+    }
+
+    const resolvedUrl = extractExternalUrlFromHref(anchor.href)
+    return resolvedUrl ? { anchor, url: resolvedUrl } : null
+  }
+
   const anchors = container.querySelectorAll<HTMLAnchorElement>("a[href]")
   for (const anchor of anchors) {
     const resolvedUrl = extractExternalUrlFromHref(anchor.href)
@@ -48,10 +62,32 @@ function findPrimaryAnchor(
 
 function collectResultContainers(root: ParentNode): HTMLElement[] {
   const containers: HTMLElement[] = []
-  if (root instanceof HTMLElement && root.matches(RESULT_CONTAINER_SELECTOR)) {
-    containers.push(root)
+  const seen = new Set<HTMLElement>()
+  const add = (container: HTMLElement): void => {
+    if (!seen.has(container)) {
+      seen.add(container)
+      containers.push(container)
+    }
   }
-  containers.push(...root.querySelectorAll<HTMLElement>(RESULT_CONTAINER_SELECTOR))
+
+  if (root instanceof HTMLElement && root.matches(GOOGLE_RESULT_CONTAINER_SELECTOR)) {
+    add(root)
+  }
+  root.querySelectorAll<HTMLElement>(GOOGLE_RESULT_CONTAINER_SELECTOR).forEach(add)
+
+  const duckDuckGoArticles: HTMLElement[] = []
+  if (root instanceof HTMLElement && root.matches(DUCKDUCKGO_RESULT_ARTICLE_SELECTOR)) {
+    duckDuckGoArticles.push(root)
+  }
+  duckDuckGoArticles.push(...root.querySelectorAll<HTMLElement>(DUCKDUCKGO_RESULT_ARTICLE_SELECTOR))
+
+  for (const article of duckDuckGoArticles) {
+    const container = article.closest<HTMLElement>(DUCKDUCKGO_ORGANIC_CONTAINER_SELECTOR)
+    if (container) {
+      add(container)
+    }
+  }
+
   return containers
 }
 
