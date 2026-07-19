@@ -1,47 +1,246 @@
 :root {
-  color-scheme: light dark;
-  font-family: system-ui, sans-serif;
+  color-scheme: light;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  color: #202124;
+  background: #f7f8fa;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
+  min-width: 320px;
+  min-height: 100dvh;
   margin: 0;
+  background: #f7f8fa;
 }
 
-main {
-  max-width: 680px;
+.settings-page {
+  width: min(100%, 920px);
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: clamp(24px, 6vw, 64px) clamp(16px, 4vw, 40px);
+}
+
+.settings-panel {
+  padding: clamp(24px, 5vw, 40px);
+  background: #fff;
+  border: 1px solid #e0e3e7;
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgb(60 64 67 / 8%);
+}
+
+.brand-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.brand-mark {
+  display: grid;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  color: #185abc;
+  background: #d2e3fc;
+  border-radius: 14px;
+  place-items: center;
+}
+
+.brand-mark svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2.4;
+}
+
+.brand-copy {
+  min-width: 0;
 }
 
 h1 {
-  margin: 0 0 24px;
-  font-size: 1.5rem;
+  margin: 0;
+  color: #111214;
+  font-size: clamp(1.45rem, 4vw, 1.85rem);
+  font-weight: 650;
+  line-height: 1.2;
+  text-wrap: balance;
 }
 
-.setting {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
+.subtitle {
+  display: block;
+  margin-top: 3px;
+  color: #5f6368;
+  font-size: 0.975rem;
+  line-height: 1.45;
+  text-wrap: pretty;
 }
 
-.setting input {
-  width: 18px;
-  height: 18px;
-  margin: 2px 0 0;
+.divider {
+  height: 1px;
+  margin: 30px 0;
+  background: #e0e3e7;
 }
 
-.setting span {
+h2 {
+  margin: 0 0 14px;
+  color: #7a7f85;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+
+.setting-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: start;
+  padding: 20px 22px;
+  cursor: pointer;
+  border: 1px solid #dadce0;
+  border-radius: 14px;
+}
+
+.setting-card:focus-within {
+  border-color: #1a73e8;
+}
+
+.setting-card:has(input:disabled) {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.setting-copy {
   display: grid;
   gap: 6px;
 }
 
-.setting small {
-  color: GrayText;
-  line-height: 1.5;
+.setting-copy strong {
+  color: #17181a;
+  font-size: 1.075rem;
+  font-weight: 650;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+
+.setting-copy small {
+  color: #5f6368;
+  font-size: 0.925rem;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.toggle-control {
+  position: relative;
+  margin-top: 2px;
+}
+
+.toggle-control input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.switch {
+  position: relative;
+  display: block;
+  width: 48px;
+  height: 28px;
+  background: #9aa0a6;
+  border-radius: 999px;
+}
+
+.switch::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  content: "";
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgb(60 64 67 / 35%);
+}
+
+.toggle-control input:checked + .switch {
+  background: #1a73e8;
+}
+
+.toggle-control input:checked + .switch::after {
+  transform: translateX(20px);
+}
+
+.toggle-control input:focus-visible + .switch {
+  outline: 3px solid rgb(26 115 232 / 28%);
+  outline-offset: 3px;
 }
 
 .status {
   min-height: 1.5em;
-  margin: 16px 0 0 30px;
-  color: GrayText;
+  margin: 16px 4px 0;
+  color: #5f6368;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.status::before {
+  display: inline-block;
+  width: 1.25em;
+  margin-right: 5px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.status[data-state="success"] {
+  color: #137333;
+}
+
+.status[data-state="success"]::before {
+  content: "✓";
+}
+
+.status[data-state="error"] {
+  color: #b3261e;
+}
+
+.status[data-state="error"]::before {
+  content: "!";
+}
+
+@media (max-width: 520px) {
+  .settings-panel {
+    border-radius: 14px;
+  }
+
+  .brand-header {
+    align-items: flex-start;
+  }
+
+  .brand-mark {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+  }
+
+  .divider {
+    margin: 24px 0;
+  }
+
+  .setting-card {
+    gap: 16px;
+    padding: 18px;
+  }
 }

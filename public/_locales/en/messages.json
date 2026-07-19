@@ -10,5 +10,37 @@
   "actionDefaultTitle": {
     "message": "GSearch With Social Signals",
     "description": "Toolbar action title."
+  },
+  "optionsPageTitle": {
+    "message": "GSearch With Social Signals settings",
+    "description": "Browser tab title for the options page."
+  },
+  "optionsSubtitle": {
+    "message": "Social signals on Google Search results",
+    "description": "Subtitle shown below the extension name on the options page."
+  },
+  "optionsSectionTitle": {
+    "message": "Display",
+    "description": "Heading for display settings."
+  },
+  "optionsFilterTitle": {
+    "message": "Show only results with social signals",
+    "description": "Title for the result filtering setting."
+  },
+  "optionsFilterDescription": {
+    "message": "Hide a result when neither Hatena Bookmark nor Hacker News reports a signal. Results stay visible if either request fails.",
+    "description": "Explanation for the result filtering setting."
+  },
+  "optionsSaving": {
+    "message": "Saving…",
+    "description": "Status shown while the option is being saved."
+  },
+  "optionsSaved": {
+    "message": "Saved",
+    "description": "Status shown after the option is saved."
+  },
+  "optionsSaveError": {
+    "message": "Could not save the setting",
+    "description": "Error shown when saving the option fails."
   }
 }

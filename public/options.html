@@ -3,23 +3,53 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GSearch With Social Signals settings</title>
+    <title data-i18n="optionsPageTitle">GSearch With Social Signals settings</title>
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
-    <main>
-      <h1>GSearch With Social Signals</h1>
-      <label class="setting">
-        <input id="hide-results-without-signals" type="checkbox" disabled />
-        <span>
-          <strong>Show only results with social signals</strong>
-          <small>
-            Hide a result after both Hatena Bookmark and Hacker News report no positive signal.
-            Results stay visible if either request fails.
-          </small>
-        </span>
-      </label>
-      <p id="save-status" class="status" role="status" aria-live="polite"></p>
+    <main class="settings-page">
+      <section class="settings-panel" aria-labelledby="page-title">
+        <header class="brand-header">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M5 17v-3M9.5 17V9.5M14 17V6.5M18.5 17V3" />
+            </svg>
+          </span>
+          <span class="brand-copy">
+            <h1 id="page-title">GSearch With Social Signals</h1>
+            <span class="subtitle" data-i18n="optionsSubtitle">
+              Social signals on Google Search results
+            </span>
+          </span>
+        </header>
+
+        <div class="divider" aria-hidden="true"></div>
+
+        <section aria-labelledby="display-heading">
+          <h2 id="display-heading" data-i18n="optionsSectionTitle">Display</h2>
+          <label class="setting-card">
+            <span class="setting-copy">
+              <strong data-i18n="optionsFilterTitle">
+                Show only results with social signals
+              </strong>
+              <small id="filter-description" data-i18n="optionsFilterDescription">
+                Hide a result when neither Hatena Bookmark nor Hacker News reports a signal. Results
+                stay visible if either request fails.
+              </small>
+            </span>
+            <span class="toggle-control">
+              <input
+                id="hide-results-without-signals"
+                type="checkbox"
+                aria-describedby="filter-description"
+                disabled
+              />
+              <span class="switch" aria-hidden="true"></span>
+            </span>
+          </label>
+          <p id="save-status" class="status" role="status" aria-live="polite"></p>
+        </section>
+      </section>
     </main>
     <script type="module" src="options.js"></script>
   </body>
