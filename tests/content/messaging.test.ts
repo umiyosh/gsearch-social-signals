@@ -24,9 +24,7 @@ function stubChrome(options: {
   respondWith?: ((message: unknown) => unknown) | undefined
   throwOnSend?: boolean | undefined
   onSend?: ((message: unknown) => void) | undefined
-  sendMessage?:
-    | ((message: unknown, callback: (response: unknown) => void) => void)
-    | undefined
+  sendMessage?: ((message: unknown, callback: (response: unknown) => void) => void) | undefined
 }): void {
   const stub: ChromeStub = {
     runtime: {
@@ -94,10 +92,7 @@ describe("requestHatenaCounts", () => {
 
   it("retries an unavailable Hatena response before applying a stable count", async () => {
     vi.useFakeTimers()
-    const responses = [
-      ok({ "https://a": HATENA_COUNT_UNAVAILABLE }),
-      ok({ "https://a": 0 })
-    ]
+    const responses = [ok({ "https://a": HATENA_COUNT_UNAVAILABLE }), ok({ "https://a": 0 })]
     const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
       callback(responses.shift())
     })
