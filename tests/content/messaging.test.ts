@@ -24,19 +24,22 @@ function stubChrome(options: {
   respondWith?: ((message: unknown) => unknown) | undefined
   throwOnSend?: boolean | undefined
   onSend?: ((message: unknown) => void) | undefined
+  sendMessage?: ((message: unknown, callback: (response: unknown) => void) => void) | undefined
 }): void {
   const stub: ChromeStub = {
     runtime: {
       id: options.id,
       lastError: options.lastError,
       getManifest: () => ({ version: "0.1.3" }),
-      sendMessage: (message, callback) => {
-        if (options.throwOnSend) {
-          throw new Error("send failed")
-        }
-        options.onSend?.(message)
-        callback(options.respondWith ? options.respondWith(message) : options.respond)
-      }
+      sendMessage:
+        options.sendMessage ??
+        ((message, callback) => {
+          if (options.throwOnSend) {
+            throw new Error("send failed")
+          }
+          options.onSend?.(message)
+          callback(options.respondWith ? options.respondWith(message) : options.respond)
+        })
     }
   }
   vi.stubGlobal("chrome", stub)
@@ -72,13 +75,60 @@ describe("requestHatenaCounts", () => {
     expect(apply).not.toHaveBeenCalled()
   })
 
-  it("maps unavailable Hatena results to an unknown signal", () => {
-    stubChrome({ id: "ext", respond: ok({ "https://a": HATENA_COUNT_UNAVAILABLE }) })
+  it("maps unavailable Hatena results to an unknown signal after retries", async () => {
+    vi.useFakeTimers()
+    const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
+      callback(ok({ "https://a": HATENA_COUNT_UNAVAILABLE }))
+    })
+    stubChrome({ id: "ext", sendMessage })
     const apply = vi.fn()
 
     requestHatenaCounts(["https://a"], apply, vi.fn())
+    await vi.runAllTimersAsync()
 
+    expect(sendMessage).toHaveBeenCalledTimes(3)
     expect(apply).toHaveBeenCalledWith("https://a", undefined)
+  })
+
+  it("retries an unavailable Hatena response before applying a stable count", async () => {
+    vi.useFakeTimers()
+    const responses = [ok({ "https://a": HATENA_COUNT_UNAVAILABLE }), ok({ "https://a": 0 })]
+    const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
+      callback(responses.shift())
+    })
+    stubChrome({ id: "ext", sendMessage })
+    const apply = vi.fn()
+    const settle = vi.fn()
+
+    requestHatenaCounts(["https://a"], apply, settle)
+    await vi.runAllTimersAsync()
+
+    expect(sendMessage).toHaveBeenCalledTimes(2)
+    expect(apply).toHaveBeenCalledOnce()
+    expect(apply).toHaveBeenCalledWith("https://a", 0)
+    expect(settle).toHaveBeenCalledOnce()
+  })
+
+  it("limits simultaneous Hatena runtime messages to two and preserves FIFO", () => {
+    const callbacks: Array<(response: unknown) => void> = []
+    const startedUrls: string[] = []
+    const sendMessage = vi.fn((message: unknown, callback: (response: unknown) => void) => {
+      startedUrls.push((message as { urls: string[] }).urls[0] ?? "")
+      callbacks.push(callback)
+    })
+    stubChrome({ id: "ext", sendMessage })
+    const urls = Array.from({ length: 4 }, (_, index) => `https://example.com/${index + 1}`)
+
+    urls.forEach((url) => requestHatenaCounts([url], vi.fn(), vi.fn()))
+
+    expect(startedUrls).toEqual(urls.slice(0, 2))
+    callbacks.shift()?.(ok({ [urls[0]!]: 0 }))
+    expect(startedUrls).toEqual(urls.slice(0, 3))
+    callbacks.shift()?.(ok({ [urls[1]!]: 0 }))
+    expect(startedUrls).toEqual(urls)
+    callbacks.splice(0).forEach((callback, index) => {
+      callback(ok({ [urls[index + 2]!]: 0 }))
+    })
   })
 
   it("applies undefined when the runtime is unavailable", () => {
@@ -96,7 +146,8 @@ describe("requestHatenaCounts", () => {
     expect(settled).toEqual(["https://a"])
   })
 
-  it("applies undefined on lastError, invalid envelopes, and error envelopes", () => {
+  it("applies undefined on lastError, invalid envelopes, and error envelopes", async () => {
+    vi.useFakeTimers()
     for (const options of [
       { id: "ext", respond: ok({}), lastError: { message: "gone" } },
       { id: "ext", respond: { bogus: true } },
@@ -105,11 +156,13 @@ describe("requestHatenaCounts", () => {
       stubChrome(options)
       const applied: Array<[string, number | null | undefined]> = []
       requestHatenaCounts(["https://a"], (url, count) => applied.push([url, count]), vi.fn())
+      await vi.runAllTimersAsync()
       expect(applied).toEqual([["https://a", undefined]])
     }
   })
 
-  it("applies undefined when sendMessage throws synchronously", () => {
+  it("applies undefined when sendMessage throws synchronously", async () => {
+    vi.useFakeTimers()
     stubChrome({ id: "ext", throwOnSend: true })
     const applied: Array<[string, number | null | undefined]> = []
     const settled: string[] = []
@@ -119,6 +172,7 @@ describe("requestHatenaCounts", () => {
       (url, count) => applied.push([url, count]),
       (url) => settled.push(url)
     )
+    await vi.runAllTimersAsync()
 
     expect(applied).toEqual([["https://a", undefined]])
     expect(settled).toEqual(["https://a"])
@@ -149,16 +203,68 @@ describe("requestHnSummaries", () => {
     expect(apply).not.toHaveBeenCalled()
   })
 
-  it("maps unavailable HN results to an unknown signal", () => {
-    stubChrome({ id: "ext", respond: ok({ "https://a": HACKER_NEWS_SUMMARY_UNAVAILABLE }) })
+  it("maps unavailable HN results to an unknown signal after retries", async () => {
+    vi.useFakeTimers()
+    const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
+      callback(ok({ "https://a": HACKER_NEWS_SUMMARY_UNAVAILABLE }))
+    })
+    stubChrome({ id: "ext", sendMessage })
     const apply = vi.fn()
 
     requestHnSummaries(["https://a"], apply, vi.fn())
+    await vi.runAllTimersAsync()
 
+    expect(sendMessage).toHaveBeenCalledTimes(3)
     expect(apply).toHaveBeenCalledWith("https://a", undefined)
   })
 
-  it("applies undefined on unavailable runtime, errors, and invalid envelopes", () => {
+  it("retries an unavailable HN response before applying a stable summary", async () => {
+    vi.useFakeTimers()
+    const stableSummary = { nbHits: 0, maxPoints: 0, maxComments: 0 }
+    const responses = [
+      ok({ "https://a": HACKER_NEWS_SUMMARY_UNAVAILABLE }),
+      ok({ "https://a": stableSummary })
+    ]
+    const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
+      callback(responses.shift())
+    })
+    stubChrome({ id: "ext", sendMessage })
+    const apply = vi.fn()
+    const settle = vi.fn()
+
+    requestHnSummaries(["https://a"], apply, settle)
+    await vi.runAllTimersAsync()
+
+    expect(sendMessage).toHaveBeenCalledTimes(2)
+    expect(apply).toHaveBeenCalledOnce()
+    expect(apply).toHaveBeenCalledWith("https://a", stableSummary)
+    expect(settle).toHaveBeenCalledOnce()
+  })
+
+  it("limits simultaneous HN runtime messages to four and preserves FIFO", () => {
+    const callbacks: Array<(response: unknown) => void> = []
+    const startedUrls: string[] = []
+    const sendMessage = vi.fn((message: unknown, callback: (response: unknown) => void) => {
+      startedUrls.push((message as { urls: string[] }).urls[0] ?? "")
+      callbacks.push(callback)
+    })
+    stubChrome({ id: "ext", sendMessage })
+    const urls = Array.from({ length: 6 }, (_, index) => `https://example.com/${index + 1}`)
+
+    urls.forEach((url) => requestHnSummaries([url], vi.fn(), vi.fn()))
+
+    expect(startedUrls).toEqual(urls.slice(0, 4))
+    callbacks.shift()?.(ok({ [urls[0]!]: { nbHits: 0 } }))
+    expect(startedUrls).toEqual(urls.slice(0, 5))
+    callbacks.shift()?.(ok({ [urls[1]!]: { nbHits: 0 } }))
+    expect(startedUrls).toEqual(urls)
+    callbacks.splice(0).forEach((callback, index) => {
+      callback(ok({ [urls[index + 2]!]: { nbHits: 0 } }))
+    })
+  })
+
+  it("applies undefined on unavailable runtime, errors, and invalid envelopes", async () => {
+    vi.useFakeTimers()
     for (const options of [
       { id: undefined },
       { id: "ext", respond: ok({}), lastError: { message: "gone" } },
@@ -169,6 +275,7 @@ describe("requestHnSummaries", () => {
       stubChrome(options)
       const applied: Array<[string, unknown]> = []
       requestHnSummaries(["https://a"], (url, summary) => applied.push([url, summary]), vi.fn())
+      await vi.runAllTimersAsync()
       expect(applied).toEqual([["https://a", undefined]])
     }
   })

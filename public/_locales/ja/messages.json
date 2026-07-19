@@ -10,5 +10,37 @@
   "actionDefaultTitle": {
     "message": "GSearch With Social Signals",
     "description": "ツールバーアクションのタイトル。"
+  },
+  "optionsPageTitle": {
+    "message": "GSearch With Social Signals の設定",
+    "description": "設定ページのブラウザタブに表示するタイトル。"
+  },
+  "optionsSubtitle": {
+    "message": "Google検索結果にソーシャルシグナルを表示",
+    "description": "設定ページの拡張機能名の下に表示する説明。"
+  },
+  "optionsSectionTitle": {
+    "message": "表示設定",
+    "description": "表示に関する設定の見出し。"
+  },
+  "optionsFilterTitle": {
+    "message": "シグナルのある結果だけ表示",
+    "description": "検索結果の絞り込み設定のタイトル。"
+  },
+  "optionsFilterDescription": {
+    "message": "はてなブックマークとHacker Newsの両方でシグナルが無い結果を非表示にします。どちらかの取得に失敗した場合は表示を維持します。",
+    "description": "検索結果の絞り込み設定の説明。"
+  },
+  "optionsSaving": {
+    "message": "保存しています…",
+    "description": "設定の保存中に表示する状態。"
+  },
+  "optionsSaved": {
+    "message": "保存しました",
+    "description": "設定の保存後に表示する状態。"
+  },
+  "optionsSaveError": {
+    "message": "設定を保存できませんでした",
+    "description": "設定の保存に失敗した場合に表示するエラー。"
   }
 }

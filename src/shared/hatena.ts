@@ -1,5 +1,6 @@
 import { normalizeRequestUrl, normalizeUrl, normalizeForComparison, stripQueryString } from "./url"
 import type { HatenaEntryFetchTiming } from "./diagnostics"
+import { createRequestQueue, HttpResponseError, retryTransientRequest } from "./request-queue"
 
 export const HATENA_COUNT_UNAVAILABLE = "unavailable" as const
 type HatenaCountResult = number | null | typeof HATENA_COUNT_UNAVAILABLE
@@ -15,7 +16,9 @@ export interface HatenaBookmarkSummary {
 
 const API_ENDPOINT = "https://bookmark.hatenaapis.com/count/entries"
 const MAX_BATCH_SIZE = 50
+const MAX_CONCURRENT_COUNT_REQUESTS = 2
 const ENTRY_ENDPOINT = "https://b.hatena.ne.jp/entry/jsonlite/"
+const enqueueHatenaCountRequest = createRequestQueue(MAX_CONCURRENT_COUNT_REQUESTS)
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -79,7 +82,7 @@ async function requestChunk(urls: readonly string[]): Promise<HatenaApiCountMap>
   })
 
   if (!response.ok) {
-    throw new Error(`Hatena API responded with ${response.status}`)
+    throw new HttpResponseError("Hatena", response.status)
   }
 
   const payloadText = await response.text()
@@ -120,7 +123,9 @@ export async function fetchHatenaCounts(urls: readonly string[]): Promise<Hatena
     )
 
     try {
-      const normalizedMap = normalizeCountKeys(await requestChunk(batch))
+      const normalizedMap = normalizeCountKeys(
+        await enqueueHatenaCountRequest(() => retryTransientRequest(() => requestChunk(batch)))
+      )
 
       batchOriginalUrls.forEach((requestedUrl) => {
         const normalizedRequest = normalizeForComparison(

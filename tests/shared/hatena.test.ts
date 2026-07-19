@@ -44,6 +44,8 @@ function mockFetchText(payloadText: string, ok = true, status = ok ? 200 : 500):
 }
 
 afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
 
@@ -124,7 +126,7 @@ describe("fetchHatenaCounts", () => {
       })
       .mockResolvedValueOnce({
         ok: false,
-        status: 500,
+        status: 400,
         text: () => Promise.resolve("{}"),
         json: () => Promise.resolve({})
       })
@@ -158,6 +160,106 @@ describe("fetchHatenaCounts", () => {
 
     const counts = await fetchHatenaCounts(["https://example.com/invalid-json"])
     expect(counts["https://example.com/invalid-json"]).toBe(HATENA_COUNT_UNAVAILABLE)
+  })
+})
+
+describe("fetchHatenaCounts request control", () => {
+  it("limits concurrent Hatena requests to two across simultaneous batches and preserves FIFO", async () => {
+    const releaseFetches: Array<() => void> = []
+    const startedUrls: string[] = []
+    let activeRequests = 0
+    let maxActiveRequests = 0
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((requestUrl: string | URL | Request) => {
+        const endpoint = new URL(
+          typeof requestUrl === "string"
+            ? requestUrl
+            : requestUrl instanceof URL
+              ? requestUrl.href
+              : requestUrl.url
+        )
+        startedUrls.push(endpoint.searchParams.get("url") ?? "")
+        activeRequests += 1
+        maxActiveRequests = Math.max(maxActiveRequests, activeRequests)
+
+        let releaseFetch: () => void = () => {}
+        const waitForRelease = new Promise<void>((resolve) => {
+          releaseFetch = resolve
+        })
+        releaseFetches.push(releaseFetch)
+
+        return waitForRelease.then(() => {
+          activeRequests -= 1
+          return {
+            ok: true,
+            status: 200,
+            text: () => Promise.resolve("{}")
+          }
+        })
+      })
+    )
+
+    const urls = Array.from({ length: 4 }, (_, index) => `https://example.com/${index + 1}`)
+    const requests = urls.map((url) => fetchHatenaCounts([url]))
+
+    await vi.waitFor(() => {
+      expect(startedUrls).toHaveLength(2)
+    })
+    expect(startedUrls).toEqual(urls.slice(0, 2))
+    expect(maxActiveRequests).toBe(2)
+
+    releaseFetches.shift()?.()
+    await vi.waitFor(() => {
+      expect(startedUrls).toHaveLength(3)
+    })
+    expect(startedUrls[2]).toBe(urls[2])
+
+    releaseFetches.shift()?.()
+    await vi.waitFor(() => {
+      expect(startedUrls).toHaveLength(4)
+    })
+    expect(startedUrls[3]).toBe(urls[3])
+
+    releaseFetches.splice(0).forEach((releaseFetch) => releaseFetch())
+    await Promise.all(requests)
+
+    expect(maxActiveRequests).toBe(2)
+  })
+
+  it("retries a transient Hatena 503 response", async () => {
+    vi.useFakeTimers()
+    vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        text: () => Promise.resolve("{}")
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify({ "https://example.com/retry": 7 }))
+      })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const request = fetchHatenaCounts(["https://example.com/retry"])
+    await vi.runAllTimersAsync()
+
+    await expect(request).resolves.toEqual({ "https://example.com/retry": 7 })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it("does not retry a permanent Hatena 400 response", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined)
+    mockFetchResponse({}, false, 400)
+
+    const counts = await fetchHatenaCounts(["https://example.com/bad-request"])
+
+    expect(counts["https://example.com/bad-request"]).toBe(HATENA_COUNT_UNAVAILABLE)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 })
 

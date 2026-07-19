@@ -21,6 +21,98 @@ export interface EntryRequestOptions {
   diagnostics?: boolean
 }
 
+type RuntimeMessageQueue = (task: (release: () => void) => void) => void
+
+interface RuntimeMessageResult<T> {
+  response?: T | undefined
+  runtimeError?: { message: string | undefined } | undefined
+  thrownError?: unknown
+}
+
+const RUNTIME_MESSAGE_MAX_ATTEMPTS = 3
+const RUNTIME_MESSAGE_RETRY_BASE_DELAY_MS = 250
+const enqueueHatenaRuntimeMessage = createRuntimeMessageQueue(2)
+const enqueueHnRuntimeMessage = createRuntimeMessageQueue(4)
+
+function createRuntimeMessageQueue(maxConcurrent: number): RuntimeMessageQueue {
+  const pending: Array<(release: () => void) => void> = []
+  let active = 0
+
+  const drain = (): void => {
+    while (active < maxConcurrent) {
+      const next = pending.shift()
+      if (!next) {
+        return
+      }
+
+      active += 1
+      let released = false
+      next(() => {
+        if (released) {
+          return
+        }
+        released = true
+        active -= 1
+        drain()
+      })
+    }
+  }
+
+  return (task): void => {
+    pending.push(task)
+    drain()
+  }
+}
+
+function sendQueuedRuntimeMessage<T>(
+  enqueue: RuntimeMessageQueue,
+  request: unknown,
+  shouldRetryResponse: (response: T | undefined) => boolean,
+  complete: (result: RuntimeMessageResult<T>) => void
+): void {
+  let attempt = 1
+
+  const runAttempt = (): void => {
+    enqueue((release) => {
+      let completed = false
+      const completeAttempt = (result: RuntimeMessageResult<T>): void => {
+        if (completed) {
+          return
+        }
+        completed = true
+        release()
+
+        const retryable =
+          result.runtimeError !== undefined ||
+          result.thrownError !== undefined ||
+          shouldRetryResponse(result.response)
+        if (retryable && attempt < RUNTIME_MESSAGE_MAX_ATTEMPTS) {
+          const delayMs = RUNTIME_MESSAGE_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1)
+          attempt += 1
+          setTimeout(runAttempt, delayMs)
+          return
+        }
+
+        complete(result)
+      }
+
+      try {
+        chrome.runtime.sendMessage(request, (response: T | undefined) => {
+          const lastError = chrome.runtime.lastError
+          completeAttempt({
+            response,
+            ...(lastError ? { runtimeError: { message: lastError.message } } : {})
+          })
+        })
+      } catch (error) {
+        completeAttempt({ thrownError: error })
+      }
+    })
+  }
+
+  runAttempt()
+}
+
 function runtimeAvailable(): boolean {
   return Boolean(chrome.runtime?.id)
 }
@@ -44,12 +136,24 @@ export function requestHatenaCounts(
   }
 
   const request = { type: MESSAGE_TYPES.COUNT_REQUEST, urls }
-  try {
-    chrome.runtime.sendMessage(request, (response: HatenaCountsResponse | undefined) => {
+  sendQueuedRuntimeMessage<HatenaCountsResponse>(
+    enqueueHatenaRuntimeMessage,
+    request,
+    (response) =>
+      !isExtensionResponse(response, isCountMap) ||
+      !response.ok ||
+      Object.values(response.data).includes(HATENA_COUNT_UNAVAILABLE),
+    ({ response, runtimeError, thrownError }) => {
       urls.forEach((url) => settle(url))
 
-      if (chrome.runtime.lastError) {
-        console.error("Failed to retrieve Hatena counts", chrome.runtime.lastError)
+      if (runtimeError) {
+        console.error("Failed to retrieve Hatena counts", runtimeError)
+        urls.forEach((url) => apply(url, undefined))
+        return
+      }
+
+      if (thrownError !== undefined) {
+        console.error("Unhandled error while requesting Hatena counts", thrownError)
         urls.forEach((url) => apply(url, undefined))
         return
       }
@@ -71,12 +175,8 @@ export function requestHatenaCounts(
       })
 
       urls.filter((url) => !(url in response.data)).forEach((url) => apply(url, null))
-    })
-  } catch (error) {
-    urls.forEach((url) => settle(url))
-    console.error("Unhandled error while requesting Hatena counts", error)
-    urls.forEach((url) => apply(url, undefined))
-  }
+    }
+  )
 }
 
 export function requestHnSummaries(
@@ -98,12 +198,24 @@ export function requestHnSummaries(
   }
 
   const request = { type: MESSAGE_TYPES.HN_REQUEST, urls }
-  try {
-    chrome.runtime.sendMessage(request, (response: HackerNewsResponse | undefined) => {
+  sendQueuedRuntimeMessage<HackerNewsResponse>(
+    enqueueHnRuntimeMessage,
+    request,
+    (response) =>
+      !isExtensionResponse(response, isHnSummaryMap) ||
+      !response.ok ||
+      Object.values(response.data).includes(HACKER_NEWS_SUMMARY_UNAVAILABLE),
+    ({ response, runtimeError, thrownError }) => {
       urls.forEach((url) => settle(url))
 
-      if (chrome.runtime.lastError) {
-        console.error("Failed to retrieve HN summaries", chrome.runtime.lastError)
+      if (runtimeError) {
+        console.error("Failed to retrieve HN summaries", runtimeError)
+        urls.forEach((url) => apply(url, undefined))
+        return
+      }
+
+      if (thrownError !== undefined) {
+        console.error("Unhandled error while requesting HN summaries", thrownError)
         urls.forEach((url) => apply(url, undefined))
         return
       }
@@ -125,12 +237,8 @@ export function requestHnSummaries(
       })
 
       urls.filter((url) => !(url in response.data)).forEach((url) => apply(url, null))
-    })
-  } catch (error) {
-    urls.forEach((url) => settle(url))
-    console.error("Unhandled error while requesting HN summaries", error)
-    urls.forEach((url) => apply(url, undefined))
-  }
+    }
+  )
 }
 
 export function requestEntryBookmarks(

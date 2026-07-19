@@ -153,6 +153,7 @@
     - `https://hn.algolia.com/*`: Hacker News Search API によるURL言及・score取得。
   - `https://news.ycombinator.com/*` は fetch しないため宣言しない。HN story はユーザークリック時の通常遷移先として扱う。
   - `"permissions"` はフィルター設定の永続化に必要な `storage` のみを宣言し、不要な `tabs` / `activeTab` / `scripting` は追加しない。
+  - `"action.default_popup"` で同梱の `popup.html` を指定し、ツールバーアイコンからフィルター設定を切り替えられるようにする。
   - `"options_ui"` で同梱の `options.html` を指定し、設定画面をタブで開く。
 
 - **アイコン**
@@ -290,7 +291,7 @@ DOM抽出ロジックは `src/content/searchResults.ts` に集約し、検索サ
 
 ### 9.6 ソーシャルシグナルフィルター
 
-- Options page の `Show only results with social signals` で ON / OFF を切り替える。初期値は OFF とする。
+- Toolbar popup または Options page の `Show only results with social signals` で ON / OFF を切り替える。初期値は OFF とする。
 - 設定は `chrome.storage.sync` に boolean として保存し、content script は `chrome.storage.onChanged` で変更を反映する。
 - ON の場合、Hatena count と HN summary の両方が正常に完了し、どちらにも正のシグナルがない検索結果だけに拡張固有の非表示 class を付ける。
 - 片方でも正のシグナルがある場合、または API エラー・runtime error・不正 response により片方でも判定不能な場合は表示を維持する（fail-open）。

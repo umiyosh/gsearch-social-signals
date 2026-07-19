@@ -1,5 +1,5 @@
 import type { HatenaBookmarkSummary, HatenaCountMap } from "../shared/hatena"
-import type { HackerNewsSummaryResult } from "../shared/hackerNews"
+import { HACKER_NEWS_SUMMARY_UNAVAILABLE, type HackerNewsSummaryResult } from "../shared/hackerNews"
 import type { HatenaEntryFetchTiming } from "../shared/diagnostics"
 import {
   MESSAGE_TYPES,
@@ -116,17 +116,22 @@ async function handleHackerNews(deps: BackgroundDeps, urls: string[]): Promise<H
 
   try {
     const uncached = sanitized.filter((url) => !deps.hnCache.has(url))
+    let fetched: HnSummaryMap = {}
     if (uncached.length) {
-      const fetched = await deps.fetchHackerNewsSummaries(uncached)
+      fetched = await deps.fetchHackerNewsSummaries(uncached)
       Object.entries(fetched).forEach(([url, summary]) => {
-        deps.hnCache.set(url, summary)
+        if (summary !== HACKER_NEWS_SUMMARY_UNAVAILABLE) {
+          deps.hnCache.set(url, summary)
+        }
       })
       trimOldestEntries(deps.hnCache, MAX_HN_CACHE_ENTRIES)
     }
 
     const summaries: HnSummaryMap = {}
     urls.forEach((url) => {
-      summaries[url] = deps.hnCache.get(url) ?? null
+      summaries[url] = deps.hnCache.has(url)
+        ? (deps.hnCache.get(url) ?? null)
+        : (fetched[url] ?? null)
     })
     return ok(summaries)
   } catch (error: unknown) {

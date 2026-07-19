@@ -3,6 +3,7 @@ import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 
 interface ExtensionManifest {
+  action?: { default_popup?: string }
   content_scripts?: Array<{ matches?: string[] }>
   web_accessible_resources?: Array<{ matches?: string[] }>
 }
@@ -14,6 +15,12 @@ function readManifest(): ExtensionManifest {
 }
 
 describe("extension manifest", () => {
+  it("opens the bundled settings popup from the toolbar action", () => {
+    const manifest = readManifest()
+
+    expect(manifest.action?.default_popup).toBe("popup.html")
+  })
+
   it("loads the content script and badge icons on DuckDuckGo", () => {
     const manifest = readManifest()
 
