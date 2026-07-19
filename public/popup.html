@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="optionsPageTitle">GSearch With Social Signals settings</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup" aria-labelledby="popup-title">
+      <header class="popup-header">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M5 17v-3M9.5 17V9.5M14 17V6.5M18.5 17V3" />
+          </svg>
+        </span>
+        <span class="header-copy">
+          <h1 id="popup-title" data-i18n="appName">GSearch With Social Signals</h1>
+          <span data-i18n="optionsSectionTitle">Display</span>
+        </span>
+      </header>
+
+      <label class="setting-card">
+        <span class="setting-copy">
+          <strong data-i18n="optionsFilterTitle">Show only results with social signals</strong>
+          <small id="filter-description" data-i18n="optionsFilterDescription">
+            Hide a result when neither Hatena Bookmark nor Hacker News reports a signal. Results
+            stay visible if either request fails.
+          </small>
+        </span>
+        <span class="toggle-control">
+          <input
+            id="hide-results-without-signals"
+            type="checkbox"
+            aria-describedby="filter-description"
+            disabled
+          />
+          <span class="switch" aria-hidden="true"></span>
+        </span>
+      </label>
+      <p id="save-status" class="status" role="status" aria-live="polite"></p>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

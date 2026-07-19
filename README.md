@@ -42,7 +42,7 @@ Chrome Web Store 公開前に手動で試す場合は、このREADME下部の「
 
 ### ソーシャルシグナルがある結果だけを表示する
 
-Chrome の拡張機能メニューから GSearch With Social Signals の「オプション」を開き、`Show only results with social signals` を有効にします。Hatena Bookmark 件数または HN スコアが正の検索結果だけが残ります。
+Chrome ツールバーの GSearch With Social Signals アイコンをクリックし、`Show only results with social signals` を有効にします。拡張機能メニューの「オプション」からも同じ設定を変更できます。Hatena Bookmark 件数または HN スコアが正の検索結果だけが残ります。
 
 両方の API から正のシグナルがないと確認できた結果だけを非表示にします。API エラーなどで判定できない結果は表示したままにし、オプションを OFF に戻すと拡張機能が非表示にした結果を再表示します。
 
