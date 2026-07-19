@@ -149,11 +149,12 @@ describe("fetchHackerNewsSummaries request control", () => {
     )
 
     const request = fetchHackerNewsSummaries(["https://example.com/slow"])
-    await vi.advanceTimersByTimeAsync(HN_REQUEST_TIMEOUT_MS)
+    await vi.runAllTimersAsync()
 
     await expect(request).resolves.toEqual({
       "https://example.com/slow": HACKER_NEWS_SUMMARY_UNAVAILABLE
     })
+    expect(fetch).toHaveBeenCalledTimes(3)
   })
 
   it("limits concurrent HN requests to four across simultaneous batches and preserves FIFO", async () => {
