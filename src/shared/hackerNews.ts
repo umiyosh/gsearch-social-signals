@@ -1,4 +1,5 @@
 import { normalizeForComparison, normalizeRequestUrl, stripQueryString } from "./url"
+import { createRequestQueue, HttpResponseError, retryTransientRequest } from "./request-queue"
 
 export interface HackerNewsSummary {
   nbHits: number
@@ -19,6 +20,7 @@ const HN_ENDPOINT = "https://hn.algolia.com/api/v1/search"
 const HITS_PER_PAGE = 50
 const MAX_CONCURRENT_REQUESTS = 4
 export const HN_REQUEST_TIMEOUT_MS = 5_000
+const enqueueHackerNewsRequest = createRequestQueue(MAX_CONCURRENT_REQUESTS)
 
 interface HackerNewsSearchHit {
   objectID?: string
@@ -107,7 +109,7 @@ async function fetchHackerNewsSummary(url: string): Promise<HackerNewsSummary | 
   }
 
   if (!response.ok) {
-    throw new Error(`HN API responded with ${response.status}`)
+    throw new HttpResponseError("HN", response.status)
   }
 
   const payload = (await response.json()) as HackerNewsSearchResponse
@@ -120,25 +122,6 @@ async function fetchHackerNewsSummary(url: string): Promise<HackerNewsSummary | 
   return summarizeHits(matchingHits)
 }
 
-async function runWithConcurrency<T>(
-  items: readonly T[],
-  limit: number,
-  worker: (item: T) => Promise<void>
-): Promise<void> {
-  let nextIndex = 0
-  const workerCount = Math.min(limit, items.length)
-
-  await Promise.all(
-    Array.from({ length: workerCount }, async () => {
-      while (nextIndex < items.length) {
-        const item = items[nextIndex] as T
-        nextIndex += 1
-        await worker(item)
-      }
-    })
-  )
-}
-
 export async function fetchHackerNewsSummaries(
   urls: readonly string[]
 ): Promise<HackerNewsSummaryMap> {
@@ -147,15 +130,19 @@ export async function fetchHackerNewsSummaries(
   let failedRequests = 0
   let firstError: unknown = null
 
-  await runWithConcurrency(uniqueUrls, MAX_CONCURRENT_REQUESTS, async (url) => {
-    try {
-      summaries[url] = await fetchHackerNewsSummary(url)
-    } catch (error) {
-      failedRequests += 1
-      firstError ??= error
-      summaries[url] = HACKER_NEWS_SUMMARY_UNAVAILABLE
-    }
-  })
+  await Promise.all(
+    uniqueUrls.map(async (url) => {
+      try {
+        summaries[url] = await enqueueHackerNewsRequest(() =>
+          retryTransientRequest(() => fetchHackerNewsSummary(url))
+        )
+      } catch (error) {
+        failedRequests += 1
+        firstError ??= error
+        summaries[url] = HACKER_NEWS_SUMMARY_UNAVAILABLE
+      }
+    })
+  )
 
   if (failedRequests > 0) {
     console.error("Failed to fetch Hacker News summaries", {
