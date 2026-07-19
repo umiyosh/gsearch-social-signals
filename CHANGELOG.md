@@ -2,6 +2,34 @@
 
 All notable changes to this project are documented here.
 
+## [0.2.0] - 2026-07-20
+
+### Added
+
+- DuckDuckGo web search result support with Hatena Bookmark and Hacker News signals ([#40](https://github.com/umiyosh/gsearch-social-signals/pull/40)).
+- Optional filtering that keeps only results with a positive social signal and fails open when a provider is unavailable ([#38](https://github.com/umiyosh/gsearch-social-signals/pull/38)).
+- A Chrome toolbar popup for toggling the social-signal filter ([#41](https://github.com/umiyosh/gsearch-social-signals/pull/41)).
+- A diagnostic build for measuring production-equivalent content, background, and Hatena request timing ([#35](https://github.com/umiyosh/gsearch-social-signals/pull/35)).
+
+### Changed
+
+- Redesigned and localized the settings UI with accessible controls and automatic save feedback ([#41](https://github.com/umiyosh/gsearch-social-signals/pull/41)).
+- Added bounded request queues and retry handling for Hatena Bookmark, Hacker News, and runtime messages ([#41](https://github.com/umiyosh/gsearch-social-signals/pull/41)).
+- Reused browser caching for Hatena Bookmark comment previews to reduce repeat loading time ([#35](https://github.com/umiyosh/gsearch-social-signals/pull/35)).
+
+### Fixed
+
+- Prevented unfiltered results from remaining visible after loading large numbers of paginated search results ([#41](https://github.com/umiyosh/gsearch-social-signals/pull/41)).
+- Allowed Hacker News lookups to recover after transient provider failures instead of caching an unavailable result ([#41](https://github.com/umiyosh/gsearch-social-signals/pull/41)).
+
+## [0.1.3] - 2026-07-07
+
+### Changed
+
+- Localized the Chrome Web Store listing metadata and documented the public support and operations paths ([#30](https://github.com/umiyosh/gsearch-social-signals/pull/30)).
+- Added pull request CI checks and a repository-local live E2E workflow for real Google search result verification ([#31](https://github.com/umiyosh/gsearch-social-signals/pull/31), [#32](https://github.com/umiyosh/gsearch-social-signals/pull/32)).
+- Improved repository presentation and governance with status badges, the application icon, and code ownership ([#31](https://github.com/umiyosh/gsearch-social-signals/pull/31), [#33](https://github.com/umiyosh/gsearch-social-signals/pull/33), [#34](https://github.com/umiyosh/gsearch-social-signals/pull/34)).
+
 ## [0.1.2] - 2026-06-22
 
 ### Changed

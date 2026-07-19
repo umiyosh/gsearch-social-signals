@@ -1,0 +1,4 @@
+interface:
+  display_name: "GSearch Social Signals Release"
+  short_description: "Prepare releases with complete changelogs"
+  default_prompt: "Use $gsearch-social-signals-release to prepare and publish a versioned release with matching changelog and release notes."

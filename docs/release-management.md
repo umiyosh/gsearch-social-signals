@@ -18,6 +18,20 @@ make release-check VERSION=0.2.0
 
 `make release-tag VERSION=0.2.0` runs the same check before creating and pushing `v0.2.0`.
 
+## Changelog and Release Notes
+
+Every release pull request must update `CHANGELOG.md` before the release tag is created.
+
+- Add `## [X.Y.Z] - YYYY-MM-DD` for the candidate version.
+- Describe user-visible changes under the applicable `Added`, `Changed`, and `Fixed` headings.
+- Derive the entry from the previous release tag comparison, merged pull requests, and verified behavior instead of copying a raw commit list.
+- Backfill any missing released version discovered while preparing the candidate release.
+- After the release workflow succeeds, replace its placeholder GitHub Release body with the same user-visible content and a `previous-tag...current-tag` comparison link.
+
+Do not move or recreate a published tag to repair missing notes. Update the GitHub Release body and add the missing `CHANGELOG.md` entry in a follow-up pull request.
+
+Use `.codex/skills/gsearch-social-signals-release/SKILL.md` for the complete release workflow.
+
 ## GitHub Release
 
 GitHub Releases are created by `.github/workflows/release.yml` when a `v*` tag is pushed.

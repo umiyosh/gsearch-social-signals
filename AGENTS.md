@@ -38,6 +38,10 @@
 
 ## Repository Codex Skills
 
+- `gsearch-social-signals-release`
+  - Version bump、Chrome Web Store package、tag、GitHub Releaseを一貫して準備・公開するrelease skill。
+  - Release PRでは `CHANGELOG.md` を必ず更新し、公開Release本文にも同じ利用者向け変更と比較リンクを掲載する。
+  - 実行する場合は `.codex/skills/gsearch-social-signals-release/SKILL.md` を参照する。
 - `gsearch-social-signals-live-e2e`
   - Real Google SERP に対して Hatena Bookmark / Hacker News バッジ表示を検証する live E2E skill。
   - Google bot detection / CAPTCHA のため CI では実行しない。
