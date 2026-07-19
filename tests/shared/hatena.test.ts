@@ -126,7 +126,7 @@ describe("fetchHatenaCounts", () => {
       })
       .mockResolvedValueOnce({
         ok: false,
-        status: 500,
+        status: 400,
         text: () => Promise.resolve("{}"),
         json: () => Promise.resolve({})
       })
@@ -161,7 +161,9 @@ describe("fetchHatenaCounts", () => {
     const counts = await fetchHatenaCounts(["https://example.com/invalid-json"])
     expect(counts["https://example.com/invalid-json"]).toBe(HATENA_COUNT_UNAVAILABLE)
   })
+})
 
+describe("fetchHatenaCounts request control", () => {
   it("limits concurrent Hatena requests to two across simultaneous batches and preserves FIFO", async () => {
     const releaseFetches: Array<() => void> = []
     const startedUrls: string[] = []
@@ -171,7 +173,13 @@ describe("fetchHatenaCounts", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((requestUrl: string | URL | Request) => {
-        const endpoint = new URL(requestUrl.toString())
+        const endpoint = new URL(
+          typeof requestUrl === "string"
+            ? requestUrl
+            : requestUrl instanceof URL
+              ? requestUrl.href
+              : requestUrl.url
+        )
         startedUrls.push(endpoint.searchParams.get("url") ?? "")
         activeRequests += 1
         maxActiveRequests = Math.max(maxActiveRequests, activeRequests)

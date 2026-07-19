@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
   fetchHackerNewsSummaries,
-  HACKER_NEWS_SUMMARY_UNAVAILABLE,
-  HN_REQUEST_TIMEOUT_MS
+  HACKER_NEWS_SUMMARY_UNAVAILABLE
 } from "../../src/shared/hackerNews"
 
 function mockFetchResponse(payload: unknown, ok = true, status = ok ? 200 : 500): void {
@@ -96,7 +95,7 @@ describe("fetchHackerNewsSummaries", () => {
   })
 })
 
-describe("fetchHackerNewsSummaries request control", () => {
+describe("fetchHackerNewsSummaries request failures", () => {
   it("logs failed requests once per batch", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined)
     mockFetchResponse({}, false)
@@ -156,7 +155,9 @@ describe("fetchHackerNewsSummaries request control", () => {
     })
     expect(fetch).toHaveBeenCalledTimes(3)
   })
+})
 
+describe("fetchHackerNewsSummaries request queue", () => {
   it("limits concurrent HN requests to four across simultaneous batches and preserves FIFO", async () => {
     const releaseFetches: Array<() => void> = []
     const startedUrls: string[] = []
@@ -166,7 +167,13 @@ describe("fetchHackerNewsSummaries request control", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((requestUrl: string | URL | Request) => {
-        const endpoint = new URL(requestUrl.toString())
+        const endpoint = new URL(
+          typeof requestUrl === "string"
+            ? requestUrl
+            : requestUrl instanceof URL
+              ? requestUrl.href
+              : requestUrl.url
+        )
         startedUrls.push(endpoint.searchParams.get("query") ?? "")
         activeRequests += 1
         maxActiveRequests = Math.max(maxActiveRequests, activeRequests)
