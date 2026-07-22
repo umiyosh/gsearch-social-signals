@@ -1,6 +1,6 @@
 {
   "appName": {
-    "message": "GSearch With Social Signals",
+    "message": "はてなブックマーク・HNスコアを検索結果に表示 - GSearch",
     "description": "Chrome と Chrome Web Store に表示する拡張機能名。"
   },
   "appDescription": {
