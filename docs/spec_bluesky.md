@@ -36,6 +36,7 @@ Bluesky does not publish a numeric request limit for the public AppView. The doc
 - HTTP 5xx, timeout, and transient fetch errors use the shared bounded retry helper for at most three attempts.
 - Invalid JSON, invalid response shape, and missing `hitsTotal` are unavailable and are not retried at the message layer.
 - Unavailable Bluesky data does not block Hatena or HN rendering. The result filter fails open whenever Bluesky is unavailable.
+- While the result filter is enabled, unavailable provider results are retried automatically with bounded backoff. This also applies to results added by pagination or infinite scroll; results remain visible until all providers return a definitive zero or positive signal.
 
 ## Filter Behavior
 

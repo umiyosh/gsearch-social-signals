@@ -421,6 +421,37 @@ describe("dynamic result filtering", () => {
 
     expect(nextPageTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
   })
+
+  it("bounds automatic retries while a provider remains unavailable", async () => {
+    vi.useFakeTimers()
+    queueTargets.setFilterEnabled(true)
+    const target = buildTarget("https://signals.example/persistently-unavailable")
+    queueTargets([target])
+
+    const countsCall = lastCountsCall()
+    countsCall.apply(target.url, 0)
+    countsCall.settle(target.url)
+    const hnCall = lastHnCall()
+    hnCall.apply(target.url, null)
+    hnCall.settle(target.url)
+    const blueskyCall = lastBlueskyCall()
+    blueskyCall.apply(target.url, undefined)
+    blueskyCall.settle(target.url)
+
+    for (const delay of [2_000, 10_000, 50_000, 60_000]) {
+      await vi.advanceTimersByTimeAsync(delay)
+      const retry = lastBlueskyCall()
+      retry.apply(target.url, undefined)
+      retry.settle(target.url)
+    }
+
+    expect(requestBlueskySummaries).toHaveBeenCalledTimes(5)
+
+    await vi.advanceTimersByTimeAsync(120_000)
+
+    expect(requestBlueskySummaries).toHaveBeenCalledTimes(5)
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+  })
 })
 
 describe("badge hover previews", () => {
