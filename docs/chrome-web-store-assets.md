@@ -72,7 +72,8 @@ image is optional, but prepared to avoid blocking later store listing work.
 | 1400x560 | `docs/assets/store/promo-marquee-1400x560.png` |
 
 The promotional images keep copy short, use the same product name as the
-manifest, and visually show the Hatena/Hacker News badge pairing.
+manifest, and visually show the Hatena, Hacker News, and Unicode butterfly
+Bluesky badges.
 
 ## Regeneration
 
