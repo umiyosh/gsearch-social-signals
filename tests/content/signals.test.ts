@@ -203,9 +203,7 @@ describe("queueTargets", () => {
     lastBlueskyCall().apply(positive.url, { hitsTotal: 12 })
     lastBlueskyCall().apply(zero.url, { hitsTotal: 0 })
 
-    expect(positive.container.querySelector(".gsplus-bluesky-count")?.textContent).toContain(
-      "12 posts"
-    )
+    expect(positive.container.querySelector(".gsplus-bluesky-count")?.textContent).toContain("🦋12")
     expect(zero.container.querySelector(".gsplus-bluesky-count")).toBeNull()
   })
 })

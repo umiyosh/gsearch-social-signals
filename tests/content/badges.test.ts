@@ -159,7 +159,7 @@ describe("insertHnBadge", () => {
 })
 
 describe("insertBlueskyBadge", () => {
-  it("renders a local-icon badge that opens Bluesky search", () => {
+  it("renders a generic butterfly emoji and compact count that open Bluesky search", () => {
     const target = buildTarget("https://example.com/article?keep=1")
 
     insertBlueskyBadge(target, { hitsTotal: 12 })
@@ -167,12 +167,14 @@ describe("insertBlueskyBadge", () => {
     const badge = target.container.querySelector<HTMLAnchorElement>(".gsplus-bluesky-count")
     expect(badge?.href).toContain("https://bsky.app/search?q=")
     expect(badge?.href).toContain(encodeURIComponent("https://example.com/article?keep=1"))
-    expect(badge?.querySelector("img")?.src).toBe(
-      "chrome-extension://test-extension/icons/bluesky-signal.svg"
+    expect(badge?.querySelector("img")).toBeNull()
+    expect(badge?.querySelector(".gsplus-bluesky-count__icon")?.textContent).toBe("🦋")
+    expect(badge?.querySelector(".gsplus-bluesky-count__icon")?.getAttribute("aria-hidden")).toBe(
+      "true"
     )
-    expect(badge?.querySelector("img")?.alt).toBe("")
-    expect(badge?.textContent).toContain("12 posts")
+    expect(badge?.querySelector(".gsplus-bluesky-count__text")?.textContent).toBe("12")
     expect(badge?.textContent).not.toContain("Bluesky")
+    expect(badge?.textContent).not.toContain("posts")
     expect(badge?.getAttribute("aria-label")).toBe("Bluesky: 12 posts mentioning this URL")
     expect(badge?.rel).toBe("noopener noreferrer")
   })

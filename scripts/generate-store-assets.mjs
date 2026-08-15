@@ -27,8 +27,7 @@ const colors = {
   line: "#dadce0",
   bg: "#ffffff",
   hatena: "#00a4de",
-  hn: "#ff6600",
-  bluesky: "#0560c9"
+  hn: "#ff6600"
 }
 
 function escapeXml(value) {
@@ -81,17 +80,6 @@ function hnBadge(x, y, label = "HN 128 pts") {
     </g>`
 }
 
-function blueskyBadge(x, y, label = "12 posts") {
-  return `
-    <g transform="translate(${x} ${y})">
-      ${rect(0, 0, 94, 26, { fill: "#eef5ff", stroke: "#b9d7ff", radius: 13 })}
-      <g transform="translate(7 4) scale(.75)">
-        <path fill="#006aff" d="M12 10.8C10.913 8.686 7.954 4.747 5.202 2.805 2.566.944 1.561 1.266.902 1.565.139 1.91 0 3.08 0 3.77c0 .69.378 5.65.624 6.478.815 2.736 3.713 3.66 6.383 3.364-4.637.687-8.764 2.376-3.358 8.394 5.947 6.157 8.148-1.32 8.351-2.89.203 1.57 2.404 9.047 8.351 2.89 5.406-6.018 1.279-7.707-3.358-8.394 2.67.296 5.568-.628 6.383-3.364C23.622 9.42 24 4.46 24 3.77c0-.69-.139-1.86-.902-2.205-.659-.299-1.664-.621-4.3 1.24C16.046 4.747 13.087 8.686 12 10.8Z"/>
-      </g>
-      ${text(31, 18, label, { size: 14, weight: 700, fill: colors.bluesky })}
-    </g>`
-}
-
 function promoSmall() {
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
@@ -103,7 +91,6 @@ function promoSmall() {
       ${text(74, 149, "public web research", { size: 15, fill: colors.muted })}
       ${hatenaBadge(64, 184, "24 users")}
       ${hnBadge(185, 184, "HN 128 pts")}
-      ${blueskyBadge(311, 184, "12 posts")}
     </svg>`
 }
 
@@ -118,7 +105,6 @@ function promoMarquee() {
       ${text(196, 329, "browser extension social signals", { size: 24, fill: colors.muted })}
       ${hatenaBadge(890, 278, "24 users")}
       ${hnBadge(1024, 278, "HN 128 pts")}
-      ${blueskyBadge(1150, 278, "12 posts")}
       ${rect(154, 390, 850, 36, { fill: "#ffffff", stroke: "#e8eaed", radius: 8 })}
       ${text(178, 414, "Understanding social signals in search results", { size: 22, fill: "#1a0dab" })}
     </svg>`

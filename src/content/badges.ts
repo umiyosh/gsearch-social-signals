@@ -18,7 +18,6 @@ import {
 const BADGE_BOUND_ATTR = "data-gsplus-badge-bound"
 const HATENA_ICON = "icons/hatena-bookmark.svg"
 const HN_ICON = "icons/hacker-news.svg"
-const BLUESKY_ICON = "icons/bluesky-signal.svg"
 
 function extensionAssetUrl(path: string): string {
   if (typeof chrome === "undefined") {
@@ -152,17 +151,12 @@ export function insertBlueskyBadge(target: SearchResultTarget, summary: BlueskyS
   badge.setAttribute("aria-label", `Bluesky: ${summary.hitsTotal} posts mentioning this URL`)
   badge.title = `Bluesky: ${summary.hitsTotal} posts mentioning this URL`
 
-  let icon = badge.querySelector<HTMLImageElement>(`.${BLUESKY_BADGE_ICON_CLASS}`)
+  let icon = badge.querySelector<HTMLElement>(`.${BLUESKY_BADGE_ICON_CLASS}`)
   if (!icon) {
-    icon = document.createElement("img")
+    icon = document.createElement("span")
     icon.className = BLUESKY_BADGE_ICON_CLASS
-    icon.src = extensionAssetUrl(BLUESKY_ICON)
-    icon.alt = ""
     icon.setAttribute("aria-hidden", "true")
-    icon.width = 12
-    icon.height = 12
-    icon.decoding = "async"
-    icon.loading = "lazy"
+    icon.textContent = "🦋"
     badge.prepend(icon)
   }
 
@@ -172,7 +166,7 @@ export function insertBlueskyBadge(target: SearchResultTarget, summary: BlueskyS
     text.className = BLUESKY_BADGE_TEXT_CLASS
     badge.appendChild(text)
   }
-  text.textContent = `${summary.hitsTotal} posts`
+  text.textContent = String(summary.hitsTotal)
 }
 
 function attachBadgeEvents(badge: HTMLAnchorElement, url: string, hover: BadgeHoverHandlers): void {

@@ -46,11 +46,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": [
-        "icons/hatena-bookmark.svg",
-        "icons/hacker-news.svg",
-        "icons/bluesky-signal.svg"
-      ],
+      "resources": ["icons/hatena-bookmark.svg", "icons/hacker-news.svg"],
       "matches": [
         "https://www.google.com/*",
         "https://www.google.co.jp/*",

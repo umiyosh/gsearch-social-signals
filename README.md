@@ -20,7 +20,7 @@
 
 - Google / DuckDuckGo の検索結果リンク付近に Hatena Bookmark 件数を `123 users` のように表示します。
 - Hacker News で話題になったURLには、最も高い story score を `HN 456 pts` のように表示します。
-- Bluesky で対象URLを含む投稿が見つかった場合、蝶アイコンの隣にURL mention countを `12 posts` のように表示します。
+- Bluesky で対象URLを含む投稿が見つかった場合、URL mention countを `🦋 12` のように表示します。
 - Hatena バッジにマウスを重ねる、またはキーボードフォーカスすると、コメント付きブックマークのプレビューを表示します。
 - 0件、または正のスコアがない結果にはバッジを表示しません。
 - オプションを有効にすると、Hatena、HN、Bluesky のすべてに正のシグナルがない検索結果を非表示にできます。初期値は OFF です。
@@ -67,7 +67,7 @@ Chrome ツールバーの GSearch With Social Signals アイコンをクリッ�
 
 ### Bluesky
 
-蝶アイコンと `12 posts` のような件数を表示します。
+Unicodeの蝶絵文字と件数を `🦋 12` のように表示します。Blueskyの公式ロゴ画像は使用しません。
 
 - 公開 AppView API が返す `hitsTotal` を、対象URLを含む投稿数の目安として表示します。likes、reposts、replies の合計ではありません。
 - クリックすると、対象URLをqueryにしたBlueskyの検索結果を開きます。
