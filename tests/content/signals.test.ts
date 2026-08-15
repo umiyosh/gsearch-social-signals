@@ -204,7 +204,7 @@ describe("queueTargets", () => {
     lastBlueskyCall().apply(zero.url, { hitsTotal: 0 })
 
     expect(positive.container.querySelector(".gsplus-bluesky-count")?.textContent).toContain(
-      "Bluesky 12 posts"
+      "12 posts"
     )
     expect(zero.container.querySelector(".gsplus-bluesky-count")).toBeNull()
   })

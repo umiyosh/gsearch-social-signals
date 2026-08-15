@@ -40,7 +40,7 @@ Required to send supported search result URLs to the Hacker News Search / Algoli
 
 ### `https://public.api.bsky.app/*`
 
-Required to send normalized supported search result URLs to the public Bluesky AppView API and display the returned public `hitsTotal` URL mention count as a `Bluesky 12 posts` badge. The extension does not use Bluesky login, account data, or an API token.
+Required to send normalized supported search result URLs to the public Bluesky AppView API and display the returned public `hitsTotal` URL mention count as a butterfly icon with a `12 posts` badge. The accessible name retains the full `Bluesky` service name. The extension does not use Bluesky login, account data, or an API token.
 
 ### `storage`
 

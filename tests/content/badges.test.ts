@@ -171,7 +171,8 @@ describe("insertBlueskyBadge", () => {
       "chrome-extension://test-extension/icons/bluesky-signal.svg"
     )
     expect(badge?.querySelector("img")?.alt).toBe("")
-    expect(badge?.textContent).toContain("Bluesky 12 posts")
+    expect(badge?.textContent).toContain("12 posts")
+    expect(badge?.textContent).not.toContain("Bluesky")
     expect(badge?.getAttribute("aria-label")).toBe("Bluesky: 12 posts mentioning this URL")
     expect(badge?.rel).toBe("noopener noreferrer")
   })

@@ -172,7 +172,7 @@ export function insertBlueskyBadge(target: SearchResultTarget, summary: BlueskyS
     text.className = BLUESKY_BADGE_TEXT_CLASS
     badge.appendChild(text)
   }
-  text.textContent = `Bluesky ${summary.hitsTotal} posts`
+  text.textContent = `${summary.hitsTotal} posts`
 }
 
 function attachBadgeEvents(badge: HTMLAnchorElement, url: string, hover: BadgeHoverHandlers): void {

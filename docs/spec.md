@@ -2,7 +2,7 @@
 
 ## 1. 概要
 
-本ドキュメントは、「Google と DuckDuckGo のWeb検索結果ページに、各結果URLの Hatena Bookmark 件数（`X users`）、Hacker News 最大スコア（`HN X pts`）、Bluesky URL mention count（`Bluesky X posts`）を表示する」Chrome拡張の現行仕様である。
+本ドキュメントは、「Google と DuckDuckGo のWeb検索結果ページに、各結果URLの Hatena Bookmark 件数（`X users`）、Hacker News 最大スコア（`HN X pts`）、Bluesky URL mention count（蝶アイコンと `X posts`）を表示する」Chrome拡張の現行仕様である。
 公開前の source of truth として、技術スタック、アーキテクチャ、権限、データフロー、公開時の注意点を記録する。
 
 ---
@@ -14,7 +14,7 @@
 - Google と DuckDuckGo のWeb検索結果ページ上で、各検索結果に対応するURLの Hatena Bookmark 件数を表示する。
 - Hacker News Search API / Algolia から、各検索結果URLに対応するstory群の最大 positive points を表示する。
 - Bluesky public AppView API から、各検索結果URLを含む投稿の `hitsTotal` を表示する。
-- Hatena 件数は `X users`、HN は `HN X pts`、Bluesky は `Bluesky X posts` として表示する。
+- Hatena 件数は `X users`、HN は `HN X pts`、Bluesky は蝶アイコンと `X posts` として表示する。
 - 0件または positive score がないURLについては、UI上に何も追加しない（＝0は非表示）。
 - Hatena Bookmarkの**公開APIのみ**を使用し、認証（OAuth等）は不要とする。
 - Hacker News は公開 Search API のみを使用し、認証は不要とする。
@@ -37,7 +37,7 @@
 ## 3. ユースケース
 
 - ユーザーが Chrome で Google または DuckDuckGo のWeb検索を行う。
-- 検索結果一覧が表示されると、各結果のタイトル付近に `123 users`、`HN 456 pts`、`Bluesky 12 posts` のようなバッジが表示される。
+- 検索結果一覧が表示されると、各結果のタイトル付近に `123 users`、`HN 456 pts`、蝶アイコンと `12 posts` のようなバッジが表示される。
 - ユーザーは、Hatena Bookmark 件数、HN score、BlueskyでのURL mention countを補助シグナルとして参照できる。
 
 ---
@@ -70,7 +70,7 @@
    - `hitsTotal` はlikes、reposts、repliesの合計ではなく、丸め・切り捨てられる可能性のあるURL mention countとする。
 
 6. **UI表示**
-   - 各検索結果のタイトル等の近くに `X users`、`HN X pts`、`Bluesky X posts` というテキストを表示する。
+   - 各検索結果のタイトル等の近くに `X users`、`HN X pts`、蝶アイコンと `X posts` を表示する。
    - 件数またはscoreが0の場合は、UI表示を行わない。
    - UIは最小限の装飾（小さめの灰色テキスト、適度なマージン）に留める。
 
@@ -265,7 +265,7 @@ DOM抽出ロジックは `src/content/searchResults.ts` に集約し、検索サ
 
 ### 9.3 UI挿入戦略
 
-- 各結果ごとに、既存DOMに social signal container を追加し、positiveな `X users`、`HN X pts`、`Bluesky X posts` を入れる。
+- 各結果ごとに、既存DOMに social signal container を追加し、positiveな `X users`、`HN X pts`、蝶アイコンと `X posts` を入れる。
 - 挿入位置の候補:
   - タイトルリンク (`<a>`) の直後
   - タイトルを囲むコンテナの末尾

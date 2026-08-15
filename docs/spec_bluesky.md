@@ -3,7 +3,7 @@
 ## Signal Semantics
 
 - The extension calls the unauthenticated public AppView endpoint `app.bsky.feed.searchPosts` once per unique normalized URL.
-- The visible value is the optional `hitsTotal` returned by the API and is rendered as `Bluesky <hitsTotal> posts` only when it is positive.
+- The visible value is the optional `hitsTotal` returned by the API and is rendered as a Bluesky butterfly icon followed by `<hitsTotal> posts` only when it is positive. The accessible name and tooltip retain the full `Bluesky` service name.
 - `hitsTotal` is a URL mention count that the API may round or truncate. It is not a sum of likes, reposts, or replies.
 - Missing or invalid `hitsTotal` is unavailable, not zero. `posts.length` is never used as the total.
 - The badge opens `https://bsky.app/search?q=<normalized URL>` in a new tab with `noopener noreferrer`.

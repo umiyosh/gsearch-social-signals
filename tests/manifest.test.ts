@@ -68,4 +68,13 @@ describe("extension manifest", () => {
     expect(manifest.host_permissions).not.toContain("https://api.bsky.app/*")
     expect(manifest.web_accessible_resources?.[0]?.resources).toContain("icons/bluesky-signal.svg")
   })
+
+  it("bundles a transparent Bluesky butterfly SVG", () => {
+    const icon = readFileSync(resolve(process.cwd(), "public/icons/bluesky-signal.svg"), "utf8")
+
+    expect(icon).toContain('viewBox="0 0 24 24"')
+    expect(icon).toContain('fill="#006aff"')
+    expect(icon).not.toContain("<rect")
+    expect(icon).not.toContain("#fff")
+  })
 })
