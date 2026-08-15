@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { insertBadge, insertBlueskyBadge, insertHnBadge } from "../../src/content/badges"
 import {
   beginOverlaySession,
@@ -99,6 +99,10 @@ beforeEach(() => {
     cancelOverlayHide
   }
   queueTargets = createSignalPipeline(deps)
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe("queueTargets", () => {
@@ -371,6 +375,51 @@ describe("dynamic result filtering", () => {
 
     expect(first.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
     expect(second.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
+  })
+
+  it("automatically retries an unavailable signal for a result added after pagination", async () => {
+    vi.useFakeTimers()
+    queueTargets.setFilterEnabled(true)
+
+    const firstPageTarget = buildTarget("https://signals.example/first-page")
+    queueTargets([firstPageTarget])
+    const firstCountsCall = lastCountsCall()
+    firstCountsCall.apply(firstPageTarget.url, 0)
+    firstCountsCall.settle(firstPageTarget.url)
+    const firstHnCall = lastHnCall()
+    firstHnCall.apply(firstPageTarget.url, null)
+    firstHnCall.settle(firstPageTarget.url)
+    const firstBlueskyCall = lastBlueskyCall()
+    firstBlueskyCall.apply(firstPageTarget.url, { hitsTotal: 0 })
+    firstBlueskyCall.settle(firstPageTarget.url)
+
+    const nextPageTarget = buildTarget("https://signals.example/next-page")
+    queueTargets([nextPageTarget])
+    const nextCountsCall = lastCountsCall()
+    nextCountsCall.apply(nextPageTarget.url, 0)
+    nextCountsCall.settle(nextPageTarget.url)
+    const nextHnCall = lastHnCall()
+    nextHnCall.apply(nextPageTarget.url, null)
+    nextHnCall.settle(nextPageTarget.url)
+    const nextBlueskyCall = lastBlueskyCall()
+    nextBlueskyCall.apply(nextPageTarget.url, undefined)
+    nextBlueskyCall.settle(nextPageTarget.url)
+    const countsRequests = requestHatenaCounts.mock.calls.length
+    const hnRequests = requestHnSummaries.mock.calls.length
+    const blueskyRequests = requestBlueskySummaries.mock.calls.length
+
+    expect(nextPageTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(2_000)
+
+    expect(requestHatenaCounts).toHaveBeenCalledTimes(countsRequests)
+    expect(requestHnSummaries).toHaveBeenCalledTimes(hnRequests)
+    expect(requestBlueskySummaries).toHaveBeenCalledTimes(blueskyRequests + 1)
+    expect(lastBlueskyCall().urls).toEqual([nextPageTarget.url])
+
+    lastBlueskyCall().apply(nextPageTarget.url, { hitsTotal: 0 })
+
+    expect(nextPageTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
   })
 })
 
