@@ -91,7 +91,11 @@ function applyProviderResult<T>(
   state: ProviderPipelineState<T>,
   render: (target: SearchResultTarget, value: T) => void
 ): void {
-  state.cache.set(url, value)
+  if (value === undefined) {
+    state.cache.delete(url)
+  } else {
+    state.cache.set(url, value)
+  }
   const targets = state.targets.get(url) ?? []
   targets.forEach((target) => render(target, value))
   state.targets.delete(url)
@@ -171,10 +175,122 @@ function createSignalRenderer(
   return { applyFilter, renderCount, renderHnSummary, renderBlueskySummary }
 }
 
-export function createSignalPipeline(deps: SignalPipelineDeps): SignalPipeline {
+function createSignalRequestCoordinator(
+  deps: SignalPipelineDeps,
+  renderer: ReturnType<typeof createSignalRenderer>,
+  targetStates: Map<HTMLElement, TargetSignalState>
+) {
   const hatena = createProviderPipelineState<number | null | undefined>()
   const hackerNews = createProviderPipelineState<HackerNewsSummary | null | undefined>()
   const bluesky = createProviderPipelineState<BlueskySummary | undefined>()
+
+  const applyCount = (url: string, count: number | null | undefined): void => {
+    applyProviderResult(url, count, hatena, renderer.renderCount)
+  }
+  const applyHnSummary = (url: string, summary: HackerNewsSummary | null | undefined): void => {
+    applyProviderResult(url, summary, hackerNews, renderer.renderHnSummary)
+  }
+  const applyBlueskySummary = (url: string, summary: BlueskySummary | undefined): void => {
+    applyProviderResult(url, summary, bluesky, renderer.renderBlueskySummary)
+  }
+
+  function requestQueuedTargets(
+    urlsToRequest: string[],
+    hnUrlsToRequest: string[],
+    blueskyUrlsToRequest: string[]
+  ): void {
+    if (urlsToRequest.length) {
+      deps.requestHatenaCounts(urlsToRequest, applyCount, (url) => hatena.inflight.delete(url))
+    }
+    if (hnUrlsToRequest.length) {
+      deps.requestHnSummaries(hnUrlsToRequest, applyHnSummary, (url) =>
+        hackerNews.inflight.delete(url)
+      )
+    }
+    if (blueskyUrlsToRequest.length) {
+      deps.requestBlueskySummaries(blueskyUrlsToRequest, applyBlueskySummary, (url) =>
+        bluesky.inflight.delete(url)
+      )
+    }
+  }
+
+  function retryUnknownTargets(): void {
+    const urlsToRequest: string[] = []
+    const hnUrlsToRequest: string[] = []
+    const blueskyUrlsToRequest: string[] = []
+
+    targetStates.forEach((state) => {
+      if (state.hatena === "unknown") {
+        state.hatena = "pending"
+        queueProviderTarget<number | null | undefined>(
+          state.target,
+          hatena,
+          renderer.renderCount,
+          urlsToRequest
+        )
+      }
+      if (state.hackerNews === "unknown") {
+        state.hackerNews = "pending"
+        queueProviderTarget<HackerNewsSummary | null | undefined>(
+          state.target,
+          hackerNews,
+          renderer.renderHnSummary,
+          hnUrlsToRequest
+        )
+      }
+      if (state.bluesky === "unknown") {
+        state.bluesky = "pending"
+        queueProviderTarget<BlueskySummary | undefined>(
+          state.target,
+          bluesky,
+          renderer.renderBlueskySummary,
+          blueskyUrlsToRequest
+        )
+      }
+    })
+
+    requestQueuedTargets(urlsToRequest, hnUrlsToRequest, blueskyUrlsToRequest)
+  }
+
+  function queueTargets(targets: SearchResultTarget[]): void {
+    const urlsToRequest: string[] = []
+    const hnUrlsToRequest: string[] = []
+    const blueskyUrlsToRequest: string[] = []
+
+    targets.forEach((target) => {
+      targetStates.set(target.container, {
+        target,
+        hatena: "pending",
+        hackerNews: "pending",
+        bluesky: "pending"
+      })
+      queueProviderTarget<number | null | undefined>(
+        target,
+        hatena,
+        renderer.renderCount,
+        urlsToRequest
+      )
+      queueProviderTarget<HackerNewsSummary | null | undefined>(
+        target,
+        hackerNews,
+        renderer.renderHnSummary,
+        hnUrlsToRequest
+      )
+      queueProviderTarget<BlueskySummary | undefined>(
+        target,
+        bluesky,
+        renderer.renderBlueskySummary,
+        blueskyUrlsToRequest
+      )
+    })
+
+    requestQueuedTargets(urlsToRequest, hnUrlsToRequest, blueskyUrlsToRequest)
+  }
+
+  return { queueTargets, retryUnknownTargets }
+}
+
+export function createSignalPipeline(deps: SignalPipelineDeps): SignalPipeline {
   const entryPreviewCache = new Map<string, HatenaBookmarkSummary[] | null>()
   const entryPreviewRequests = new Map<string, Promise<HatenaBookmarkSummary[] | null>>()
   const targetStates = new Map<HTMLElement, TargetSignalState>()
@@ -190,6 +306,7 @@ export function createSignalPipeline(deps: SignalPipelineDeps): SignalPipeline {
     }
   }
   const renderer = createSignalRenderer(deps, badgeHover, targetStates, () => filterEnabled)
+  const signalRequests = createSignalRequestCoordinator(deps, renderer, targetStates)
 
   async function handleBadgeHover(badge: HTMLAnchorElement, url: string): Promise<void> {
     deps.beginOverlaySession(url, badge)
@@ -221,71 +338,17 @@ export function createSignalPipeline(deps: SignalPipelineDeps): SignalPipeline {
     return result
   }
 
-  function applyCount(url: string, count: number | null | undefined): void {
-    applyProviderResult(url, count, hatena, renderer.renderCount)
-  }
-
-  function applyHnSummary(url: string, summary: HackerNewsSummary | null | undefined): void {
-    applyProviderResult(url, summary, hackerNews, renderer.renderHnSummary)
-  }
-
-  function applyBlueskySummary(url: string, summary: BlueskySummary | undefined): void {
-    applyProviderResult(url, summary, bluesky, renderer.renderBlueskySummary)
-  }
-
   const queueTargets = (targets: SearchResultTarget[]): void => {
-    const urlsToRequest: string[] = []
-    const hnUrlsToRequest: string[] = []
-    const blueskyUrlsToRequest: string[] = []
-
-    targets.forEach((target) => {
-      targetStates.set(target.container, {
-        target,
-        hatena: "pending",
-        hackerNews: "pending",
-        bluesky: "pending"
-      })
-
-      queueProviderTarget<number | null | undefined>(
-        target,
-        hatena,
-        renderer.renderCount,
-        urlsToRequest
-      )
-      queueProviderTarget<HackerNewsSummary | null | undefined>(
-        target,
-        hackerNews,
-        renderer.renderHnSummary,
-        hnUrlsToRequest
-      )
-      queueProviderTarget<BlueskySummary | undefined>(
-        target,
-        bluesky,
-        renderer.renderBlueskySummary,
-        blueskyUrlsToRequest
-      )
-    })
-
-    if (urlsToRequest.length) {
-      deps.requestHatenaCounts(urlsToRequest, applyCount, (url) => hatena.inflight.delete(url))
-    }
-
-    if (hnUrlsToRequest.length) {
-      deps.requestHnSummaries(hnUrlsToRequest, applyHnSummary, (url) =>
-        hackerNews.inflight.delete(url)
-      )
-    }
-
-    if (blueskyUrlsToRequest.length) {
-      deps.requestBlueskySummaries(blueskyUrlsToRequest, applyBlueskySummary, (url) =>
-        bluesky.inflight.delete(url)
-      )
-    }
+    signalRequests.queueTargets(targets)
   }
 
   queueTargets.setFilterEnabled = (enabled: boolean): void => {
+    const wasEnabled = filterEnabled
     filterEnabled = enabled
     targetStates.forEach(renderer.applyFilter)
+    if (enabled && !wasEnabled) {
+      signalRequests.retryUnknownTargets()
+    }
   }
 
   return queueTargets
