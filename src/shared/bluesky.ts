@@ -12,7 +12,7 @@ export type BlueskySummaryMap = Record<string, BlueskySummaryResult>
 export const BLUESKY_REQUEST_TIMEOUT_MS = 5_000
 export const BLUESKY_RATE_LIMIT_FALLBACK_MS = 60_000
 
-const BLUESKY_ENDPOINT = "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts"
+const BLUESKY_ENDPOINT = "https://api.bsky.app/xrpc/app.bsky.feed.searchPosts"
 const MAX_CONCURRENT_REQUESTS = 3
 
 interface BlueskySearchResponse {
@@ -69,11 +69,15 @@ function parseResetDelayMs(headers: Headers, now: number): number {
 }
 
 function parseSummary(payload: BlueskySearchResponse): BlueskySummary {
-  if (
-    !Array.isArray(payload.posts) ||
-    !Number.isInteger(payload.hitsTotal) ||
-    (payload.hitsTotal as number) < 0
-  ) {
+  if (!Array.isArray(payload.posts)) {
+    throw new TypeError("Bluesky API returned an invalid search response")
+  }
+
+  if (payload.hitsTotal === undefined) {
+    throw new TypeError("Bluesky API omitted hitsTotal from the search response")
+  }
+
+  if (!Number.isInteger(payload.hitsTotal) || (payload.hitsTotal as number) < 0) {
     throw new TypeError("Bluesky API returned an invalid search response")
   }
 

@@ -38,7 +38,7 @@ Required to fetch public Hatena Bookmark entry/comment information for the URL w
 
 Required to send supported search result URLs to the Hacker News Search / Algolia API and display the highest matching public Hacker News story score as an `HN 456 pts` badge.
 
-### `https://public.api.bsky.app/*`
+### `https://api.bsky.app/*`
 
 Required to send normalized supported search result URLs to the public Bluesky AppView API and display the returned public `hitsTotal` URL mention count as a butterfly icon with a `12 posts` badge. The accessible name retains the full `Bluesky` service name. The extension does not use Bluesky login, account data, or an API token.
 
@@ -124,7 +124,7 @@ Share data only with:
 - Hatena Bookmark API: `https://bookmark.hatenaapis.com/*`
 - Hatena Bookmark entry API: `https://b.hatena.ne.jp/*`
 - Hacker News Search / Algolia: `https://hn.algolia.com/*`
-- Bluesky public AppView: `https://public.api.bsky.app/*`
+- Bluesky public AppView: `https://api.bsky.app/*`
 
 Do not disclose sharing with developer servers, analytics providers, advertising providers, error tracking providers, data brokers, or information resellers because the extension does not use them.
 

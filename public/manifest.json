@@ -10,7 +10,7 @@
     "https://bookmark.hatenaapis.com/*",
     "https://b.hatena.ne.jp/*",
     "https://hn.algolia.com/*",
-    "https://public.api.bsky.app/*"
+    "https://api.bsky.app/*"
   ],
   "icons": {
     "16": "icons/icon16.png",

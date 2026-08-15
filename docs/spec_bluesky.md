@@ -11,13 +11,13 @@
 
 ## API Request
 
-- Endpoint: `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts`
+- Endpoint: `https://api.bsky.app/xrpc/app.bsky.feed.searchPosts`
 - Parameters: `q=<normalized URL>`, `url=<normalized URL>`, `limit=1`, `sort=top`
 - Authentication: none
 - Background service worker only; the content script does not fetch AppView directly.
-- Host permission: `https://public.api.bsky.app/*` only. No fallback host is requested because the public AppView is the documented public endpoint.
+- Host permission: `https://api.bsky.app/*` only. No fallback host is requested because this is the AppView endpoint used by the extension.
 
-Bluesky does not publish a numeric request limit for the public AppView. The documented PDS read limit of 3,000 requests per five minutes per IP is not the limit for `public.api.bsky.app`, so this implementation does not present it as an AppView allowance.
+Bluesky does not publish a numeric request limit for the public AppView. The documented PDS read limit of 3,000 requests per five minutes per IP is not the limit for `api.bsky.app`, so this implementation does not present it as an AppView allowance.
 
 ## Request Control
 

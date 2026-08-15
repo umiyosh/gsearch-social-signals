@@ -37,7 +37,7 @@ describe("createBlueskyClient", () => {
       "https://Example.com/article?utm_source=google&keep=1#comments": { hitsTotal: 12 }
     })
     const endpoint = new URL(requestedUrl)
-    expect(endpoint.origin).toBe("https://public.api.bsky.app")
+    expect(endpoint.origin).toBe("https://api.bsky.app")
     expect(endpoint.pathname).toBe("/xrpc/app.bsky.feed.searchPosts")
     expect(endpoint.searchParams.get("q")).toBe("https://example.com/article?keep=1")
     expect(endpoint.searchParams.get("url")).toBe("https://example.com/article?keep=1")
@@ -56,6 +56,7 @@ describe("createBlueskyClient", () => {
 
   it.each([
     { posts: [] },
+    { posts: [{}] },
     { posts: [], hitsTotal: -1 },
     { posts: [], hitsTotal: 1.5 },
     { posts: "invalid", hitsTotal: 1 }

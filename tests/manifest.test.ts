@@ -61,11 +61,11 @@ describe("extension manifest", () => {
     )
   })
 
-  it("grants only the public Bluesky AppView host without exposing a Bluesky logo asset", () => {
+  it("grants only the working Bluesky AppView host without exposing a Bluesky logo asset", () => {
     const manifest = readManifest()
 
-    expect(manifest.host_permissions).toContain("https://public.api.bsky.app/*")
-    expect(manifest.host_permissions).not.toContain("https://api.bsky.app/*")
+    expect(manifest.host_permissions).toContain("https://api.bsky.app/*")
+    expect(manifest.host_permissions).not.toContain("https://public.api.bsky.app/*")
     expect(manifest.web_accessible_resources?.[0]?.resources).not.toContain(
       "icons/bluesky-signal.svg"
     )

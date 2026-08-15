@@ -29,7 +29,7 @@ The extension sends search result URLs to the following third-party services onl
 - Hatena Bookmark API (`https://bookmark.hatenaapis.com/*`): retrieves Hatena Bookmark counts for search result URLs.
 - Hatena Bookmark entry API (`https://b.hatena.ne.jp/*`): retrieves public bookmarked comments for the URL whose Hatena badge the user hovers or focuses.
 - Hacker News Search / Algolia (`https://hn.algolia.com/*`): retrieves public Hacker News story matches, points, and comment counts for search result URLs.
-- Bluesky public AppView (`https://public.api.bsky.app/*`): retrieves the public `hitsTotal` URL mention count for search result URLs. The extension does not authenticate to Bluesky or send a Bluesky account or API token.
+- Bluesky public AppView (`https://api.bsky.app/*`): retrieves the public `hitsTotal` URL mention count for search result URLs. The extension does not authenticate to Bluesky or send a Bluesky account or API token.
 
 The extension opens Hatena Bookmark entry pages, Hacker News story/search pages, and Bluesky search pages only when the user clicks the corresponding badge.
 

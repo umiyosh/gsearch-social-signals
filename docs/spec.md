@@ -159,7 +159,7 @@
     - `https://bookmark.hatenaapis.com/*`: Hatena Bookmark件数取得。
     - `https://b.hatena.ne.jp/*`: Hatena entry / コメント情報取得とエントリーページリンク。
     - `https://hn.algolia.com/*`: Hacker News Search API によるURL言及・score取得。
-    - `https://public.api.bsky.app/*`: Bluesky public AppView API によるURL mention count取得。
+    - `https://api.bsky.app/*`: Bluesky public AppView API によるURL mention count取得。
   - `https://news.ycombinator.com/*` は fetch しないため宣言しない。HN story はユーザークリック時の通常遷移先として扱う。
   - `"permissions"` はフィルター設定の永続化に必要な `storage` のみを宣言し、不要な `tabs` / `activeTab` / `scripting` は追加しない。
   - `"action.default_popup"` で同梱の `popup.html` を指定し、ツールバーアイコンからフィルター設定を切り替えられるようにする。
@@ -342,7 +342,7 @@ Hatena API 連携は以下の方針に従う。
 
 ## 11. セキュリティ・権限
 
-- 必要最低限の `host_permissions` のみを宣言する（`bookmark.hatenaapis.com`, `b.hatena.ne.jp`, `hn.algolia.com`, `public.api.bsky.app`）。
+- 必要最低限の `host_permissions` のみを宣言する（`bookmark.hatenaapis.com`, `b.hatena.ne.jp`, `hn.algolia.com`, `api.bsky.app`）。
 - `news.ycombinator.com` はユーザークリック時の遷移先だけに使い、host permission は要求しない。
 - 外部favicon取得をやめる場合は、公式faviconの同梱可否を確認したうえで拡張内アセット化し、`chrome.runtime.getURL()` と必要最小限の `web_accessible_resources` で参照する。
 - コンテンツスクリプトからは外部ドメインへ直接通信せず、必ず Background を通す。
