@@ -77,7 +77,7 @@ The summary uses:
 - The content script never fetches HN directly.
 - The only HN host permission is `https://hn.algolia.com/*`.
 - Search result URLs are sent to HN Algolia to provide the displayed points. This is described in `PRIVACY.md` and the Chrome Web Store Privacy practices draft.
-- The common result filter hides a result only after Hatena, HN, and Bluesky have all completed successfully without a positive signal. An unavailable provider keeps the result visible.
+- The common result filter keeps pending or positive results visible. Once requests settle, an unavailable provider does not count as a positive signal; unavailable results are retried automatically while the filter is enabled.
 
 ## Tests
 

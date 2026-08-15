@@ -307,8 +307,8 @@ DOM抽出ロジックは `src/content/searchResults.ts` に集約し、検索サ
 - Toolbar popup または Options page の `Show only results with social signals` で ON / OFF を切り替える。初期値は OFF とする。
 - 設定は `chrome.storage.sync` に boolean として保存し、content script は `chrome.storage.onChanged` で変更を反映する。
 - ON の場合、Hatena count、HN summary、Bluesky summaryの3つが正常に完了し、すべてに正のシグナルがない検索結果だけに拡張固有の非表示 class を付ける。
-- いずれかがpositiveの場合、または API エラー・runtime error・不正 response により1つでも判定不能な場合は表示を維持する（fail-open）。
-- filterがONの間に判定不能となったproviderは、bounded backoffで自動再取得する。pagination / infinite scrollで追加された検索結果も同じ対象とし、再取得が完了するまではfail-openを維持する。
+- いずれかがpositive、または1つでも取得中（pending）の場合は表示を維持する。
+- API エラー・runtime error・不正 response により判定不能（unknown）となり、他providerにもpositiveがなければ非表示にする。filterがONの間はbounded backoffで自動再取得し、positiveに回復した結果は再表示する。pagination / infinite scrollで追加された検索結果も同じ対象とする。
 - OFF に戻した場合は拡張固有の非表示 class を外し、検索サービス側の表示状態は変更しない。
 - URL ごとの取得結果を page-local cache へ保持し、MutationObserver で追加された同一 URL の結果にも同じ判定を適用する。
 

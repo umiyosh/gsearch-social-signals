@@ -28,7 +28,7 @@
     "description": "Title for the result filtering setting."
   },
   "optionsFilterDescription": {
-    "message": "Hide a result only when Hatena Bookmark, Hacker News, and Bluesky all report no signal. Results stay visible if any request fails.",
+    "message": "Hide results without a signal from Hatena Bookmark, Hacker News, or Bluesky. Pending requests stay visible, and failed requests retry automatically.",
     "description": "Explanation for the result filtering setting."
   },
   "optionsSaving": {

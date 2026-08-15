@@ -194,11 +194,9 @@ function createSignalRenderer(
   isFilterEnabled: () => boolean
 ) {
   function applyFilter(state: TargetSignalState): void {
+    const signals = [state.hatena, state.hackerNews, state.bluesky]
     const shouldHide =
-      isFilterEnabled() &&
-      state.hatena === "none" &&
-      state.hackerNews === "none" &&
-      state.bluesky === "none"
+      isFilterEnabled() && !signals.includes("pending") && !signals.includes("positive")
     state.target.container.classList.toggle(FILTERED_RESULT_CLASS, shouldHide)
   }
 

@@ -28,7 +28,7 @@
     "description": "検索結果の絞り込み設定のタイトル。"
   },
   "optionsFilterDescription": {
-    "message": "はてな、Hacker News、Blueskyのすべてでシグナルが無い結果だけを非表示にします。いずれかの取得に失敗した場合は表示を維持します。",
+    "message": "はてな、Hacker News、Blueskyのいずれにもシグナルがない結果を非表示にします。取得中は表示を維持し、取得失敗は自動再試行します。",
     "description": "検索結果の絞り込み設定の説明。"
   },
   "optionsSaving": {

@@ -15,7 +15,7 @@ The repository-local skill opens real Google SERPs in the user's local Chrome pr
 - Confirm positive Hatena and HN badges appear inside organic `li[data-layout="organic"]` results.
 - Confirm `li[data-layout="ad"]`, related searches, maps, and non-web tabs have no extension badges.
 - Scroll to the bottom and confirm newly added organic results are processed once.
-- Toggle the saved social-signal filter and confirm API failures remain fail-open.
+- Toggle the saved social-signal filter and confirm pending results remain visible, settled failures without another positive signal are filtered, and recovered positives are restored.
 
 ## What It Checks
 
