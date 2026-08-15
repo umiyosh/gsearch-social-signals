@@ -6,8 +6,9 @@ interface ExtensionManifest {
   name?: string
   default_locale?: string
   action?: { default_popup?: string }
+  host_permissions?: string[]
   content_scripts?: Array<{ matches?: string[] }>
-  web_accessible_resources?: Array<{ matches?: string[] }>
+  web_accessible_resources?: Array<{ matches?: string[]; resources?: string[] }>
 }
 
 type MessageCatalog = Record<string, { message: string }>
@@ -58,5 +59,13 @@ describe("extension manifest", () => {
     expect(japaneseCatalog.optionsSubtitle?.message).toBe(
       "Google検索結果にソーシャルシグナルを表示"
     )
+  })
+
+  it("grants only the public Bluesky AppView host and bundles the local signal icon", () => {
+    const manifest = readManifest()
+
+    expect(manifest.host_permissions).toContain("https://public.api.bsky.app/*")
+    expect(manifest.host_permissions).not.toContain("https://api.bsky.app/*")
+    expect(manifest.web_accessible_resources?.[0]?.resources).toContain("icons/bluesky-signal.svg")
   })
 })

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { insertBadge, insertHnBadge } from "../../src/content/badges"
+import { insertBadge, insertBlueskyBadge, insertHnBadge } from "../../src/content/badges"
 import {
   beginOverlaySession,
   cancelOverlayHide,
@@ -16,6 +16,7 @@ import { FILTERED_RESULT_CLASS } from "../../src/content/styles"
 
 type CountRequest = SignalPipelineDeps["requestHatenaCounts"]
 type HnRequest = SignalPipelineDeps["requestHnSummaries"]
+type BlueskyRequest = SignalPipelineDeps["requestBlueskySummaries"]
 type EntryRequest = SignalPipelineDeps["requestEntryBookmarks"]
 
 let deps: SignalPipelineDeps
@@ -24,6 +25,9 @@ let requestHatenaCounts: ReturnType<
   typeof vi.fn<Parameters<CountRequest>, ReturnType<CountRequest>>
 >
 let requestHnSummaries: ReturnType<typeof vi.fn<Parameters<HnRequest>, ReturnType<HnRequest>>>
+let requestBlueskySummaries: ReturnType<
+  typeof vi.fn<Parameters<BlueskyRequest>, ReturnType<BlueskyRequest>>
+>
 let requestEntryBookmarks: ReturnType<
   typeof vi.fn<Parameters<EntryRequest>, ReturnType<EntryRequest>>
 >
@@ -63,17 +67,32 @@ function lastHnCall(): {
   return { urls: call[0], apply: call[1], settle: call[2] }
 }
 
+function lastBlueskyCall(): {
+  urls: string[]
+  apply: Parameters<BlueskyRequest>[1]
+  settle: Parameters<BlueskyRequest>[2]
+} {
+  const call = requestBlueskySummaries.mock.calls.at(-1)
+  if (!call) {
+    throw new Error("requestBlueskySummaries was not called")
+  }
+  return { urls: call[0], apply: call[1], settle: call[2] }
+}
+
 beforeEach(() => {
   document.body.textContent = ""
   requestHatenaCounts = vi.fn<Parameters<CountRequest>, ReturnType<CountRequest>>()
   requestHnSummaries = vi.fn<Parameters<HnRequest>, ReturnType<HnRequest>>()
+  requestBlueskySummaries = vi.fn<Parameters<BlueskyRequest>, ReturnType<BlueskyRequest>>()
   requestEntryBookmarks = vi.fn<Parameters<EntryRequest>, ReturnType<EntryRequest>>()
   deps = {
     requestHatenaCounts,
     requestHnSummaries,
+    requestBlueskySummaries,
     requestEntryBookmarks,
     insertBadge,
     insertHnBadge,
+    insertBlueskyBadge,
     beginOverlaySession,
     presentOverlay,
     scheduleOverlayHide,
@@ -176,7 +195,23 @@ describe("queueTargets", () => {
     expect(target.container.querySelector(".gsplus-hn-count")).toBeNull()
   })
 
-  it("hides a result only after both signal requests succeed without a positive signal", () => {
+  it("renders a Bluesky badge only for a positive hitsTotal", () => {
+    const positive = buildTarget("https://signals.example/bluesky-positive")
+    const zero = buildTarget("https://signals.example/bluesky-zero")
+
+    queueTargets([positive, zero])
+    lastBlueskyCall().apply(positive.url, { hitsTotal: 12 })
+    lastBlueskyCall().apply(zero.url, { hitsTotal: 0 })
+
+    expect(positive.container.querySelector(".gsplus-bluesky-count")?.textContent).toContain(
+      "Bluesky 12 posts"
+    )
+    expect(zero.container.querySelector(".gsplus-bluesky-count")).toBeNull()
+  })
+})
+
+describe("result filtering", () => {
+  it("hides a result only after all three signal requests succeed without a positive signal", () => {
     const target = buildTarget("https://signals.example/none")
     queueTargets.setFilterEnabled(true)
 
@@ -187,22 +222,33 @@ describe("queueTargets", () => {
 
     lastHnCall().apply(target.url, null)
 
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+
+    lastBlueskyCall().apply(target.url, { hitsTotal: 0 })
+
     expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
   })
 
   it("keeps a result visible when either signal is positive", () => {
     const hatenaTarget = buildTarget("https://signals.example/hatena-positive")
     const hnTarget = buildTarget("https://signals.example/hn-positive")
+    const blueskyTarget = buildTarget("https://signals.example/bluesky-positive")
     queueTargets.setFilterEnabled(true)
 
-    queueTargets([hatenaTarget, hnTarget])
+    queueTargets([hatenaTarget, hnTarget, blueskyTarget])
     lastCountsCall().apply(hatenaTarget.url, 3)
     lastHnCall().apply(hatenaTarget.url, null)
+    lastBlueskyCall().apply(hatenaTarget.url, { hitsTotal: 0 })
     lastCountsCall().apply(hnTarget.url, 0)
     lastHnCall().apply(hnTarget.url, { nbHits: 1, maxPoints: 7 })
+    lastBlueskyCall().apply(hnTarget.url, { hitsTotal: 0 })
+    lastCountsCall().apply(blueskyTarget.url, 0)
+    lastHnCall().apply(blueskyTarget.url, null)
+    lastBlueskyCall().apply(blueskyTarget.url, { hitsTotal: 4 })
 
     expect(hatenaTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
     expect(hnTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+    expect(blueskyTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
   })
 
   it("fails open when either signal request has an unknown result", () => {
@@ -212,6 +258,19 @@ describe("queueTargets", () => {
     queueTargets([target])
     lastCountsCall().apply(target.url, undefined)
     lastHnCall().apply(target.url, null)
+    lastBlueskyCall().apply(target.url, { hitsTotal: 0 })
+
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+  })
+
+  it("fails open when the Bluesky result is unavailable", () => {
+    const target = buildTarget("https://signals.example/bluesky-unknown")
+    queueTargets.setFilterEnabled(true)
+
+    queueTargets([target])
+    lastCountsCall().apply(target.url, 0)
+    lastHnCall().apply(target.url, null)
+    lastBlueskyCall().apply(target.url, undefined)
 
     expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
   })
@@ -222,6 +281,7 @@ describe("queueTargets", () => {
     queueTargets([target])
     lastCountsCall().apply(target.url, 0)
     lastHnCall().apply(target.url, null)
+    lastBlueskyCall().apply(target.url, { hitsTotal: 0 })
     expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
 
     queueTargets.setFilterEnabled(false)
@@ -238,6 +298,7 @@ describe("dynamic result filtering", () => {
     queueTargets([first])
     lastCountsCall().apply(url, 0)
     lastHnCall().apply(url, null)
+    lastBlueskyCall().apply(url, { hitsTotal: 0 })
 
     const second = buildTarget(url)
     queueTargets([second])

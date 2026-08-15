@@ -96,4 +96,17 @@ describe("normalizeRequestUrl", () => {
   it("returns urls without queries unchanged", () => {
     expect(normalizeRequestUrl("https://example.com/a")).toBe("https://example.com/a")
   })
+
+  it("preserves protocol, trailing slash, Unicode meaning, and long paths", () => {
+    expect(normalizeRequestUrl("http://Example.com/path#fragment")).toBe("http://example.com/path")
+    expect(normalizeRequestUrl("https://example.com/path/")).toBe("https://example.com/path/")
+    expect(normalizeRequestUrl("https://例え.テスト/記事?q=意味")).toBe(
+      "https://xn--r8jz45g.xn--zckzah/%E8%A8%98%E4%BA%8B?q=%E6%84%8F%E5%91%B3"
+    )
+
+    const longPath = "a".repeat(2_000)
+    expect(normalizeRequestUrl(`https://example.com/${longPath}`)).toBe(
+      `https://example.com/${longPath}`
+    )
+  })
 })

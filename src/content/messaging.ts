@@ -1,16 +1,23 @@
 import {
   MESSAGE_TYPES,
+  isBlueskySummaryMap,
   isBookmarkSummaryList,
   isCountMap,
   isExtensionResponse,
   isHnSummaryMap,
   type HackerNewsResponse,
+  type BlueskyResponse,
   type HatenaCountsResponse,
   type HatenaEntryResponse
 } from "../shared/messages"
 import type { HatenaBookmarkSummary } from "../shared/hatena"
 import { HATENA_COUNT_UNAVAILABLE } from "../shared/hatena"
 import { HACKER_NEWS_SUMMARY_UNAVAILABLE, type HackerNewsSummary } from "../shared/hackerNews"
+import {
+  BLUESKY_SUMMARY_UNAVAILABLE,
+  type BlueskySummary,
+  type BlueskySummaryMap
+} from "../shared/bluesky"
 import {
   BUILD_COMMIT_SHA,
   DIAGNOSTICS_ENABLED,
@@ -33,6 +40,7 @@ const RUNTIME_MESSAGE_MAX_ATTEMPTS = 3
 const RUNTIME_MESSAGE_RETRY_BASE_DELAY_MS = 250
 const enqueueHatenaRuntimeMessage = createRuntimeMessageQueue(2)
 const enqueueHnRuntimeMessage = createRuntimeMessageQueue(4)
+const enqueueBlueskyRuntimeMessage = createRuntimeMessageQueue(3)
 
 function createRuntimeMessageQueue(maxConcurrent: number): RuntimeMessageQueue {
   const pending: Array<(release: () => void) => void> = []
@@ -115,6 +123,26 @@ function sendQueuedRuntimeMessage<T>(
 
 function runtimeAvailable(): boolean {
   return Boolean(chrome.runtime?.id)
+}
+
+export function buildBlueskySummaryDiagnostics(
+  urls: readonly string[],
+  data: BlueskySummaryMap
+): { requestedUrls: number; positive: number; zero: number; unavailable: number } {
+  let positive = 0
+  let zero = 0
+  let unavailable = 0
+  urls.forEach((url) => {
+    const summary = data[url]
+    if (summary === undefined || summary === BLUESKY_SUMMARY_UNAVAILABLE) {
+      unavailable += 1
+    } else if (summary.hitsTotal > 0) {
+      positive += 1
+    } else {
+      zero += 1
+    }
+  })
+  return { requestedUrls: urls.length, positive, zero, unavailable }
 }
 
 export function requestHatenaCounts(
@@ -237,6 +265,72 @@ export function requestHnSummaries(
       })
 
       urls.filter((url) => !(url in response.data)).forEach((url) => apply(url, null))
+    }
+  )
+}
+
+export function requestBlueskySummaries(
+  urls: string[],
+  apply: (url: string, summary: BlueskySummary | undefined) => void,
+  settle: (url: string) => void
+): void {
+  if (!urls.length) {
+    return
+  }
+
+  if (!runtimeAvailable()) {
+    console.debug("Bluesky summaries skipped: runtime unavailable")
+    urls.forEach((url) => {
+      settle(url)
+      apply(url, undefined)
+    })
+    return
+  }
+
+  const request = { type: MESSAGE_TYPES.BLUESKY_REQUEST, urls }
+  sendQueuedRuntimeMessage<BlueskyResponse>(
+    enqueueBlueskyRuntimeMessage,
+    request,
+    (response) => !isExtensionResponse(response, isBlueskySummaryMap) || !response.ok,
+    ({ response, runtimeError, thrownError }) => {
+      urls.forEach((url) => settle(url))
+
+      if (runtimeError) {
+        console.error("Failed to retrieve Bluesky summaries", runtimeError)
+        urls.forEach((url) => apply(url, undefined))
+        return
+      }
+
+      if (thrownError !== undefined) {
+        console.error("Unhandled error while requesting Bluesky summaries", thrownError)
+        urls.forEach((url) => apply(url, undefined))
+        return
+      }
+
+      if (!isExtensionResponse(response, isBlueskySummaryMap)) {
+        console.warn("Unexpected Bluesky response", response)
+        urls.forEach((url) => apply(url, undefined))
+        return
+      }
+
+      if (!response.ok) {
+        console.error("Bluesky summaries fetch failed", response.error)
+        urls.forEach((url) => apply(url, undefined))
+        return
+      }
+
+      if (DIAGNOSTICS_ENABLED) {
+        console.info("[GSPLUS_DIAGNOSTICS]", {
+          event: "bluesky-summaries",
+          ...buildBlueskySummaryDiagnostics(urls, response.data)
+        })
+      }
+
+      Object.entries(response.data).forEach(([url, summary]) => {
+        apply(url, summary === BLUESKY_SUMMARY_UNAVAILABLE ? undefined : summary)
+      })
+
+      urls.filter((url) => !(url in response.data)).forEach((url) => apply(url, undefined))
     }
   )
 }

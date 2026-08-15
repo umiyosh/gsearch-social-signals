@@ -32,6 +32,15 @@ function stubChrome(messages: unknown[]): void {
           typeof message === "object" &&
           message !== null &&
           "type" in message &&
+          message.type === MESSAGE_TYPES.BLUESKY_REQUEST
+        ) {
+          callback(ok({}))
+          return
+        }
+        if (
+          typeof message === "object" &&
+          message !== null &&
+          "type" in message &&
           message.type === MESSAGE_TYPES.HN_REQUEST
         ) {
           callback(ok({}))
@@ -90,6 +99,10 @@ describe("content script boot", () => {
       type: MESSAGE_TYPES.HN_REQUEST,
       urls: ["https://dynamic.example/article"]
     })
+    expect(messages).toContainEqual({
+      type: MESSAGE_TYPES.BLUESKY_REQUEST,
+      urls: ["https://dynamic.example/article"]
+    })
     expect(result.querySelector(".gsplus-hatebu-count__text")?.textContent).toBe("3 users")
 
     observers.forEach((observer) => observer.disconnect())
@@ -135,6 +148,10 @@ describe("content script boot", () => {
     })
     expect(messages).toContainEqual({
       type: MESSAGE_TYPES.HN_REQUEST,
+      urls: ["https://dynamic.example/duckduckgo"]
+    })
+    expect(messages).toContainEqual({
+      type: MESSAGE_TYPES.BLUESKY_REQUEST,
       urls: ["https://dynamic.example/duckduckgo"]
     })
     expect(result.querySelector("h2")?.firstElementChild?.className).toBe("gsplus-signal-container")
