@@ -10,6 +10,7 @@
 
 - Hatena Bookmark は `0 users` の場合は表示しません。
 - Hacker News は、正の points を持つ一致 story が見つからない場合は表示しません。
+- Bluesky は、public AppViewの `hitsTotal` が0または取得不能の場合は表示しません。
 
 すべての検索結果にバッジを追加すると検索結果が読みづらくなるため、意味のあるシグナルがある場合だけ表示します。
 
@@ -21,14 +22,19 @@ Hacker News では、同じ URL が複数の story やコメントで言及さ�
 
 すべての言及数、コメント数、重複投稿数を数えるものではありません。
 
+### Bluesky の posts は反応数ですか？
+
+いいえ。表示するのはpublic AppView APIが返す、そのURLを含む投稿の `hitsTotal` です。likes、reposts、repliesの合計ではなく、API側で丸め・切り捨てられる可能性があるURL mention countです。`hitsTotal` が得られない場合、返却された `posts.length` を総数の代わりには使いません。
+
 ### 検索クエリは外部APIへ送信されますか？
 
-検索クエリ文字列を Hatena Bookmark や Hacker News Search / Algolia に送ることは意図していません。
+Google / DuckDuckGo の検索クエリ文字列を外部APIへ送ることは意図していません。
 
 バッジ表示のために、拡張は対応している Google / DuckDuckGo 検索結果ページに表示された検索結果 URL を読み取り、その URL を以下へ送信します。
 
 - Hatena Bookmark API
 - Hacker News Search / Algolia
+- Bluesky public AppView
 
 ただし、検索結果 URL の集合から検索意図が推測される可能性はあります。この点は [Privacy Policy](../PRIVACY.md) にも記載しています。
 

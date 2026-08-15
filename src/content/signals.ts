@@ -1,6 +1,7 @@
 import type { SearchResultTarget } from "./searchResults"
 import type { HatenaBookmarkSummary } from "../shared/hatena"
 import type { HackerNewsSummary } from "../shared/hackerNews"
+import type { BlueskySummary } from "../shared/bluesky"
 import { DATA_ATTR } from "../shared/url"
 import { FILTERED_RESULT_CLASS } from "./styles"
 
@@ -15,6 +16,11 @@ export interface SignalPipelineDeps {
     apply: (url: string, summary: HackerNewsSummary | null | undefined) => void,
     settle: (url: string) => void
   ) => void
+  requestBlueskySummaries: (
+    urls: string[],
+    apply: (url: string, summary: BlueskySummary | undefined) => void,
+    settle: (url: string) => void
+  ) => void
   requestEntryBookmarks: (url: string) => Promise<HatenaBookmarkSummary[] | null>
   insertBadge: (
     target: SearchResultTarget,
@@ -25,6 +31,7 @@ export interface SignalPipelineDeps {
     }
   ) => void
   insertHnBadge: (target: SearchResultTarget, summary: HackerNewsSummary) => void
+  insertBlueskyBadge: (target: SearchResultTarget, summary: BlueskySummary) => void
   beginOverlaySession: (url: string, badge: HTMLElement) => void
   presentOverlay: (
     url: string,
@@ -46,6 +53,48 @@ interface TargetSignalState {
   target: SearchResultTarget
   hatena: SignalState
   hackerNews: SignalState
+  bluesky: SignalState
+}
+
+interface ProviderPipelineState<T> {
+  targets: Map<string, SearchResultTarget[]>
+  cache: Map<string, T>
+  inflight: Set<string>
+}
+
+function createProviderPipelineState<T>(): ProviderPipelineState<T> {
+  return { targets: new Map(), cache: new Map(), inflight: new Set() }
+}
+
+function queueProviderTarget<T>(
+  target: SearchResultTarget,
+  state: ProviderPipelineState<T>,
+  render: (target: SearchResultTarget, value: T | undefined) => void,
+  urlsToRequest: string[]
+): void {
+  if (state.cache.has(target.url)) {
+    render(target, state.cache.get(target.url))
+  } else if (!state.inflight.has(target.url)) {
+    state.targets.set(target.url, [target])
+    state.inflight.add(target.url)
+    urlsToRequest.push(target.url)
+  } else {
+    const targets = state.targets.get(target.url) ?? []
+    targets.push(target)
+    state.targets.set(target.url, targets)
+  }
+}
+
+function applyProviderResult<T>(
+  url: string,
+  value: T,
+  state: ProviderPipelineState<T>,
+  render: (target: SearchResultTarget, value: T) => void
+): void {
+  state.cache.set(url, value)
+  const targets = state.targets.get(url) ?? []
+  targets.forEach((target) => render(target, value))
+  state.targets.delete(url)
 }
 
 function createSignalRenderer(
@@ -55,7 +104,11 @@ function createSignalRenderer(
   isFilterEnabled: () => boolean
 ) {
   function applyFilter(state: TargetSignalState): void {
-    const shouldHide = isFilterEnabled() && state.hatena === "none" && state.hackerNews === "none"
+    const shouldHide =
+      isFilterEnabled() &&
+      state.hatena === "none" &&
+      state.hackerNews === "none" &&
+      state.bluesky === "none"
     state.target.container.classList.toggle(FILTERED_RESULT_CLASS, shouldHide)
   }
 
@@ -101,16 +154,27 @@ function createSignalRenderer(
     applyFilter(state)
   }
 
-  return { applyFilter, renderCount, renderHnSummary }
+  function renderBlueskySummary(target: SearchResultTarget, summary: BlueskySummary | undefined) {
+    const state = targetStates.get(target.container)
+    if (!state) {
+      return
+    }
+
+    const positive = Boolean(summary && summary.hitsTotal > 0)
+    state.bluesky = signalState(summary, positive)
+    if (positive && summary) {
+      deps.insertBlueskyBadge(target, summary)
+    }
+    applyFilter(state)
+  }
+
+  return { applyFilter, renderCount, renderHnSummary, renderBlueskySummary }
 }
 
 export function createSignalPipeline(deps: SignalPipelineDeps): SignalPipeline {
-  const urlTargets = new Map<string, SearchResultTarget[]>()
-  const cachedCounts = new Map<string, number | null | undefined>()
-  const inflightUrls = new Set<string>()
-  const hnTargets = new Map<string, SearchResultTarget[]>()
-  const cachedHnSummaries = new Map<string, HackerNewsSummary | null | undefined>()
-  const hnInflight = new Set<string>()
+  const hatena = createProviderPipelineState<number | null | undefined>()
+  const hackerNews = createProviderPipelineState<HackerNewsSummary | null | undefined>()
+  const bluesky = createProviderPipelineState<BlueskySummary | undefined>()
   const entryPreviewCache = new Map<string, HatenaBookmarkSummary[] | null>()
   const entryPreviewRequests = new Map<string, Promise<HatenaBookmarkSummary[] | null>>()
   const targetStates = new Map<HTMLElement, TargetSignalState>()
@@ -158,62 +222,64 @@ export function createSignalPipeline(deps: SignalPipelineDeps): SignalPipeline {
   }
 
   function applyCount(url: string, count: number | null | undefined): void {
-    cachedCounts.set(url, count)
-
-    const targets = urlTargets.get(url) ?? []
-    targets.forEach((target) => renderer.renderCount(target, count))
-    urlTargets.delete(url)
+    applyProviderResult(url, count, hatena, renderer.renderCount)
   }
 
   function applyHnSummary(url: string, summary: HackerNewsSummary | null | undefined): void {
-    cachedHnSummaries.set(url, summary)
-    const targets = hnTargets.get(url) ?? []
-    targets.forEach((target) => renderer.renderHnSummary(target, summary))
-    hnTargets.delete(url)
+    applyProviderResult(url, summary, hackerNews, renderer.renderHnSummary)
+  }
+
+  function applyBlueskySummary(url: string, summary: BlueskySummary | undefined): void {
+    applyProviderResult(url, summary, bluesky, renderer.renderBlueskySummary)
   }
 
   const queueTargets = (targets: SearchResultTarget[]): void => {
     const urlsToRequest: string[] = []
     const hnUrlsToRequest: string[] = []
+    const blueskyUrlsToRequest: string[] = []
 
     targets.forEach((target) => {
       targetStates.set(target.container, {
         target,
         hatena: "pending",
-        hackerNews: "pending"
+        hackerNews: "pending",
+        bluesky: "pending"
       })
 
-      if (cachedCounts.has(target.url)) {
-        renderer.renderCount(target, cachedCounts.get(target.url))
-      } else if (!inflightUrls.has(target.url)) {
-        urlTargets.set(target.url, [target])
-        inflightUrls.add(target.url)
-        urlsToRequest.push(target.url)
-      } else {
-        const list = urlTargets.get(target.url) ?? []
-        list.push(target)
-        urlTargets.set(target.url, list)
-      }
-
-      if (cachedHnSummaries.has(target.url)) {
-        renderer.renderHnSummary(target, cachedHnSummaries.get(target.url))
-      } else if (!hnInflight.has(target.url)) {
-        hnTargets.set(target.url, [target])
-        hnInflight.add(target.url)
-        hnUrlsToRequest.push(target.url)
-      } else {
-        const hnList = hnTargets.get(target.url) ?? []
-        hnList.push(target)
-        hnTargets.set(target.url, hnList)
-      }
+      queueProviderTarget<number | null | undefined>(
+        target,
+        hatena,
+        renderer.renderCount,
+        urlsToRequest
+      )
+      queueProviderTarget<HackerNewsSummary | null | undefined>(
+        target,
+        hackerNews,
+        renderer.renderHnSummary,
+        hnUrlsToRequest
+      )
+      queueProviderTarget<BlueskySummary | undefined>(
+        target,
+        bluesky,
+        renderer.renderBlueskySummary,
+        blueskyUrlsToRequest
+      )
     })
 
     if (urlsToRequest.length) {
-      deps.requestHatenaCounts(urlsToRequest, applyCount, (url) => inflightUrls.delete(url))
+      deps.requestHatenaCounts(urlsToRequest, applyCount, (url) => hatena.inflight.delete(url))
     }
 
     if (hnUrlsToRequest.length) {
-      deps.requestHnSummaries(hnUrlsToRequest, applyHnSummary, (url) => hnInflight.delete(url))
+      deps.requestHnSummaries(hnUrlsToRequest, applyHnSummary, (url) =>
+        hackerNews.inflight.delete(url)
+      )
+    }
+
+    if (blueskyUrlsToRequest.length) {
+      deps.requestBlueskySummaries(blueskyUrlsToRequest, applyBlueskySummary, (url) =>
+        bluesky.inflight.delete(url)
+      )
     }
   }
 

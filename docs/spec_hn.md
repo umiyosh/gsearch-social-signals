@@ -11,7 +11,7 @@ Hacker News support is implemented in the main GSearch With Social Signals exten
 - `nbHits` is kept as response metadata but is not the visible count.
 - `maxComments` and `topStoryId` are kept as summary metadata.
 - The badge is hidden when `maxPoints` is missing, zero, or negative.
-- HN badges are rendered next to Hatena Bookmark badges in the shared social signal container.
+- HN badges are rendered next to Hatena Bookmark and Bluesky badges in the shared social signal container.
 - HN story links open only when the user clicks a badge; the extension does not request `news.ycombinator.com` as a host permission.
 
 ## API
@@ -77,6 +77,7 @@ The summary uses:
 - The content script never fetches HN directly.
 - The only HN host permission is `https://hn.algolia.com/*`.
 - Search result URLs are sent to HN Algolia to provide the displayed points. This is described in `PRIVACY.md` and the Chrome Web Store Privacy practices draft.
+- The common result filter hides a result only after Hatena, HN, and Bluesky have all completed successfully without a positive signal. An unavailable provider keeps the result visible.
 
 ## Tests
 

@@ -1,7 +1,7 @@
 {
   "name": "gsearch-social-signals",
   "version": "0.2.0",
-  "description": "Chrome extension that shows Hatena Bookmark counts and Hacker News points on Google and DuckDuckGo results.",
+  "description": "Chrome extension that shows Hatena Bookmark, Hacker News, and Bluesky signals on Google and DuckDuckGo results.",
   "private": true,
   "type": "module",
   "scripts": {

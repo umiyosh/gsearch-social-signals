@@ -1,11 +1,15 @@
 import type { SearchResultTarget } from "./searchResults"
 import type { HackerNewsSummary } from "../shared/hackerNews"
-import { DATA_ATTR, buildHatenaEntryUrl } from "../shared/url"
+import type { BlueskySummary } from "../shared/bluesky"
+import { DATA_ATTR, buildHatenaEntryUrl, normalizeRequestUrl } from "../shared/url"
 import {
   BADGE_CLASS,
   BADGE_CONTAINER_CLASS,
   BADGE_ICON_CLASS,
   BADGE_TEXT_CLASS,
+  BLUESKY_BADGE_CLASS,
+  BLUESKY_BADGE_ICON_CLASS,
+  BLUESKY_BADGE_TEXT_CLASS,
   HN_BADGE_CLASS,
   HN_BADGE_ICON_CLASS,
   HN_BADGE_TEXT_CLASS
@@ -132,6 +136,39 @@ export function insertHnBadge(target: SearchResultTarget, summary: HackerNewsSum
   text.textContent = `HN ${summary.maxPoints ?? 0} pts`
 }
 
+export function insertBlueskyBadge(target: SearchResultTarget, summary: BlueskySummary): void {
+  const container = getSignalContainer(target)
+  let badge = container.querySelector<HTMLAnchorElement>(`.${BLUESKY_BADGE_CLASS}`)
+  if (!badge) {
+    badge = document.createElement("a")
+    badge.className = BLUESKY_BADGE_CLASS
+    badge.target = "_blank"
+    badge.rel = "noopener noreferrer"
+    container.appendChild(badge)
+  }
+
+  badge.href = buildBlueskySearchUrl(target.url)
+  badge.setAttribute("aria-label", `Bluesky: ${summary.hitsTotal} posts mentioning this URL`)
+  badge.title = `Bluesky: ${summary.hitsTotal} posts mentioning this URL`
+
+  let icon = badge.querySelector<HTMLElement>(`.${BLUESKY_BADGE_ICON_CLASS}`)
+  if (!icon) {
+    icon = document.createElement("span")
+    icon.className = BLUESKY_BADGE_ICON_CLASS
+    icon.setAttribute("aria-hidden", "true")
+    icon.textContent = "🦋"
+    badge.prepend(icon)
+  }
+
+  let text = badge.querySelector<HTMLElement>(`.${BLUESKY_BADGE_TEXT_CLASS}`)
+  if (!text) {
+    text = document.createElement("span")
+    text.className = BLUESKY_BADGE_TEXT_CLASS
+    badge.appendChild(text)
+  }
+  text.textContent = String(summary.hitsTotal)
+}
+
 function attachBadgeEvents(badge: HTMLAnchorElement, url: string, hover: BadgeHoverHandlers): void {
   if (badge.getAttribute(BADGE_BOUND_ATTR) === "true") {
     return
@@ -155,4 +192,8 @@ function attachBadgeEvents(badge: HTMLAnchorElement, url: string, hover: BadgeHo
 function buildHnSearchUrl(url: string): string {
   const encoded = encodeURIComponent(url)
   return `https://hn.algolia.com/?query=${encoded}&type=story&sort=byPopularity`
+}
+
+function buildBlueskySearchUrl(url: string): string {
+  return `https://bsky.app/search?q=${encodeURIComponent(normalizeRequestUrl(url))}`
 }

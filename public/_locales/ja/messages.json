@@ -4,7 +4,7 @@
     "description": "Chrome と Chrome Web Store に表示する拡張機能名。"
   },
   "appDescription": {
-    "message": "GoogleとDuckDuckGoの検索結果にはてなブックマーク数とHacker Newsポイントを表示します。",
+    "message": "GoogleとDuckDuckGoの検索結果にはてな、Hacker News、Blueskyのシグナルを表示します。",
     "description": "Chrome と Chrome Web Store に表示する短い説明。"
   },
   "actionDefaultTitle": {
@@ -28,7 +28,7 @@
     "description": "検索結果の絞り込み設定のタイトル。"
   },
   "optionsFilterDescription": {
-    "message": "はてなブックマークとHacker Newsの両方でシグナルが無い結果を非表示にします。どちらかの取得に失敗した場合は表示を維持します。",
+    "message": "はてな、Hacker News、Blueskyのすべてでシグナルが無い結果だけを非表示にします。いずれかの取得に失敗した場合は表示を維持します。",
     "description": "検索結果の絞り込み設定の説明。"
   },
   "optionsSaving": {

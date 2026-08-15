@@ -5,6 +5,9 @@ export const BADGE_TEXT_CLASS = "gsplus-hatebu-count__text"
 export const HN_BADGE_CLASS = "gsplus-hn-count"
 export const HN_BADGE_ICON_CLASS = "gsplus-hn-count__icon"
 export const HN_BADGE_TEXT_CLASS = "gsplus-hn-count__text"
+export const BLUESKY_BADGE_CLASS = "gsplus-bluesky-count"
+export const BLUESKY_BADGE_ICON_CLASS = "gsplus-bluesky-count__icon"
+export const BLUESKY_BADGE_TEXT_CLASS = "gsplus-bluesky-count__text"
 export const OVERLAY_CLASS = "gsplus-hatebu-overlay"
 export const OVERLAY_BODY_CLASS = "gsplus-hatebu-overlay__body"
 export const OVERLAY_USER_CLASS = "gsplus-hatebu-overlay__user"
@@ -41,7 +44,8 @@ const STYLE_TEXT = `
     }
 
     .${BADGE_CLASS}:focus-visible,
-    .${HN_BADGE_CLASS}:focus-visible {
+    .${HN_BADGE_CLASS}:focus-visible,
+    .${BLUESKY_BADGE_CLASS}:focus-visible {
       outline: 2px solid currentColor;
       outline-offset: 2px;
       border-radius: 3px;
@@ -65,6 +69,25 @@ const STYLE_TEXT = `
     .${HN_BADGE_TEXT_CLASS} {
       text-transform: uppercase;
       letter-spacing: 0;
+    }
+
+    .${BLUESKY_BADGE_CLASS} {
+      font-size: 0.875rem;
+      color: #0560c9;
+      margin-left: 0.35rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      text-decoration: none;
+    }
+
+    .${BLUESKY_BADGE_ICON_CLASS} {
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+      line-height: 1;
+    }
+
+    .${BLUESKY_BADGE_TEXT_CLASS} {
+      line-height: 1;
     }
 
     .${BADGE_CONTAINER_CLASS} {
@@ -143,6 +166,10 @@ const STYLE_TEXT = `
         color: #ffb36b;
       }
 
+      .${BLUESKY_BADGE_CLASS} {
+        color: #75afff;
+      }
+
       .${OVERLAY_CLASS} {
         background: #202124;
         color: #e8eaed;
@@ -168,13 +195,15 @@ const STYLE_TEXT = `
 
     @media (forced-colors: active) {
       .${BADGE_CLASS},
-      .${HN_BADGE_CLASS} {
+      .${HN_BADGE_CLASS},
+      .${BLUESKY_BADGE_CLASS} {
         color: LinkText;
         text-decoration: underline;
       }
 
       .${BADGE_CLASS}:focus-visible,
-      .${HN_BADGE_CLASS}:focus-visible {
+      .${HN_BADGE_CLASS}:focus-visible,
+      .${BLUESKY_BADGE_CLASS}:focus-visible {
         outline-color: Highlight;
       }
 

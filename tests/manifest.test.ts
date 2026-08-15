@@ -6,8 +6,9 @@ interface ExtensionManifest {
   name?: string
   default_locale?: string
   action?: { default_popup?: string }
+  host_permissions?: string[]
   content_scripts?: Array<{ matches?: string[] }>
-  web_accessible_resources?: Array<{ matches?: string[] }>
+  web_accessible_resources?: Array<{ matches?: string[]; resources?: string[] }>
 }
 
 type MessageCatalog = Record<string, { message: string }>
@@ -51,12 +52,22 @@ describe("extension manifest", () => {
     expect(Array.from(japaneseCatalog.appName?.message ?? "").length).toBeLessThanOrEqual(75)
     expect(englishCatalog.appName?.message).toBe("GSearch With Social Signals")
     expect(japaneseCatalog.appDescription?.message).toBe(
-      "GoogleとDuckDuckGoの検索結果にはてなブックマーク数とHacker Newsポイントを表示します。"
+      "GoogleとDuckDuckGoの検索結果にはてな、Hacker News、Blueskyのシグナルを表示します。"
     )
     expect(japaneseCatalog.actionDefaultTitle?.message).toBe("GSearch With Social Signals")
     expect(japaneseCatalog.optionsPageTitle?.message).toBe("GSearch With Social Signals の設定")
     expect(japaneseCatalog.optionsSubtitle?.message).toBe(
       "Google検索結果にソーシャルシグナルを表示"
+    )
+  })
+
+  it("grants only the working Bluesky AppView host without exposing a Bluesky logo asset", () => {
+    const manifest = readManifest()
+
+    expect(manifest.host_permissions).toContain("https://api.bsky.app/*")
+    expect(manifest.host_permissions).not.toContain("https://public.api.bsky.app/*")
+    expect(manifest.web_accessible_resources?.[0]?.resources).not.toContain(
+      "icons/bluesky-signal.svg"
     )
   })
 })
