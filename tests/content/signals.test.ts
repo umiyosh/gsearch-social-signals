@@ -269,7 +269,7 @@ describe("result filtering", () => {
     expect(blueskyTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
   })
 
-  it("fails open when either signal request has an unknown result", () => {
+  it("hides a settled result when no provider has a known positive signal", () => {
     const target = buildTarget("https://signals.example/unknown")
     queueTargets.setFilterEnabled(true)
 
@@ -278,10 +278,10 @@ describe("result filtering", () => {
     lastHnCall().apply(target.url, null)
     lastBlueskyCall().apply(target.url, { hitsTotal: 0 })
 
-    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
   })
 
-  it("fails open when the Bluesky result is unavailable", () => {
+  it("hides a settled result when Bluesky is unavailable", () => {
     const target = buildTarget("https://signals.example/bluesky-unknown")
     queueTargets.setFilterEnabled(true)
 
@@ -290,7 +290,7 @@ describe("result filtering", () => {
     lastHnCall().apply(target.url, null)
     lastBlueskyCall().apply(target.url, undefined)
 
-    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
   })
 
   it("restores hidden results when the filter is disabled", () => {
@@ -408,7 +408,7 @@ describe("dynamic result filtering", () => {
     const hnRequests = requestHnSummaries.mock.calls.length
     const blueskyRequests = requestBlueskySummaries.mock.calls.length
 
-    expect(nextPageTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+    expect(nextPageTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
 
     await vi.advanceTimersByTimeAsync(2_000)
 
@@ -417,9 +417,12 @@ describe("dynamic result filtering", () => {
     expect(requestBlueskySummaries).toHaveBeenCalledTimes(blueskyRequests + 1)
     expect(lastBlueskyCall().urls).toEqual([nextPageTarget.url])
 
-    lastBlueskyCall().apply(nextPageTarget.url, { hitsTotal: 0 })
+    lastBlueskyCall().apply(nextPageTarget.url, { hitsTotal: 2 })
 
-    expect(nextPageTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
+    expect(nextPageTarget.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+    expect(nextPageTarget.container.querySelector(".gsplus-bluesky-count")?.textContent).toContain(
+      "🦋2"
+    )
   })
 
   it("bounds automatic retries while a provider remains unavailable", async () => {
@@ -450,7 +453,7 @@ describe("dynamic result filtering", () => {
     await vi.advanceTimersByTimeAsync(120_000)
 
     expect(requestBlueskySummaries).toHaveBeenCalledTimes(5)
-    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
   })
 })
 
