@@ -46,8 +46,9 @@ describe("extension manifest", () => {
     expect(manifest.name).toBe("__MSG_appName__")
     expect(manifest.default_locale).toBe("en")
     expect(japaneseCatalog.appName?.message).toBe(
-      "はてなブックマーク・HNスコアを検索結果に表示 - GSearch"
+      "はてなブックマーク・HN・Blueskyを検索結果に表示 - GSearch"
     )
+    expect(Array.from(japaneseCatalog.appName?.message ?? "").length).toBeLessThanOrEqual(75)
     expect(englishCatalog.appName?.message).toBe("GSearch With Social Signals")
     expect(japaneseCatalog.appDescription?.message).toBe(
       "GoogleとDuckDuckGoの検索結果にはてなブックマーク数とHacker Newsポイントを表示します。"
