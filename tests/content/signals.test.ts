@@ -153,6 +153,22 @@ describe("queueTargets", () => {
     expect(requestHatenaCounts.mock.calls.length).toBe(requestsSoFar)
   })
 
+  it("does not cache an unknown result for a later matching target", () => {
+    const url = "https://signals.example/retry-unknown"
+    const first = buildTarget(url)
+    queueTargets([first])
+    const firstCall = lastCountsCall()
+    firstCall.apply(url, undefined)
+    firstCall.settle(url)
+    const requestsSoFar = requestHatenaCounts.mock.calls.length
+
+    const second = buildTarget(url)
+    queueTargets([second])
+
+    expect(requestHatenaCounts.mock.calls.length).toBe(requestsSoFar + 1)
+    expect(lastCountsCall().urls).toEqual([url])
+  })
+
   it("renders HN badges when summaries report positive max points", () => {
     const target = buildTarget("https://signals.example/hn")
 
@@ -284,6 +300,58 @@ describe("result filtering", () => {
 
     queueTargets.setFilterEnabled(false)
 
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
+  })
+
+  it("retries only unknown providers when the filter is re-enabled", () => {
+    const target = buildTarget("https://signals.example/retry-filter")
+    queueTargets.setFilterEnabled(true)
+    queueTargets([target])
+
+    const countsCall = lastCountsCall()
+    countsCall.apply(target.url, undefined)
+    countsCall.settle(target.url)
+    const hnCall = lastHnCall()
+    hnCall.apply(target.url, null)
+    hnCall.settle(target.url)
+    const blueskyCall = lastBlueskyCall()
+    blueskyCall.apply(target.url, { hitsTotal: 0 })
+    blueskyCall.settle(target.url)
+    const hnRequestsSoFar = requestHnSummaries.mock.calls.length
+    const blueskyRequestsSoFar = requestBlueskySummaries.mock.calls.length
+
+    queueTargets.setFilterEnabled(false)
+    queueTargets.setFilterEnabled(true)
+
+    expect(lastCountsCall().urls).toEqual([target.url])
+    expect(requestHnSummaries.mock.calls.length).toBe(hnRequestsSoFar)
+    expect(requestBlueskySummaries.mock.calls.length).toBe(blueskyRequestsSoFar)
+
+    lastCountsCall().apply(target.url, 0)
+
+    expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
+  })
+
+  it("renders a recovered Bluesky signal when the filter is re-enabled", () => {
+    const target = buildTarget("https://signals.example/retry-bluesky")
+    queueTargets.setFilterEnabled(true)
+    queueTargets([target])
+
+    const countsCall = lastCountsCall()
+    countsCall.apply(target.url, 0)
+    countsCall.settle(target.url)
+    const hnCall = lastHnCall()
+    hnCall.apply(target.url, null)
+    hnCall.settle(target.url)
+    const blueskyCall = lastBlueskyCall()
+    blueskyCall.apply(target.url, undefined)
+    blueskyCall.settle(target.url)
+
+    queueTargets.setFilterEnabled(false)
+    queueTargets.setFilterEnabled(true)
+    lastBlueskyCall().apply(target.url, { hitsTotal: 1 })
+
+    expect(target.container.querySelector(".gsplus-bluesky-count")?.textContent).toContain("🦋1")
     expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(false)
   })
 })
