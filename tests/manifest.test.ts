@@ -52,7 +52,7 @@ describe("extension manifest", () => {
     expect(Array.from(japaneseCatalog.appName?.message ?? "").length).toBeLessThanOrEqual(75)
     expect(englishCatalog.appName?.message).toBe("GSearch With Social Signals")
     expect(japaneseCatalog.appDescription?.message).toBe(
-      "GoogleとDuckDuckGoの検索結果にはてなブックマーク数とHacker Newsポイントを表示します。"
+      "GoogleとDuckDuckGoの検索結果にはてな、Hacker News、Blueskyのシグナルを表示します。"
     )
     expect(japaneseCatalog.actionDefaultTitle?.message).toBe("GSearch With Social Signals")
     expect(japaneseCatalog.optionsPageTitle?.message).toBe("GSearch With Social Signals の設定")
