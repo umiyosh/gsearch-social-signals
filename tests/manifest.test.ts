@@ -47,12 +47,12 @@ describe("extension manifest", () => {
     expect(manifest.name).toBe("__MSG_appName__")
     expect(manifest.default_locale).toBe("en")
     expect(japaneseCatalog.appName?.message).toBe(
-      "はてなブックマーク・HN・Blueskyを検索結果に表示 - GSearch"
+      "はてなブックマーク・HNスコアを検索結果に表示 - GSearch"
     )
     expect(Array.from(japaneseCatalog.appName?.message ?? "").length).toBeLessThanOrEqual(75)
     expect(englishCatalog.appName?.message).toBe("GSearch With Social Signals")
     expect(japaneseCatalog.appDescription?.message).toBe(
-      "GoogleとDuckDuckGoの検索結果にはてな、Hacker News、Blueskyのシグナルを表示します。"
+      "GoogleとDuckDuckGoの検索結果にはてなブックマーク数とHacker Newsポイントを表示します。"
     )
     expect(japaneseCatalog.actionDefaultTitle?.message).toBe("GSearch With Social Signals")
     expect(japaneseCatalog.optionsPageTitle?.message).toBe("GSearch With Social Signals の設定")
@@ -61,10 +61,10 @@ describe("extension manifest", () => {
     )
   })
 
-  it("grants only the working Bluesky AppView host without exposing a Bluesky logo asset", () => {
+  it("does not grant access to Bluesky after withdrawing that integration", () => {
     const manifest = readManifest()
 
-    expect(manifest.host_permissions).toContain("https://api.bsky.app/*")
+    expect(manifest.host_permissions).not.toContain("https://api.bsky.app/*")
     expect(manifest.host_permissions).not.toContain("https://public.api.bsky.app/*")
     expect(manifest.web_accessible_resources?.[0]?.resources).not.toContain(
       "icons/bluesky-signal.svg"

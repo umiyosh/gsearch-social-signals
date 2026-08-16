@@ -10,6 +10,7 @@ export interface HackerNewsSummary {
 }
 
 export const HACKER_NEWS_SUMMARY_UNAVAILABLE = "unavailable" as const
+export const HN_REQUEST_BATCH_SIZE = 40
 export type HackerNewsSummaryResult =
   | HackerNewsSummary
   | null

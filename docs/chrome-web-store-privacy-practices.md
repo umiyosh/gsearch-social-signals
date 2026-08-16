@@ -14,11 +14,11 @@ Official references:
 
 Use this in the Chrome Web Store Privacy practices "Single purpose" field:
 
-> Google と DuckDuckGo のWeb検索結果に表示されるリンクURLについて、公開されている Hatena Bookmark 件数、Hacker News score、Bluesky URL mention count を検索結果上にバッジ表示すること。
+> Google と DuckDuckGo のWeb検索結果に表示されるリンクURLについて、公開されている Hatena Bookmark 件数と Hacker News score を検索結果上にバッジ表示すること。
 
 English fallback:
 
-> Display public Hatena Bookmark counts, Hacker News scores, and Bluesky URL mention counts next to links on supported Google Search and DuckDuckGo web result pages.
+> Display public Hatena Bookmark counts and Hacker News scores next to links on supported Google Search and DuckDuckGo web result pages.
 
 This is intentionally narrow. The extension does not provide analytics, advertising, tracking, ranking changes, account sync, or general browsing history features.
 
@@ -37,10 +37,6 @@ Required to fetch public Hatena Bookmark entry/comment information for the URL w
 ### `https://hn.algolia.com/*`
 
 Required to send supported search result URLs to the Hacker News Search / Algolia API and display the highest matching public Hacker News story score as an `HN 456 pts` badge.
-
-### `https://api.bsky.app/*`
-
-Required to send normalized supported search result URLs to the public Bluesky AppView API and display the returned public `hitsTotal` URL mention count as a butterfly icon with a `12 posts` badge. The accessible name retains the full `Bluesky` service name. The extension does not use Bluesky login, account data, or an API token.
 
 ### `storage`
 
@@ -110,7 +106,6 @@ Use the data only for app functionality:
 
 - Send search result URLs to Hatena Bookmark APIs to retrieve bookmark counts and public comment previews.
 - Send search result URLs to Hacker News Search / Algolia to retrieve matching public story scores.
-- Send normalized search result URLs to the Bluesky public AppView API to retrieve `hitsTotal` URL mention counts.
 - Cache responses in memory during the browser session or service worker lifetime to avoid repeated requests.
 
 Do not disclose analytics, advertising, personalization, profiling, credit-worthiness, resale, or unrelated research uses because the extension does not perform those activities.
@@ -124,13 +119,12 @@ Share data only with:
 - Hatena Bookmark API: `https://bookmark.hatenaapis.com/*`
 - Hatena Bookmark entry API: `https://b.hatena.ne.jp/*`
 - Hacker News Search / Algolia: `https://hn.algolia.com/*`
-- Bluesky public AppView: `https://api.bsky.app/*`
 
 Do not disclose sharing with developer servers, analytics providers, advertising providers, error tracking providers, data brokers, or information resellers because the extension does not use them.
 
 Use this explanation:
 
-> Search result URLs are sent to Hatena Bookmark APIs, Hacker News Search / Algolia, and the Bluesky public AppView API only to retrieve the public social signals displayed by the extension. This transfer is necessary to provide the extension's single purpose. The developer does not operate a server for this extension and does not store the transmitted URLs.
+> Search result URLs are sent to Hatena Bookmark APIs and Hacker News Search / Algolia only to retrieve the public social signals displayed by the extension. This transfer is necessary to provide the extension's single purpose. The developer does not operate a server for this extension and does not store the transmitted URLs.
 
 ## Developer Data Retention
 
@@ -148,12 +142,12 @@ Use this statement in the data use certification:
 
 Use this statement in the Privacy practices certification and keep it consistent with `PRIVACY.md`:
 
-> The extension's use of browsing activity and website content data complies with the Chrome Web Store User Data Policy, including the Limited Use requirements. Data is used only to provide or improve the single purpose of showing public Hatena Bookmark, Hacker News, and Bluesky signals on supported Google Search and DuckDuckGo web result pages. Data is transferred to third parties only when necessary to provide that feature. Data is not sold and is not used for advertising, profiling, or unrelated purposes.
+> The extension's use of browsing activity and website content data complies with the Chrome Web Store User Data Policy, including the Limited Use requirements. Data is used only to provide or improve the single purpose of showing public Hatena Bookmark and Hacker News signals on supported Google Search and DuckDuckGo web result pages. Data is transferred to third parties only when necessary to provide that feature. Data is not sold and is not used for advertising, profiling, or unrelated purposes.
 
 ## Consistency Checklist
 
 - Privacy practices and `PRIVACY.md` both explain that search result URLs can suggest search intent.
-- Privacy practices and `PRIVACY.md` both list Hatena Bookmark API, Hatena Bookmark entry API, Hacker News Search / Algolia, and Bluesky public AppView.
+- Privacy practices and `PRIVACY.md` both list Hatena Bookmark API, Hatena Bookmark entry API, and Hacker News Search / Algolia.
 - Privacy practices and `PRIVACY.md` both state that third-party transfer is necessary to provide the user-facing feature.
 - Privacy practices and `PRIVACY.md` both state that the developer does not operate a server or retain user data.
 - Privacy practices and `PRIVACY.md` both state that browser caches are in-memory only and that only the boolean filter preference is persisted with `chrome.storage.sync`.

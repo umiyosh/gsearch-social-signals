@@ -1,6 +1,5 @@
 import { HATENA_COUNT_UNAVAILABLE, type HatenaBookmarkSummary, type HatenaCountMap } from "./hatena"
 import { HACKER_NEWS_SUMMARY_UNAVAILABLE, type HackerNewsSummaryMap } from "./hackerNews"
-import { BLUESKY_SUMMARY_UNAVAILABLE, type BlueskySummaryMap } from "./bluesky"
 import {
   isEntryDiagnosticsRequest,
   type EntryDiagnosticsRequest,
@@ -10,8 +9,7 @@ import {
 export const MESSAGE_TYPES = {
   COUNT_REQUEST: "GSPLUS_HATEBU_REQUEST_COUNTS",
   ENTRY_REQUEST: "GSPLUS_HATEBU_REQUEST_ENTRY",
-  HN_REQUEST: "GSPLUS_HATEBU_REQUEST_HN",
-  BLUESKY_REQUEST: "GSPLUS_HATEBU_REQUEST_BLUESKY"
+  HN_REQUEST: "GSPLUS_HATEBU_REQUEST_HN"
 } as const
 
 export type HatenaCountsRequest = {
@@ -30,30 +28,19 @@ export type HackerNewsRequest = {
   urls: string[]
 }
 
-export type BlueskyRequest = {
-  type: typeof MESSAGE_TYPES.BLUESKY_REQUEST
-  urls: string[]
-}
-
-export type ExtensionRequest =
-  | HatenaCountsRequest
-  | HatenaEntryRequest
-  | HackerNewsRequest
-  | BlueskyRequest
+export type ExtensionRequest = HatenaCountsRequest | HatenaEntryRequest | HackerNewsRequest
 
 export type Ok<T> = { ok: true; data: T }
 export type Err = { ok: false; error: string }
 export type ExtensionResponse<T> = Ok<T> | Err
 
 export type HnSummaryMap = HackerNewsSummaryMap
-export type BlueskySummaries = BlueskySummaryMap
 
 export type HatenaCountsResponse = ExtensionResponse<HatenaCountMap>
 export type HatenaEntryResponse = ExtensionResponse<HatenaBookmarkSummary[]> & {
   diagnostics?: EntryDiagnosticsResponse
 }
 export type HackerNewsResponse = ExtensionResponse<HnSummaryMap>
-export type BlueskyResponse = ExtensionResponse<BlueskySummaries>
 
 export function ok<T>(data: T): Ok<T> {
   return { ok: true, data }
@@ -88,19 +75,8 @@ export function isHackerNewsRequest(value: unknown): value is HackerNewsRequest 
   return isRecord(value) && value.type === MESSAGE_TYPES.HN_REQUEST && isStringArray(value.urls)
 }
 
-export function isBlueskyRequest(value: unknown): value is BlueskyRequest {
-  return (
-    isRecord(value) && value.type === MESSAGE_TYPES.BLUESKY_REQUEST && isStringArray(value.urls)
-  )
-}
-
 export function isExtensionRequest(value: unknown): value is ExtensionRequest {
-  return (
-    isHatenaCountsRequest(value) ||
-    isHatenaEntryRequest(value) ||
-    isHackerNewsRequest(value) ||
-    isBlueskyRequest(value)
-  )
+  return isHatenaCountsRequest(value) || isHatenaEntryRequest(value) || isHackerNewsRequest(value)
 }
 
 export function isCountMap(value: unknown): value is HatenaCountMap {
@@ -134,19 +110,6 @@ export function isHnSummaryMap(value: unknown): value is HnSummaryMap {
         summary === null ||
         summary === HACKER_NEWS_SUMMARY_UNAVAILABLE ||
         (isRecord(summary) && typeof summary.nbHits === "number")
-    )
-  )
-}
-
-export function isBlueskySummaryMap(value: unknown): value is BlueskySummaries {
-  return (
-    isRecord(value) &&
-    Object.values(value).every(
-      (summary) =>
-        summary === BLUESKY_SUMMARY_UNAVAILABLE ||
-        (isRecord(summary) &&
-          Number.isInteger(summary.hitsTotal) &&
-          (summary.hitsTotal as number) >= 0)
     )
   )
 }

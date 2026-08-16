@@ -1,12 +1,7 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import {
-  insertBadge,
-  insertBlueskyBadge,
-  insertHnBadge,
-  type BadgeHoverHandlers
-} from "../../src/content/badges"
+import { insertBadge, insertHnBadge, type BadgeHoverHandlers } from "../../src/content/badges"
 import type { SearchResultTarget } from "../../src/content/searchResults"
 
 function buildTarget(url: string, hostClass?: string): SearchResultTarget {
@@ -155,37 +150,5 @@ describe("insertHnBadge", () => {
     expect(containers).toHaveLength(1)
     expect(containers[0]?.querySelector(".gsplus-hatebu-count")).not.toBeNull()
     expect(containers[0]?.querySelector(".gsplus-hn-count")).not.toBeNull()
-  })
-})
-
-describe("insertBlueskyBadge", () => {
-  it("renders a generic butterfly emoji and compact count that open Bluesky search", () => {
-    const target = buildTarget("https://example.com/article?keep=1")
-
-    insertBlueskyBadge(target, { hitsTotal: 12 })
-
-    const badge = target.container.querySelector<HTMLAnchorElement>(".gsplus-bluesky-count")
-    expect(badge?.href).toContain("https://bsky.app/search?q=")
-    expect(badge?.href).toContain(encodeURIComponent("https://example.com/article?keep=1"))
-    expect(badge?.querySelector("img")).toBeNull()
-    expect(badge?.querySelector(".gsplus-bluesky-count__icon")?.textContent).toBe("🦋")
-    expect(badge?.querySelector(".gsplus-bluesky-count__icon")?.getAttribute("aria-hidden")).toBe(
-      "true"
-    )
-    expect(badge?.querySelector(".gsplus-bluesky-count__text")?.textContent).toBe("12")
-    expect(badge?.textContent).not.toContain("Bluesky")
-    expect(badge?.textContent).not.toContain("posts")
-    expect(badge?.getAttribute("aria-label")).toBe("Bluesky: 12 posts mentioning this URL")
-    expect(badge?.rel).toBe("noopener noreferrer")
-  })
-
-  it("shares the existing signal container", () => {
-    const target = buildTarget("https://example.com/all")
-
-    insertBadge(target, 2, noopHover())
-    insertHnBadge(target, { nbHits: 1, maxPoints: 10 })
-    insertBlueskyBadge(target, { hitsTotal: 4 })
-
-    expect(target.container.querySelectorAll(".gsplus-signal-container")).toHaveLength(1)
   })
 })

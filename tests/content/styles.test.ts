@@ -1,11 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import {
-  BADGE_CLASS,
-  BLUESKY_BADGE_CLASS,
-  HN_BADGE_CLASS,
-  OVERLAY_CLASS,
-  ensureStyles
-} from "../../src/content/styles"
+import { BADGE_CLASS, HN_BADGE_CLASS, OVERLAY_CLASS, ensureStyles } from "../../src/content/styles"
 
 function relativeLuminance(hex: string): number {
   const channels = hex
@@ -43,7 +37,6 @@ describe("ensureStyles", () => {
     expect(style?.textContent).toContain(`.${BADGE_CLASS}`)
     expect(style?.textContent).toContain(`.${BADGE_CLASS}:focus-visible`)
     expect(style?.textContent).toContain(`.${HN_BADGE_CLASS}:focus-visible`)
-    expect(style?.textContent).toContain(`.${BLUESKY_BADGE_CLASS}:focus-visible`)
     expect(style?.textContent).toContain(`.${OVERLAY_CLASS}`)
     expect(style?.textContent).toContain("@media (prefers-color-scheme: dark)")
     expect(style?.textContent).toContain("@media (forced-colors: active)")
@@ -56,8 +49,6 @@ describe("ensureStyles", () => {
     expect(contrastRatio("#a34700", "#ffffff")).toBeGreaterThanOrEqual(4.5)
     expect(contrastRatio("#4cc9f0", "#202124")).toBeGreaterThanOrEqual(4.5)
     expect(contrastRatio("#ffb36b", "#202124")).toBeGreaterThanOrEqual(4.5)
-    expect(contrastRatio("#0560c9", "#ffffff")).toBeGreaterThanOrEqual(4.5)
-    expect(contrastRatio("#75afff", "#202124")).toBeGreaterThanOrEqual(4.5)
   })
 
   it("is idempotent", () => {

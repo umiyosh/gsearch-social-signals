@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import {
   createMessageHandler,
-  MAX_BLUESKY_CACHE_ENTRIES,
-  MAX_BLUESKY_URLS_PER_REQUEST,
   MAX_HN_CACHE_ENTRIES,
   MAX_HN_URLS_PER_REQUEST,
   type BackgroundDeps
@@ -14,7 +12,6 @@ import {
   type HackerNewsSummary
 } from "../../src/shared/hackerNews"
 import type { HatenaEntryFetchTiming } from "../../src/shared/diagnostics"
-import { BLUESKY_SUMMARY_UNAVAILABLE, type BlueskySummary } from "../../src/shared/bluesky"
 
 const diagnosticResponseHeaders = {
   xCache: "Hit from cloudfront",
@@ -28,8 +25,6 @@ function buildDeps(overrides: Partial<BackgroundDeps> = {}): BackgroundDeps {
     fetchHatenaEntry: vi.fn().mockResolvedValue([]),
     fetchHackerNewsSummaries: vi.fn().mockResolvedValue({}),
     hnCache: new Map<string, HackerNewsSummary | null>(),
-    fetchBlueskySummaries: vi.fn().mockResolvedValue({}),
-    blueskyCache: new Map<string, BlueskySummary>(),
     ...overrides
   }
 }
@@ -259,103 +254,5 @@ describe("hacker news request", () => {
     const response = await handler({ type: MESSAGE_TYPES.HN_REQUEST, urls: ["https://a"] })
 
     expect(response).toEqual({ ok: false, error: "hn down" })
-  })
-})
-
-describe("bluesky request", () => {
-  it("fetches uncached urls once and serves repeats from the cache", async () => {
-    const fetchBlueskySummaries = vi.fn().mockResolvedValue({ "https://a/": { hitsTotal: 5 } })
-    const handler = createMessageHandler(buildDeps({ fetchBlueskySummaries }))
-    const request = { type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: ["https://a"] }
-
-    const first = await handler(request)
-    const second = await handler(request)
-
-    expect(first).toEqual({ ok: true, data: { "https://a": { hitsTotal: 5 } } })
-    expect(second).toEqual(first)
-    expect(fetchBlueskySummaries).toHaveBeenCalledTimes(1)
-  })
-
-  it("uses normalized URL keys for deduplication and cache lookup", async () => {
-    const fetchBlueskySummaries = vi
-      .fn()
-      .mockResolvedValue({ "https://example.com/article?keep=1": { hitsTotal: 5 } })
-    const handler = createMessageHandler(buildDeps({ fetchBlueskySummaries }))
-
-    const first = await handler({
-      type: MESSAGE_TYPES.BLUESKY_REQUEST,
-      urls: ["https://EXAMPLE.com/article?keep=1&utm_source=one#fragment"]
-    })
-    const second = await handler({
-      type: MESSAGE_TYPES.BLUESKY_REQUEST,
-      urls: ["https://example.com/article?utm_source=two&keep=1"]
-    })
-
-    expect(first).toEqual({
-      ok: true,
-      data: {
-        "https://EXAMPLE.com/article?keep=1&utm_source=one#fragment": { hitsTotal: 5 }
-      }
-    })
-    expect(second).toEqual({
-      ok: true,
-      data: { "https://example.com/article?utm_source=two&keep=1": { hitsTotal: 5 } }
-    })
-    expect(fetchBlueskySummaries).toHaveBeenCalledTimes(1)
-    expect(fetchBlueskySummaries).toHaveBeenCalledWith(["https://example.com/article?keep=1"])
-  })
-
-  it("does not cache unavailable results", async () => {
-    const fetchBlueskySummaries = vi
-      .fn()
-      .mockResolvedValueOnce({ "https://a/": BLUESKY_SUMMARY_UNAVAILABLE })
-      .mockResolvedValueOnce({ "https://a/": { hitsTotal: 1 } })
-    const handler = createMessageHandler(buildDeps({ fetchBlueskySummaries }))
-    const request = { type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: ["https://a"] }
-
-    expect(await handler(request)).toEqual({
-      ok: true,
-      data: { "https://a": BLUESKY_SUMMARY_UNAVAILABLE }
-    })
-    expect(await handler(request)).toEqual({ ok: true, data: { "https://a": { hitsTotal: 1 } } })
-    expect(fetchBlueskySummaries).toHaveBeenCalledTimes(2)
-  })
-
-  it("returns unavailable for filtered URLs and rejects oversized lists", async () => {
-    const handler = createMessageHandler(buildDeps())
-
-    expect(
-      await handler({ type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: ["javascript:alert(1)"] })
-    ).toEqual({
-      ok: true,
-      data: { "javascript:alert(1)": BLUESKY_SUMMARY_UNAVAILABLE }
-    })
-
-    const urls = Array.from(
-      { length: MAX_BLUESKY_URLS_PER_REQUEST + 1 },
-      (_, index) => `https://example.com/${index}`
-    )
-    expect(await handler({ type: MESSAGE_TYPES.BLUESKY_REQUEST, urls })).toMatchObject({
-      ok: false
-    })
-  })
-
-  it("evicts the oldest cache entry", async () => {
-    const blueskyCache = new Map<string, BlueskySummary>(
-      Array.from({ length: MAX_BLUESKY_CACHE_ENTRIES }, (_, index) => [
-        `https://example.com/cached-${index}`,
-        { hitsTotal: index }
-      ])
-    )
-    const fetchBlueskySummaries = vi
-      .fn()
-      .mockResolvedValue({ "https://example.com/new": { hitsTotal: 999 } })
-    const handler = createMessageHandler(buildDeps({ blueskyCache, fetchBlueskySummaries }))
-
-    await handler({ type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: ["https://example.com/new"] })
-
-    expect(blueskyCache.size).toBe(MAX_BLUESKY_CACHE_ENTRIES)
-    expect(blueskyCache.has("https://example.com/cached-0")).toBe(false)
-    expect(blueskyCache.get("https://example.com/new")).toEqual({ hitsTotal: 999 })
   })
 })

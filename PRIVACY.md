@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Effective date: 2026-08-15
+Effective date: 2026-07-19
 
 This privacy policy applies to the Chrome extension "GSearch With Social Signals".
 
@@ -8,7 +8,7 @@ Public project URL: https://github.com/umiyosh/gsearch-social-signals
 
 ## Purpose
 
-The extension adds public social signals to supported Google Search and DuckDuckGo web result pages. It shows Hatena Bookmark counts, Hacker News points, and Bluesky URL mention counts next to search result links so that users can judge how much public attention a page has received.
+The extension adds public social signals to supported Google Search and DuckDuckGo web result pages. It shows Hatena Bookmark counts and Hacker News points next to search result links so that users can judge how much public attention a page has received.
 
 The extension does not change search ranking, replace search results, or add badges to advertisements and search-provider navigation surfaces.
 
@@ -29,9 +29,8 @@ The extension sends search result URLs to the following third-party services onl
 - Hatena Bookmark API (`https://bookmark.hatenaapis.com/*`): retrieves Hatena Bookmark counts for search result URLs.
 - Hatena Bookmark entry API (`https://b.hatena.ne.jp/*`): retrieves public bookmarked comments for the URL whose Hatena badge the user hovers or focuses.
 - Hacker News Search / Algolia (`https://hn.algolia.com/*`): retrieves public Hacker News story matches, points, and comment counts for search result URLs.
-- Bluesky public AppView (`https://api.bsky.app/*`): retrieves the public `hitsTotal` URL mention count for search result URLs. The extension does not authenticate to Bluesky or send a Bluesky account or API token.
 
-The extension opens Hatena Bookmark entry pages, Hacker News story/search pages, and Bluesky search pages only when the user clicks the corresponding badge.
+The extension opens Hatena Bookmark entry pages and Hacker News story/search pages only when the user clicks the corresponding badge.
 
 ## Data Not Stored by the Developer
 
@@ -56,13 +55,13 @@ The developer does not retain user data on a developer-controlled server.
 
 The extension uses in-memory caches in the browser to avoid repeated API requests for the same URLs during the current browser session or extension service worker lifetime. Search result URLs and API responses in these caches are not written to persistent extension storage.
 
-The extension stores one boolean preference in `chrome.storage.sync`: whether search results without positive Hatena Bookmark, Hacker News, or Bluesky signals should be hidden. It does not store search result URLs, search queries, browsing history, or API responses in `chrome.storage`.
+The extension stores one boolean preference in `chrome.storage.sync`: whether search results without positive Hatena Bookmark or Hacker News signals should be hidden. It does not store search result URLs, search queries, browsing history, or API responses in `chrome.storage`.
 
 Third-party services listed above may process requests according to their own policies.
 
 ## Chrome Web Store Limited Use
 
-The extension uses browsing activity and website content data only to provide or improve its single purpose: showing public Hatena Bookmark, Hacker News, and Bluesky signals on supported Google Search and DuckDuckGo web result pages.
+The extension uses browsing activity and website content data only to provide or improve its single purpose: showing public Hatena Bookmark and Hacker News signals on supported Google Search and DuckDuckGo web result pages.
 
 The extension transfers data to third parties only as necessary to provide that single purpose. The extension does not sell user data and does not use user data for advertising, profiling, credit-worthiness evaluation, or unrelated purposes.
 

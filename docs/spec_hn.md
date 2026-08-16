@@ -11,7 +11,7 @@ Hacker News support is implemented in the main GSearch With Social Signals exten
 - `nbHits` is kept as response metadata but is not the visible count.
 - `maxComments` and `topStoryId` are kept as summary metadata.
 - The badge is hidden when `maxPoints` is missing, zero, or negative.
-- HN badges are rendered next to Hatena Bookmark and Bluesky badges in the shared social signal container.
+- HN badges are rendered next to Hatena Bookmark badges in the shared social signal container.
 - HN story links open only when the user clicks a badge; the extension does not request `news.ycombinator.com` as a host permission.
 
 ## API
@@ -53,7 +53,8 @@ The summary uses:
 - HN uses one Algolia fetch per unique URL.
 - `src/shared/hackerNews.ts` limits concurrent HN fetches to 4.
 - Each HN fetch has a 5 second timeout.
-- `src/background/handlers.ts` caps HN requests at 40 URLs per message.
+- The content script splits large HN result and retry sets into messages of at most 40 URLs.
+- `src/background/handlers.ts` rejects HN messages above the shared 40 URL limit.
 - The background HN cache is capped at 200 entries.
 - The content script also keeps page-local caches and inflight sets so MutationObserver re-scans do not repeatedly fetch the same URL.
 
@@ -68,16 +69,18 @@ The summary uses:
 ## Error Handling
 
 - HTTP 400 from HN Algolia is treated as a missing summary for that URL.
+- HTTP 429 is not retried immediately. The content pipeline owns later URL-scoped retries so message and fetch retry layers do not multiply the same request.
 - Invalid JSON shape, empty hits, missing points, URL mismatch, timeout, and fetch failure result in no HN badge.
 - Failures are aggregated where possible so the extension does not flood the console with one error per URL.
+- Automatic retries are bounded per URL. Pagination or infinite scroll does not rearm an exhausted URL when a new result is added.
 
 ## Security And Privacy
 
 - HN API calls are made only from the background service worker.
 - The content script never fetches HN directly.
+- The common result filter keeps pending or positive results visible. Once requests settle, an unavailable provider does not count as a positive signal; unavailable results are retried automatically while the filter is enabled.
 - The only HN host permission is `https://hn.algolia.com/*`.
 - Search result URLs are sent to HN Algolia to provide the displayed points. This is described in `PRIVACY.md` and the Chrome Web Store Privacy practices draft.
-- The common result filter hides a result only after Hatena, HN, and Bluesky have all completed successfully without a positive signal. An unavailable provider keeps the result visible.
 
 ## Tests
 
