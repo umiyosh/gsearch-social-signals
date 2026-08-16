@@ -162,10 +162,7 @@ function collectHttpResponseHeaders(
 function inspectHttpErrorBody(
   bodyText: string,
   contentType?: string
-): Pick<
-  NonNullable<BlueskyFailureDetail["response"]>,
-  "bodyKind" | "error" | "title" | "message"
-> {
+): Pick<NonNullable<BlueskyFailureDetail["response"]>, "bodyKind" | "error" | "title" | "message"> {
   const trimmedBody = bodyText.trim()
   if (trimmedBody.length === 0) {
     return { bodyKind: "empty" }
