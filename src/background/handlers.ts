@@ -1,6 +1,7 @@
 import type { HatenaBookmarkSummary, HatenaCountMap } from "../shared/hatena"
 import { HACKER_NEWS_SUMMARY_UNAVAILABLE, type HackerNewsSummaryResult } from "../shared/hackerNews"
 import {
+  BLUESKY_REQUEST_BATCH_SIZE,
   BLUESKY_SUMMARY_UNAVAILABLE,
   type BlueskySummary,
   type BlueskySummaryMap
@@ -37,7 +38,7 @@ export interface BackgroundDeps {
 export const MAX_URLS_PER_REQUEST = 500
 export const MAX_HN_URLS_PER_REQUEST = 40
 export const MAX_HN_CACHE_ENTRIES = 200
-export const MAX_BLUESKY_URLS_PER_REQUEST = 40
+export const MAX_BLUESKY_URLS_PER_REQUEST = BLUESKY_REQUEST_BATCH_SIZE
 export const MAX_BLUESKY_CACHE_ENTRIES = 200
 
 function isHttpUrl(value: string): boolean {

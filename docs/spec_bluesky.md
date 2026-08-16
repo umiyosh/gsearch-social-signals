@@ -24,7 +24,7 @@ Bluesky does not publish a numeric request limit for the public AppView. The doc
 - Existing `normalizeRequestUrl` behavior removes fragments and tracking parameters while retaining meaningful query parameters.
 - Equivalent normalized URLs are deduplicated before fetch. A normal successful batch performs at most one AppView request per unique normalized URL.
 - Maximum concurrency: 3.
-- Maximum URLs per extension message: 40.
+- Maximum URLs per extension message: 40. The content script splits larger result and retry sets into multiple messages before sending them to the background worker.
 - Per-attempt timeout: 5 seconds.
 - Stable zero and positive summaries are cached in background memory, capped at 200 entries. Unavailable results are not cached or persisted.
 - The content script maintains page-local cache and inflight state to avoid repeated requests during MutationObserver rescans.

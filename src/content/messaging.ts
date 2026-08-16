@@ -14,6 +14,7 @@ import type { HatenaBookmarkSummary } from "../shared/hatena"
 import { HATENA_COUNT_UNAVAILABLE } from "../shared/hatena"
 import { HACKER_NEWS_SUMMARY_UNAVAILABLE, type HackerNewsSummary } from "../shared/hackerNews"
 import {
+  BLUESKY_REQUEST_BATCH_SIZE,
   BLUESKY_SUMMARY_UNAVAILABLE,
   type BlueskySummary,
   type BlueskySummaryMap
@@ -287,6 +288,16 @@ export function requestBlueskySummaries(
     return
   }
 
+  for (let index = 0; index < urls.length; index += BLUESKY_REQUEST_BATCH_SIZE) {
+    requestBlueskySummaryBatch(urls.slice(index, index + BLUESKY_REQUEST_BATCH_SIZE), apply, settle)
+  }
+}
+
+function requestBlueskySummaryBatch(
+  urls: string[],
+  apply: (url: string, summary: BlueskySummary | undefined) => void,
+  settle: (url: string) => void
+): void {
   const request = { type: MESSAGE_TYPES.BLUESKY_REQUEST, urls }
   sendQueuedRuntimeMessage<BlueskyResponse>(
     enqueueBlueskyRuntimeMessage,

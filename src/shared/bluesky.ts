@@ -11,6 +11,7 @@ export type BlueskySummaryMap = Record<string, BlueskySummaryResult>
 
 export const BLUESKY_REQUEST_TIMEOUT_MS = 5_000
 export const BLUESKY_RATE_LIMIT_FALLBACK_MS = 60_000
+export const BLUESKY_REQUEST_BATCH_SIZE = 40
 
 const BLUESKY_ENDPOINT = "https://api.bsky.app/xrpc/app.bsky.feed.searchPosts"
 const MAX_CONCURRENT_REQUESTS = 3
