@@ -166,11 +166,11 @@ describe("Bluesky request control", () => {
     const fetcher = vi.fn().mockResolvedValue(response({}, 429, { "Retry-After": "300" }))
     const client = createBlueskyClient({ fetcher, now: () => now })
 
-    const limited = await client.fetchSummaries(["https://example.com/limited"])
+    const limited = await client.fetchSummariesWithRetryInfo(["https://example.com/limited"])
     expect(limited).toMatchObject({ retryAfterMs: 300_000 })
 
     now += 100_000
-    const blocked = await client.fetchSummaries(["https://example.com/blocked"])
+    const blocked = await client.fetchSummariesWithRetryInfo(["https://example.com/blocked"])
     expect(blocked).toMatchObject({ retryAfterMs: 200_000 })
     expect(fetcher).toHaveBeenCalledTimes(1)
   })

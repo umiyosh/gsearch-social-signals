@@ -78,7 +78,7 @@ describe("requestHatenaCounts", () => {
     expect(apply).not.toHaveBeenCalled()
   })
 
-  it("maps unavailable Hatena results to an unknown signal after retries", async () => {
+  it("maps unavailable Hatena results to an unknown signal without message retries", async () => {
     vi.useFakeTimers()
     const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
       callback(ok({ "https://a": HATENA_COUNT_UNAVAILABLE }))
@@ -89,11 +89,11 @@ describe("requestHatenaCounts", () => {
     requestHatenaCounts(["https://a"], apply, vi.fn())
     await vi.runAllTimersAsync()
 
-    expect(sendMessage).toHaveBeenCalledTimes(3)
+    expect(sendMessage).toHaveBeenCalledTimes(1)
     expect(apply).toHaveBeenCalledWith("https://a", undefined)
   })
 
-  it("retries an unavailable Hatena response before applying a stable count", async () => {
+  it("leaves an unavailable Hatena retry to the content pipeline", async () => {
     vi.useFakeTimers()
     const responses = [ok({ "https://a": HATENA_COUNT_UNAVAILABLE }), ok({ "https://a": 0 })]
     const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
@@ -106,9 +106,9 @@ describe("requestHatenaCounts", () => {
     requestHatenaCounts(["https://a"], apply, settle)
     await vi.runAllTimersAsync()
 
-    expect(sendMessage).toHaveBeenCalledTimes(2)
+    expect(sendMessage).toHaveBeenCalledTimes(1)
     expect(apply).toHaveBeenCalledOnce()
-    expect(apply).toHaveBeenCalledWith("https://a", 0)
+    expect(apply).toHaveBeenCalledWith("https://a", undefined)
     expect(settle).toHaveBeenCalledOnce()
   })
 
@@ -228,7 +228,7 @@ describe("requestHnSummaries", () => {
     expect(apply).not.toHaveBeenCalled()
   })
 
-  it("maps unavailable HN results to an unknown signal after retries", async () => {
+  it("maps unavailable HN results to an unknown signal without message retries", async () => {
     vi.useFakeTimers()
     const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
       callback(ok({ "https://a": HACKER_NEWS_SUMMARY_UNAVAILABLE }))
@@ -239,11 +239,11 @@ describe("requestHnSummaries", () => {
     requestHnSummaries(["https://a"], apply, vi.fn())
     await vi.runAllTimersAsync()
 
-    expect(sendMessage).toHaveBeenCalledTimes(3)
+    expect(sendMessage).toHaveBeenCalledTimes(1)
     expect(apply).toHaveBeenCalledWith("https://a", undefined)
   })
 
-  it("retries an unavailable HN response before applying a stable summary", async () => {
+  it("leaves an unavailable HN retry to the content pipeline", async () => {
     vi.useFakeTimers()
     const stableSummary = { nbHits: 0, maxPoints: 0, maxComments: 0 }
     const responses = [
@@ -260,9 +260,9 @@ describe("requestHnSummaries", () => {
     requestHnSummaries(["https://a"], apply, settle)
     await vi.runAllTimersAsync()
 
-    expect(sendMessage).toHaveBeenCalledTimes(2)
+    expect(sendMessage).toHaveBeenCalledTimes(1)
     expect(apply).toHaveBeenCalledOnce()
-    expect(apply).toHaveBeenCalledWith("https://a", stableSummary)
+    expect(apply).toHaveBeenCalledWith("https://a", undefined)
     expect(settle).toHaveBeenCalledOnce()
   })
 
@@ -315,7 +315,9 @@ describe("requestBlueskySummaries", () => {
       respondWith: (message) => {
         const batch = (message as { urls: string[] }).urls
         sentBatches.push(batch)
-        return ok(Object.fromEntries(batch.map((url) => [url, { hitsTotal: 1 }])))
+        return ok({
+          summaries: Object.fromEntries(batch.map((url) => [url, { hitsTotal: 1 }]))
+        })
       }
     })
     const apply = vi.fn()
@@ -345,7 +347,10 @@ describe("requestBlueskySummaries", () => {
   })
 
   it("applies validated summaries and marks missing keys unknown", () => {
-    stubChrome({ id: "ext", respond: ok({ "https://a": { hitsTotal: 4 } }) })
+    stubChrome({
+      id: "ext",
+      respond: ok({ summaries: { "https://a": { hitsTotal: 4 } } })
+    })
     const applied: Array<[string, unknown]> = []
 
     requestBlueskySummaries(
@@ -362,7 +367,7 @@ describe("requestBlueskySummaries", () => {
 
   it("maps unavailable results to unknown without repeating network-level retries", () => {
     const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
-      callback(ok({ "https://a": BLUESKY_SUMMARY_UNAVAILABLE }))
+      callback(ok({ summaries: { "https://a": BLUESKY_SUMMARY_UNAVAILABLE } }))
     })
     stubChrome({ id: "ext", sendMessage })
     const apply = vi.fn()
@@ -400,12 +405,12 @@ describe("requestBlueskySummaries", () => {
     urls.forEach((url) => requestBlueskySummaries([url], vi.fn(), vi.fn()))
 
     expect(startedUrls).toEqual(urls.slice(0, 3))
-    callbacks.shift()?.(ok({ [urls[0]!]: { hitsTotal: 0 } }))
+    callbacks.shift()?.(ok({ summaries: { [urls[0]!]: { hitsTotal: 0 } } }))
     expect(startedUrls).toEqual(urls.slice(0, 4))
-    callbacks.shift()?.(ok({ [urls[1]!]: { hitsTotal: 0 } }))
+    callbacks.shift()?.(ok({ summaries: { [urls[1]!]: { hitsTotal: 0 } } }))
     expect(startedUrls).toEqual(urls)
     callbacks.splice(0).forEach((callback, index) => {
-      callback(ok({ [urls[index + 2]!]: { hitsTotal: 0 } }))
+      callback(ok({ summaries: { [urls[index + 2]!]: { hitsTotal: 0 } } }))
     })
   })
 })

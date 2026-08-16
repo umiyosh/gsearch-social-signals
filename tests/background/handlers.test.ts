@@ -28,7 +28,7 @@ function buildDeps(overrides: Partial<BackgroundDeps> = {}): BackgroundDeps {
     fetchHatenaEntry: vi.fn().mockResolvedValue([]),
     fetchHackerNewsSummaries: vi.fn().mockResolvedValue({}),
     hnCache: new Map<string, HackerNewsSummary | null>(),
-    fetchBlueskySummaries: vi.fn().mockResolvedValue({}),
+    fetchBlueskySummaries: vi.fn().mockResolvedValue({ summaries: {} }),
     blueskyCache: new Map<string, BlueskySummary>(),
     ...overrides
   }
@@ -264,14 +264,19 @@ describe("hacker news request", () => {
 
 describe("bluesky request", () => {
   it("fetches uncached urls once and serves repeats from the cache", async () => {
-    const fetchBlueskySummaries = vi.fn().mockResolvedValue({ "https://a/": { hitsTotal: 5 } })
+    const fetchBlueskySummaries = vi
+      .fn()
+      .mockResolvedValue({ summaries: { "https://a/": { hitsTotal: 5 } } })
     const handler = createMessageHandler(buildDeps({ fetchBlueskySummaries }))
     const request = { type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: ["https://a"] }
 
     const first = await handler(request)
     const second = await handler(request)
 
-    expect(first).toEqual({ ok: true, data: { "https://a": { hitsTotal: 5 } } })
+    expect(first).toEqual({
+      ok: true,
+      data: { summaries: { "https://a": { hitsTotal: 5 } } }
+    })
     expect(second).toEqual(first)
     expect(fetchBlueskySummaries).toHaveBeenCalledTimes(1)
   })
@@ -279,7 +284,9 @@ describe("bluesky request", () => {
   it("uses normalized URL keys for deduplication and cache lookup", async () => {
     const fetchBlueskySummaries = vi
       .fn()
-      .mockResolvedValue({ "https://example.com/article?keep=1": { hitsTotal: 5 } })
+      .mockResolvedValue({
+        summaries: { "https://example.com/article?keep=1": { hitsTotal: 5 } }
+      })
     const handler = createMessageHandler(buildDeps({ fetchBlueskySummaries }))
 
     const first = await handler({
@@ -294,12 +301,16 @@ describe("bluesky request", () => {
     expect(first).toEqual({
       ok: true,
       data: {
-        "https://EXAMPLE.com/article?keep=1&utm_source=one#fragment": { hitsTotal: 5 }
+        summaries: {
+          "https://EXAMPLE.com/article?keep=1&utm_source=one#fragment": { hitsTotal: 5 }
+        }
       }
     })
     expect(second).toEqual({
       ok: true,
-      data: { "https://example.com/article?utm_source=two&keep=1": { hitsTotal: 5 } }
+      data: {
+        summaries: { "https://example.com/article?utm_source=two&keep=1": { hitsTotal: 5 } }
+      }
     })
     expect(fetchBlueskySummaries).toHaveBeenCalledTimes(1)
     expect(fetchBlueskySummaries).toHaveBeenCalledWith(["https://example.com/article?keep=1"])
@@ -308,17 +319,38 @@ describe("bluesky request", () => {
   it("does not cache unavailable results", async () => {
     const fetchBlueskySummaries = vi
       .fn()
-      .mockResolvedValueOnce({ "https://a/": BLUESKY_SUMMARY_UNAVAILABLE })
-      .mockResolvedValueOnce({ "https://a/": { hitsTotal: 1 } })
+      .mockResolvedValueOnce({ summaries: { "https://a/": BLUESKY_SUMMARY_UNAVAILABLE } })
+      .mockResolvedValueOnce({ summaries: { "https://a/": { hitsTotal: 1 } } })
     const handler = createMessageHandler(buildDeps({ fetchBlueskySummaries }))
     const request = { type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: ["https://a"] }
 
     expect(await handler(request)).toEqual({
       ok: true,
-      data: { "https://a": BLUESKY_SUMMARY_UNAVAILABLE }
+      data: { summaries: { "https://a": BLUESKY_SUMMARY_UNAVAILABLE } }
     })
-    expect(await handler(request)).toEqual({ ok: true, data: { "https://a": { hitsTotal: 1 } } })
+    expect(await handler(request)).toEqual({
+      ok: true,
+      data: { summaries: { "https://a": { hitsTotal: 1 } } }
+    })
     expect(fetchBlueskySummaries).toHaveBeenCalledTimes(2)
+  })
+
+  it("forwards the Bluesky cooldown hint with unavailable summaries", async () => {
+    const fetchBlueskySummaries = vi.fn().mockResolvedValue({
+      summaries: { "https://a/": BLUESKY_SUMMARY_UNAVAILABLE },
+      retryAfterMs: 300_000
+    })
+    const handler = createMessageHandler(buildDeps({ fetchBlueskySummaries }))
+
+    expect(
+      await handler({ type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: ["https://a"] })
+    ).toEqual({
+      ok: true,
+      data: {
+        summaries: { "https://a": BLUESKY_SUMMARY_UNAVAILABLE },
+        retryAfterMs: 300_000
+      }
+    })
   })
 
   it("returns unavailable for filtered URLs and rejects oversized lists", async () => {
@@ -328,7 +360,7 @@ describe("bluesky request", () => {
       await handler({ type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: ["javascript:alert(1)"] })
     ).toEqual({
       ok: true,
-      data: { "javascript:alert(1)": BLUESKY_SUMMARY_UNAVAILABLE }
+      data: { summaries: { "javascript:alert(1)": BLUESKY_SUMMARY_UNAVAILABLE } }
     })
 
     const urls = Array.from(
@@ -349,7 +381,7 @@ describe("bluesky request", () => {
     )
     const fetchBlueskySummaries = vi
       .fn()
-      .mockResolvedValue({ "https://example.com/new": { hitsTotal: 999 } })
+      .mockResolvedValue({ summaries: { "https://example.com/new": { hitsTotal: 999 } } })
     const handler = createMessageHandler(buildDeps({ blueskyCache, fetchBlueskySummaries }))
 
     await handler({ type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: ["https://example.com/new"] })
