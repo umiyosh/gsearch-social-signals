@@ -64,6 +64,7 @@ interface BlueskyFailureDetail {
     rateLimitRemaining?: string
     rateLimitReset?: string
     error?: string
+    title?: string
     message?: string
     bodyMarker?: "cloudflare"
   }
@@ -161,13 +162,27 @@ function collectHttpResponseHeaders(
 function inspectHttpErrorBody(
   bodyText: string,
   contentType?: string
-): Pick<NonNullable<BlueskyFailureDetail["response"]>, "bodyKind" | "error" | "message"> {
+): Pick<
+  NonNullable<BlueskyFailureDetail["response"]>,
+  "bodyKind" | "error" | "title" | "message"
+> {
   const trimmedBody = bodyText.trim()
   if (trimmedBody.length === 0) {
     return { bodyKind: "empty" }
   }
   if (contentType?.toLowerCase().includes("html") || trimmedBody.startsWith("<")) {
-    return { bodyKind: "html" }
+    const titleMatch = trimmedBody.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
+    const title = titleMatch?.[1] ? sanitizeDiagnosticText(titleMatch[1]) : undefined
+    const visibleText = trimmedBody
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+    const message = sanitizeDiagnosticText(visibleText)
+    return {
+      bodyKind: "html",
+      ...(title === undefined ? {} : { title }),
+      ...(message.length === 0 ? {} : { message })
+    }
   }
   if (!contentType?.toLowerCase().includes("json") && !trimmedBody.startsWith("{")) {
     return { bodyKind: "text", message: sanitizeDiagnosticText(trimmedBody) }
