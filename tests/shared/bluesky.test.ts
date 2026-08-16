@@ -14,6 +14,20 @@ function response(payload: unknown, status = 200, headers: Record<string, string
   } as Response
 }
 
+const BLUESKY_DIAGNOSTIC_PREFIX = "[GSearch Social Signals][Bluesky] "
+
+function parseFailureDiagnostic(call: unknown[] | undefined): Record<string, unknown> {
+  expect(call).toHaveLength(1)
+  const message = call?.[0]
+  expect(typeof message).toBe("string")
+  expect(message).toMatch(new RegExp(`^${BLUESKY_DIAGNOSTIC_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`))
+  expect(message).not.toContain("https://example.com")
+  return JSON.parse((message as string).slice(BLUESKY_DIAGNOSTIC_PREFIX.length)) as Record<
+    string,
+    unknown
+  >
+}
+
 afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
@@ -252,5 +266,121 @@ describe("Bluesky request control after cooldown", () => {
       "https://example.com/slow": BLUESKY_SUMMARY_UNAVAILABLE
     })
     expect(fetcher).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe("Bluesky failure diagnostics", () => {
+  it("logs a Chrome-readable rate-limit cause and reset source", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const client = createBlueskyClient({
+      fetcher: vi.fn().mockResolvedValue(response({}, 429, { "Retry-After": "120" }))
+    })
+
+    await client.fetchSummariesWithRetryInfo(["https://example.com/rate-limited"])
+
+    expect(parseFailureDiagnostic(error.mock.calls.at(-1))).toEqual({
+      event: "bluesky_fetch_failed",
+      requestedCount: 1,
+      failedCount: 1,
+      failures: [
+        {
+          kind: "rate_limit",
+          count: 1,
+          status: 429,
+          retryAfterMs: 120_000,
+          resetSource: "retry-after-seconds"
+        }
+      ],
+      retryAfterMs: 120_000
+    })
+  })
+
+  it("distinguishes a circuit-open skip from the rate-limit response", async () => {
+    let now = 1_700_000_000_000
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const client = createBlueskyClient({
+      fetcher: vi.fn().mockResolvedValue(response({}, 429, { "Retry-After": "120" })),
+      now: () => now
+    })
+    await client.fetchSummariesWithRetryInfo(["https://example.com/rate-limited"])
+    error.mockClear()
+
+    now += 20_000
+    await client.fetchSummariesWithRetryInfo(["https://example.com/circuit-open"])
+
+    expect(parseFailureDiagnostic(error.mock.calls.at(-1))).toEqual({
+      event: "bluesky_fetch_failed",
+      requestedCount: 1,
+      failedCount: 1,
+      failures: [
+        {
+          kind: "circuit_open",
+          count: 1,
+          retryAfterMs: 100_000
+        }
+      ],
+      retryAfterMs: 100_000
+    })
+  })
+
+  it.each([
+    {
+      name: "HTTP status",
+      fetcher: vi.fn().mockResolvedValue(response({}, 403)),
+      expectedFailure: { kind: "http_error", count: 1, status: 403 }
+    },
+    {
+      name: "network failure",
+      fetcher: vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
+      expectedFailure: { kind: "network_error", count: 1 }
+    },
+    {
+      name: "invalid JSON",
+      fetcher: vi.fn().mockResolvedValue({
+        ...response({}),
+        json: () => Promise.reject(new SyntaxError("invalid JSON"))
+      } as Response),
+      expectedFailure: { kind: "invalid_json", count: 1 }
+    },
+    {
+      name: "invalid response",
+      fetcher: vi.fn().mockResolvedValue(response({ posts: [], hitsTotal: -1 })),
+      expectedFailure: {
+        kind: "invalid_response",
+        count: 1,
+        reason: "invalid_hits_total"
+      }
+    }
+  ])("logs $name without a raw URL", async ({ fetcher, expectedFailure }) => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const client = createBlueskyClient({ fetcher })
+
+    await client.fetchSummariesWithRetryInfo(["https://example.com/private-path?secret=value"])
+
+    expect(parseFailureDiagnostic(error.mock.calls.at(-1))).toEqual({
+      event: "bluesky_fetch_failed",
+      requestedCount: 1,
+      failedCount: 1,
+      failures: [expectedFailure]
+    })
+  })
+
+  it("logs an aborted request as a timeout", async () => {
+    vi.useFakeTimers()
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const client = createBlueskyClient({
+      fetcher: vi.fn().mockRejectedValue(new DOMException("aborted", "AbortError"))
+    })
+
+    const pending = client.fetchSummariesWithRetryInfo(["https://example.com/timeout"])
+    await vi.runAllTimersAsync()
+    await pending
+
+    expect(parseFailureDiagnostic(error.mock.calls.at(-1))).toEqual({
+      event: "bluesky_fetch_failed",
+      requestedCount: 1,
+      failedCount: 1,
+      failures: [{ kind: "timeout", count: 1 }]
+    })
   })
 })
