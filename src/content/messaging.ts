@@ -355,13 +355,15 @@ function requestBlueskySummaryBatch(
         }
       })
 
-      urls.filter((url) => !(url in response.data.summaries)).forEach((url) => {
-        if (response.data.retryAfterMs === undefined) {
-          apply(url, undefined)
-        } else {
-          apply(url, undefined, response.data.retryAfterMs)
-        }
-      })
+      urls
+        .filter((url) => !(url in response.data.summaries))
+        .forEach((url) => {
+          if (response.data.retryAfterMs === undefined) {
+            apply(url, undefined)
+          } else {
+            apply(url, undefined, response.data.retryAfterMs)
+          }
+        })
     }
   )
 }

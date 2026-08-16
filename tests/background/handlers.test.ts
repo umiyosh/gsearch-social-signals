@@ -282,11 +282,9 @@ describe("bluesky request", () => {
   })
 
   it("uses normalized URL keys for deduplication and cache lookup", async () => {
-    const fetchBlueskySummaries = vi
-      .fn()
-      .mockResolvedValue({
-        summaries: { "https://example.com/article?keep=1": { hitsTotal: 5 } }
-      })
+    const fetchBlueskySummaries = vi.fn().mockResolvedValue({
+      summaries: { "https://example.com/article?keep=1": { hitsTotal: 5 } }
+    })
     const handler = createMessageHandler(buildDeps({ fetchBlueskySummaries }))
 
     const first = await handler({
@@ -342,9 +340,7 @@ describe("bluesky request", () => {
     })
     const handler = createMessageHandler(buildDeps({ fetchBlueskySummaries }))
 
-    expect(
-      await handler({ type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: ["https://a"] })
-    ).toEqual({
+    expect(await handler({ type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: ["https://a"] })).toEqual({
       ok: true,
       data: {
         summaries: { "https://a": BLUESKY_SUMMARY_UNAVAILABLE },

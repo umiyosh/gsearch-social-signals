@@ -455,7 +455,9 @@ describe("dynamic result filtering", () => {
     expect(requestBlueskySummaries).toHaveBeenCalledTimes(5)
     expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
   })
+})
 
+describe("provider retry scheduling", () => {
   it("waits for the Bluesky cooldown hint before retrying automatically", async () => {
     vi.useFakeTimers()
     queueTargets.setFilterEnabled(true)

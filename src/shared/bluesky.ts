@@ -132,9 +132,7 @@ export function createBlueskyClient(options: BlueskyClientOptions = {}): Bluesky
     return parseSummary((await response.json()) as BlueskySearchResponse)
   }
 
-  async function fetchSummariesWithRetryInfo(
-    urls: readonly string[]
-  ): Promise<BlueskyFetchResult> {
+  async function fetchSummariesWithRetryInfo(urls: readonly string[]): Promise<BlueskyFetchResult> {
     const normalizedToOriginals = new Map<string, string[]>()
     urls.forEach((url) => {
       const normalized = normalizeRequestUrl(url)

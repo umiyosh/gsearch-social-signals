@@ -18,11 +18,7 @@ export interface SignalPipelineDeps {
   ) => void
   requestBlueskySummaries: (
     urls: string[],
-    apply: (
-      url: string,
-      summary: BlueskySummary | undefined,
-      retryAfterMs?: number
-    ) => void,
+    apply: (url: string, summary: BlueskySummary | undefined, retryAfterMs?: number) => void,
     settle: (url: string) => void
   ) => void
   requestEntryBookmarks: (url: string) => Promise<HatenaBookmarkSummary[] | null>
@@ -88,17 +84,20 @@ function createUnknownSignalRetryController(
 
     const now = Date.now()
     const nextDueAt = Math.min(...dueAtByUrl.values())
-    timer = setTimeout(() => {
-      timer = undefined
-      const retryableUrls = [...dueAtByUrl.entries()]
-        .filter(([, dueAt]) => dueAt <= Date.now())
-        .map(([url]) => url)
-      retryableUrls.forEach((url) => dueAtByUrl.delete(url))
-      if (isFilterEnabled() && retryableUrls.length > 0) {
-        retryUrls(retryableUrls)
-      }
-      armTimer()
-    }, Math.max(0, nextDueAt - now))
+    timer = setTimeout(
+      () => {
+        timer = undefined
+        const retryableUrls = [...dueAtByUrl.entries()]
+          .filter(([, dueAt]) => dueAt <= Date.now())
+          .map(([url]) => url)
+        retryableUrls.forEach((url) => dueAtByUrl.delete(url))
+        if (isFilterEnabled() && retryableUrls.length > 0) {
+          retryUrls(retryableUrls)
+        }
+        armTimer()
+      },
+      Math.max(0, nextDueAt - now)
+    )
   }
 
   function schedule(url: string, retryAfterMs?: number): void {
@@ -161,14 +160,15 @@ function queueProviderTarget<T>(
   }
 }
 
-function queueUnknownProviderTargets<T>(
-  targetStates: Iterable<TargetSignalState>,
-  provider: SignalProvider,
-  state: ProviderPipelineState<T>,
-  render: (target: SearchResultTarget, value: T | undefined) => void,
-  urlsToRequest: string[],
-  allowedUrls?: ReadonlySet<string>
-): void {
+function queueUnknownProviderTargets<T>(options: {
+  targetStates: Iterable<TargetSignalState>
+  provider: SignalProvider
+  state: ProviderPipelineState<T>
+  render: (target: SearchResultTarget, value: T | undefined) => void
+  urlsToRequest: string[]
+  allowedUrls?: ReadonlySet<string> | undefined
+}): void {
+  const { targetStates, provider, state, render, urlsToRequest, allowedUrls } = options
   for (const targetState of targetStates) {
     if (
       !targetState.target.container.isConnected ||
@@ -290,10 +290,7 @@ function createSignalResultAppliers(
   hatena: ProviderPipelineState<number | null | undefined>,
   hackerNews: ProviderPipelineState<HackerNewsSummary | null | undefined>,
   bluesky: ProviderPipelineState<BlueskySummary | undefined>,
-  unknownRetries: Record<
-    SignalProvider,
-    ReturnType<typeof createUnknownSignalRetryController>
-  >
+  unknownRetries: Record<SignalProvider, ReturnType<typeof createUnknownSignalRetryController>>
 ) {
   return {
     applyCount: createProviderResultApplier(hatena, renderer.renderCount, unknownRetries.hatena),
@@ -310,6 +307,38 @@ function createSignalResultAppliers(
   }
 }
 
+function createSignalRequestDispatcher(
+  deps: SignalPipelineDeps,
+  states: {
+    hatena: ProviderPipelineState<number | null | undefined>
+    hackerNews: ProviderPipelineState<HackerNewsSummary | null | undefined>
+    bluesky: ProviderPipelineState<BlueskySummary | undefined>
+  },
+  appliers: ReturnType<typeof createSignalResultAppliers>
+) {
+  function settleProvider<T>(url: string, provider: ProviderPipelineState<T>): void {
+    provider.inflight.delete(url)
+  }
+
+  return (hatenaUrls: string[], hnUrls: string[], blueskyUrls: string[]): void => {
+    if (hatenaUrls.length) {
+      deps.requestHatenaCounts(hatenaUrls, appliers.applyCount, (url) =>
+        settleProvider(url, states.hatena)
+      )
+    }
+    if (hnUrls.length) {
+      deps.requestHnSummaries(hnUrls, appliers.applyHnSummary, (url) =>
+        settleProvider(url, states.hackerNews)
+      )
+    }
+    if (blueskyUrls.length) {
+      deps.requestBlueskySummaries(blueskyUrls, appliers.applyBlueskySummary, (url) =>
+        settleProvider(url, states.bluesky)
+      )
+    }
+  }
+}
+
 function createSignalRequestCoordinator(
   deps: SignalPipelineDeps,
   renderer: ReturnType<typeof createSignalRenderer>,
@@ -319,10 +348,6 @@ function createSignalRequestCoordinator(
   const hatena = createProviderPipelineState<number | null | undefined>()
   const hackerNews = createProviderPipelineState<HackerNewsSummary | null | undefined>()
   const bluesky = createProviderPipelineState<BlueskySummary | undefined>()
-
-  function settleProvider<T>(url: string, provider: ProviderPipelineState<T>): void {
-    provider.inflight.delete(url)
-  }
 
   const unknownRetries = {
     hatena: createUnknownSignalRetryController(isFilterEnabled, (urls) =>
@@ -336,72 +361,48 @@ function createSignalRequestCoordinator(
     )
   }
 
-  const { applyCount, applyHnSummary, applyBlueskySummary } = createSignalResultAppliers(
-    renderer,
-    hatena,
-    hackerNews,
-    bluesky,
-    unknownRetries
+  const appliers = createSignalResultAppliers(renderer, hatena, hackerNews, bluesky, unknownRetries)
+  const requestQueuedTargets = createSignalRequestDispatcher(
+    deps,
+    { hatena, hackerNews, bluesky },
+    appliers
   )
 
-  function requestQueuedTargets(
-    urlsToRequest: string[],
-    hnUrlsToRequest: string[],
-    blueskyUrlsToRequest: string[]
-  ): void {
-    if (urlsToRequest.length) {
-      deps.requestHatenaCounts(urlsToRequest, applyCount, (url) => settleProvider(url, hatena))
-    }
-    if (hnUrlsToRequest.length) {
-      deps.requestHnSummaries(hnUrlsToRequest, applyHnSummary, (url) =>
-        settleProvider(url, hackerNews)
-      )
-    }
-    if (blueskyUrlsToRequest.length) {
-      deps.requestBlueskySummaries(blueskyUrlsToRequest, applyBlueskySummary, (url) =>
-        settleProvider(url, bluesky)
-      )
-    }
-  }
-
-  function retryUnknownTargets(
-    onlyProvider?: SignalProvider,
-    onlyUrls?: readonly string[]
-  ): void {
+  function retryUnknownTargets(onlyProvider?: SignalProvider, onlyUrls?: readonly string[]): void {
     const urlsToRequest: string[] = []
     const hnUrlsToRequest: string[] = []
     const blueskyUrlsToRequest: string[] = []
     const allowedUrls = onlyUrls === undefined ? undefined : new Set(onlyUrls)
 
     if (onlyProvider === undefined || onlyProvider === "hatena") {
-      queueUnknownProviderTargets<number | null | undefined>(
-        targetStates.values(),
-        "hatena",
-        hatena,
-        renderer.renderCount,
+      queueUnknownProviderTargets<number | null | undefined>({
+        targetStates: targetStates.values(),
+        provider: "hatena",
+        state: hatena,
+        render: renderer.renderCount,
         urlsToRequest,
         allowedUrls
-      )
+      })
     }
     if (onlyProvider === undefined || onlyProvider === "hackerNews") {
-      queueUnknownProviderTargets<HackerNewsSummary | null | undefined>(
-        targetStates.values(),
-        "hackerNews",
-        hackerNews,
-        renderer.renderHnSummary,
-        hnUrlsToRequest,
+      queueUnknownProviderTargets<HackerNewsSummary | null | undefined>({
+        targetStates: targetStates.values(),
+        provider: "hackerNews",
+        state: hackerNews,
+        render: renderer.renderHnSummary,
+        urlsToRequest: hnUrlsToRequest,
         allowedUrls
-      )
+      })
     }
     if (onlyProvider === undefined || onlyProvider === "bluesky") {
-      queueUnknownProviderTargets<BlueskySummary | undefined>(
-        targetStates.values(),
-        "bluesky",
-        bluesky,
-        renderer.renderBlueskySummary,
-        blueskyUrlsToRequest,
+      queueUnknownProviderTargets<BlueskySummary | undefined>({
+        targetStates: targetStates.values(),
+        provider: "bluesky",
+        state: bluesky,
+        render: renderer.renderBlueskySummary,
+        urlsToRequest: blueskyUrlsToRequest,
         allowedUrls
-      )
+      })
     }
 
     requestQueuedTargets(urlsToRequest, hnUrlsToRequest, blueskyUrlsToRequest)
