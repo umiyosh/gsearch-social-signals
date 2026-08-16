@@ -20,7 +20,9 @@ function parseFailureDiagnostic(call: unknown[] | undefined): Record<string, unk
   expect(call).toHaveLength(1)
   const message = call?.[0]
   expect(typeof message).toBe("string")
-  expect(message).toMatch(new RegExp(`^${BLUESKY_DIAGNOSTIC_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`))
+  expect(message).toMatch(
+    new RegExp(`^${BLUESKY_DIAGNOSTIC_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`)
+  )
   expect(message).not.toContain("https://example.com")
   return JSON.parse((message as string).slice(BLUESKY_DIAGNOSTIC_PREFIX.length)) as Record<
     string,
@@ -345,8 +347,7 @@ describe("Bluesky failure diagnostics", () => {
     },
     {
       name: "invalid response",
-      createFetcher: () =>
-        vi.fn().mockResolvedValue(response({ posts: [], hitsTotal: -1 })),
+      createFetcher: () => vi.fn().mockResolvedValue(response({ posts: [], hitsTotal: -1 })),
       expectedFailure: {
         kind: "invalid_response",
         count: 1,
