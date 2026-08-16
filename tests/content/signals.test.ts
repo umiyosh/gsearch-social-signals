@@ -455,6 +455,64 @@ describe("dynamic result filtering", () => {
     expect(requestBlueskySummaries).toHaveBeenCalledTimes(5)
     expect(target.container.classList.contains(FILTERED_RESULT_CLASS)).toBe(true)
   })
+
+  it("waits for the Bluesky cooldown hint before retrying automatically", async () => {
+    vi.useFakeTimers()
+    queueTargets.setFilterEnabled(true)
+    const target = buildTarget("https://signals.example/rate-limited")
+    queueTargets([target])
+
+    lastCountsCall().apply(target.url, 0)
+    lastCountsCall().settle(target.url)
+    lastHnCall().apply(target.url, null)
+    lastHnCall().settle(target.url)
+    const blueskyCall = lastBlueskyCall()
+    ;(blueskyCall.apply as (...args: unknown[]) => void)(target.url, undefined, 300_000)
+    blueskyCall.settle(target.url)
+    const requests = requestBlueskySummaries.mock.calls.length
+
+    await vi.advanceTimersByTimeAsync(299_999)
+    expect(requestBlueskySummaries).toHaveBeenCalledTimes(requests)
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(requestBlueskySummaries).toHaveBeenCalledTimes(requests + 1)
+    expect(lastBlueskyCall().urls).toEqual([target.url])
+  })
+
+  it("does not rearm exhausted URL retries when pagination adds another result", async () => {
+    vi.useFakeTimers()
+    queueTargets.setFilterEnabled(true)
+    const exhausted = buildTarget("https://signals.example/exhausted")
+    queueTargets([exhausted])
+
+    lastCountsCall().apply(exhausted.url, 0)
+    lastCountsCall().settle(exhausted.url)
+    lastHnCall().apply(exhausted.url, null)
+    lastHnCall().settle(exhausted.url)
+    lastBlueskyCall().apply(exhausted.url, undefined)
+    lastBlueskyCall().settle(exhausted.url)
+
+    for (const delay of [2_000, 10_000, 50_000, 60_000]) {
+      await vi.advanceTimersByTimeAsync(delay)
+      lastBlueskyCall().apply(exhausted.url, undefined)
+      lastBlueskyCall().settle(exhausted.url)
+    }
+    const exhaustedRequests = requestBlueskySummaries.mock.calls.length
+
+    const added = buildTarget("https://signals.example/added")
+    queueTargets([added])
+    lastCountsCall().apply(added.url, 0)
+    lastCountsCall().settle(added.url)
+    lastHnCall().apply(added.url, null)
+    lastHnCall().settle(added.url)
+    lastBlueskyCall().apply(added.url, undefined)
+    lastBlueskyCall().settle(added.url)
+
+    await vi.advanceTimersByTimeAsync(2_000)
+
+    expect(requestBlueskySummaries).toHaveBeenCalledTimes(exhaustedRequests + 2)
+    expect(lastBlueskyCall().urls).toEqual([added.url])
+  })
 })
 
 describe("badge hover previews", () => {

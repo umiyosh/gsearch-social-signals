@@ -372,6 +372,21 @@ describe("requestBlueskySummaries", () => {
     expect(apply).toHaveBeenCalledWith("https://a", undefined)
   })
 
+  it("passes the background cooldown hint to unavailable results", () => {
+    stubChrome({
+      id: "ext",
+      respond: ok({
+        summaries: { "https://a": BLUESKY_SUMMARY_UNAVAILABLE },
+        retryAfterMs: 300_000
+      })
+    })
+    const apply = vi.fn()
+
+    requestBlueskySummaries(["https://a"], apply, vi.fn())
+
+    expect(apply).toHaveBeenCalledWith("https://a", undefined, 300_000)
+  })
+
   it("limits simultaneous runtime messages to three", () => {
     const callbacks: Array<(response: unknown) => void> = []
     const startedUrls: string[] = []

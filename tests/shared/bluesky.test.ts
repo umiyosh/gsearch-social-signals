@@ -161,6 +161,20 @@ describe("Bluesky request control", () => {
     expect(fetcher).toHaveBeenCalledTimes(2)
   })
 
+  it("reports the remaining circuit delay so the content script can recover after cooldown", async () => {
+    let now = 1_700_000_000_000
+    const fetcher = vi.fn().mockResolvedValue(response({}, 429, { "Retry-After": "300" }))
+    const client = createBlueskyClient({ fetcher, now: () => now })
+
+    const limited = await client.fetchSummaries(["https://example.com/limited"])
+    expect(limited).toMatchObject({ retryAfterMs: 300_000 })
+
+    now += 100_000
+    const blocked = await client.fetchSummaries(["https://example.com/blocked"])
+    expect(blocked).toMatchObject({ retryAfterMs: 200_000 })
+    expect(fetcher).toHaveBeenCalledTimes(1)
+  })
+
   it("uses the fallback circuit interval when a 429 has no reset header", async () => {
     let now = 1_700_000_000_000
     const fetcher = vi
