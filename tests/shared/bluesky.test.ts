@@ -10,7 +10,8 @@ function response(payload: unknown, status = 200, headers: Record<string, string
     ok: status >= 200 && status < 300,
     status,
     headers: new Headers(headers),
-    json: () => Promise.resolve(payload)
+    json: () => Promise.resolve(payload),
+    text: () => Promise.resolve(JSON.stringify(payload))
   } as Response
 }
 
@@ -325,12 +326,57 @@ describe("Bluesky failure diagnostics", () => {
     })
   })
 
+  it("logs enough sanitized response metadata to diagnose an HTTP 403", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const client = createBlueskyClient({
+      fetcher: vi.fn().mockResolvedValue(
+        response(
+          {
+            error: "RateLimitExceeded",
+            message: "Request for https://example.com/private-path is temporarily blocked"
+          },
+          403,
+          {
+            "Content-Type": "application/json; charset=utf-8",
+            Server: "cloudflare",
+            "Retry-After": "60",
+            "RateLimit-Remaining": "0",
+            "RateLimit-Reset": "1786860000"
+          }
+        )
+      )
+    })
+
+    await client.fetchSummariesWithRetryInfo([
+      "https://example.com/private-path?secret=value"
+    ])
+
+    expect(parseFailureDiagnostic(error.mock.calls.at(-1))).toEqual({
+      event: "bluesky_fetch_failed",
+      requestedCount: 1,
+      failedCount: 1,
+      failures: [
+        {
+          kind: "http_error",
+          count: 1,
+          status: 403,
+          request: { host: "example.com", ordinal: 1 },
+          response: {
+            bodyKind: "json",
+            contentType: "application/json; charset=utf-8",
+            server: "cloudflare",
+            retryAfter: "60",
+            rateLimitRemaining: "0",
+            rateLimitReset: "1786860000",
+            error: "RateLimitExceeded",
+            message: "Request for [url] is temporarily blocked"
+          }
+        }
+      ]
+    })
+  })
+
   it.each([
-    {
-      name: "HTTP status",
-      createFetcher: () => vi.fn().mockResolvedValue(response({}, 403)),
-      expectedFailure: { kind: "http_error", count: 1, status: 403 }
-    },
     {
       name: "network failure",
       createFetcher: () => vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
