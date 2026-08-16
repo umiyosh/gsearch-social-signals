@@ -50,7 +50,7 @@ Bluesky does not publish a numeric request limit for the public AppView. The doc
 - Search result URLs are sent directly from the background service worker to the public Bluesky AppView. No developer-operated server, Bluesky login, account information, or API token is involved.
 - URLs and API responses are not written to persistent extension storage. The only persistent setting remains the boolean filter preference.
 - Diagnostic builds log aggregate counts for positive, zero, and unavailable results. They do not log raw URLs or query strings.
-- Background fetch failures are logged as a single JSON string so Chrome's extension error page can preserve the cause. The log distinguishes rate limits, an open circuit, HTTP status failures, timeouts, network failures, invalid JSON, and invalid response fields; it contains aggregate counts and retry timing but no raw URL.
+- Background fetch failures are logged as a single JSON string so Chrome's extension error page can preserve the cause. The log distinguishes rate limits, an open circuit, HTTP status failures, timeouts, network failures, invalid JSON, and invalid response fields. HTTP failures also include a service-worker-local request ordinal, destination host, selected rate-limit headers, response server/content type, and sanitized API error fields or an HTML/Cloudflare marker. Raw URLs and query strings are never logged.
 - The integration is unofficial and is not provided, approved, or endorsed by Bluesky.
 
 ## Tests
