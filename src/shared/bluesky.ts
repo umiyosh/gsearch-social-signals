@@ -138,73 +138,82 @@ function optionalHeader(headers: Headers, name: string): string | undefined {
   return headers.get(name) ?? undefined
 }
 
+function collectHttpResponseHeaders(
+  headers: Headers
+): Omit<NonNullable<BlueskyFailureDetail["response"]>, "bodyKind"> {
+  const contentType = optionalHeader(headers, "content-type")
+  const server = optionalHeader(headers, "server")
+  const retryAfter = optionalHeader(headers, "retry-after")
+  const rateLimitRemaining =
+    optionalHeader(headers, "ratelimit-remaining") ??
+    optionalHeader(headers, "x-ratelimit-remaining")
+  const rateLimitReset =
+    optionalHeader(headers, "ratelimit-reset") ?? optionalHeader(headers, "x-ratelimit-reset")
+  return {
+    ...(contentType === undefined ? {} : { contentType }),
+    ...(server === undefined ? {} : { server }),
+    ...(retryAfter === undefined ? {} : { retryAfter }),
+    ...(rateLimitRemaining === undefined ? {} : { rateLimitRemaining }),
+    ...(rateLimitReset === undefined ? {} : { rateLimitReset })
+  }
+}
+
+function inspectHttpErrorBody(
+  bodyText: string,
+  contentType?: string
+): Pick<NonNullable<BlueskyFailureDetail["response"]>, "bodyKind" | "error" | "message"> {
+  const trimmedBody = bodyText.trim()
+  if (trimmedBody.length === 0) {
+    return { bodyKind: "empty" }
+  }
+  if (contentType?.toLowerCase().includes("html") || trimmedBody.startsWith("<")) {
+    return { bodyKind: "html" }
+  }
+  if (!contentType?.toLowerCase().includes("json") && !trimmedBody.startsWith("{")) {
+    return { bodyKind: "text", message: sanitizeDiagnosticText(trimmedBody) }
+  }
+
+  try {
+    const payload = JSON.parse(trimmedBody) as unknown
+    if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+      return { bodyKind: "json" }
+    }
+    const record = payload as Record<string, unknown>
+    const error =
+      typeof record.error === "string" ? sanitizeDiagnosticText(record.error) : undefined
+    const message =
+      typeof record.message === "string" ? sanitizeDiagnosticText(record.message) : undefined
+    return {
+      bodyKind: "json",
+      ...(error === undefined ? {} : { error }),
+      ...(message === undefined ? {} : { message })
+    }
+  } catch {
+    return { bodyKind: "text", message: sanitizeDiagnosticText(trimmedBody) }
+  }
+}
+
 async function inspectHttpErrorResponse(
   response: Response
 ): Promise<NonNullable<BlueskyFailureDetail["response"]>> {
-  const contentType = optionalHeader(response.headers, "content-type")
-  const server = optionalHeader(response.headers, "server")
-  const retryAfter = optionalHeader(response.headers, "retry-after")
-  const rateLimitRemaining =
-    optionalHeader(response.headers, "ratelimit-remaining") ??
-    optionalHeader(response.headers, "x-ratelimit-remaining")
-  const rateLimitReset =
-    optionalHeader(response.headers, "ratelimit-reset") ??
-    optionalHeader(response.headers, "x-ratelimit-reset")
+  const headerEvidence = collectHttpResponseHeaders(response.headers)
 
   let bodyText: string
   try {
     bodyText = await response.text()
   } catch {
-    return {
-      bodyKind: "unreadable",
-      ...(contentType === undefined ? {} : { contentType }),
-      ...(server === undefined ? {} : { server }),
-      ...(retryAfter === undefined ? {} : { retryAfter }),
-      ...(rateLimitRemaining === undefined ? {} : { rateLimitRemaining }),
-      ...(rateLimitReset === undefined ? {} : { rateLimitReset })
-    }
+    return { bodyKind: "unreadable", ...headerEvidence }
   }
 
   const trimmedBody = bodyText.trim()
-  let bodyKind: HttpResponseBodyKind = "text"
-  let error: string | undefined
-  let message: string | undefined
-  if (trimmedBody.length === 0) {
-    bodyKind = "empty"
-  } else if (contentType?.toLowerCase().includes("json") || trimmedBody.startsWith("{")) {
-    try {
-      const payload = JSON.parse(trimmedBody) as unknown
-      if (typeof payload === "object" && payload !== null && !Array.isArray(payload)) {
-        const record = payload as Record<string, unknown>
-        error = typeof record.error === "string" ? sanitizeDiagnosticText(record.error) : undefined
-        message =
-          typeof record.message === "string" ? sanitizeDiagnosticText(record.message) : undefined
-      }
-      bodyKind = "json"
-    } catch {
-      bodyKind = "text"
-      message = sanitizeDiagnosticText(trimmedBody)
-    }
-  } else if (contentType?.toLowerCase().includes("html") || trimmedBody.startsWith("<")) {
-    bodyKind = "html"
-  } else {
-    message = sanitizeDiagnosticText(trimmedBody)
-  }
-
   const cloudflare =
     response.headers.has("cf-ray") ||
-    server?.toLowerCase().includes("cloudflare") === true ||
+    headerEvidence.server?.toLowerCase().includes("cloudflare") === true ||
     trimmedBody.toLowerCase().includes("cloudflare")
 
   return {
-    bodyKind,
-    ...(contentType === undefined ? {} : { contentType }),
-    ...(server === undefined ? {} : { server }),
-    ...(retryAfter === undefined ? {} : { retryAfter }),
-    ...(rateLimitRemaining === undefined ? {} : { rateLimitRemaining }),
-    ...(rateLimitReset === undefined ? {} : { rateLimitReset }),
-    ...(error === undefined ? {} : { error }),
-    ...(message === undefined ? {} : { message }),
+    ...inspectHttpErrorBody(bodyText, headerEvidence.contentType),
+    ...headerEvidence,
     ...(cloudflare ? { bodyMarker: "cloudflare" as const } : {})
   }
 }

@@ -325,7 +325,9 @@ describe("Bluesky failure diagnostics", () => {
       retryAfterMs: 100_000
     })
   })
+})
 
+describe("Bluesky HTTP failure diagnostics", () => {
   it("logs enough sanitized response metadata to diagnose an HTTP 403", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
     const client = createBlueskyClient({
@@ -347,9 +349,7 @@ describe("Bluesky failure diagnostics", () => {
       )
     })
 
-    await client.fetchSummariesWithRetryInfo([
-      "https://example.com/private-path?secret=value"
-    ])
+    await client.fetchSummariesWithRetryInfo(["https://example.com/private-path?secret=value"])
 
     expect(parseFailureDiagnostic(error.mock.calls.at(-1))).toEqual({
       event: "bluesky_fetch_failed",
@@ -376,7 +376,9 @@ describe("Bluesky failure diagnostics", () => {
       ]
     })
   })
+})
 
+describe("Bluesky other failure diagnostics", () => {
   it.each([
     {
       name: "network failure",
