@@ -363,6 +363,7 @@ describe("Bluesky failure diagnostics", () => {
           request: { host: "example.com", ordinal: 1 },
           response: {
             bodyKind: "json",
+            bodyMarker: "cloudflare",
             contentType: "application/json; charset=utf-8",
             server: "cloudflare",
             retryAfter: "60",

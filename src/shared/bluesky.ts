@@ -30,6 +30,7 @@ type RateLimitResetSource =
   | "fallback"
 
 type InvalidResponseReason = "invalid_posts" | "missing_hits_total" | "invalid_hits_total"
+type HttpResponseBodyKind = "empty" | "json" | "html" | "text" | "unreadable"
 
 interface ResetDelay {
   delayMs: number
@@ -51,6 +52,21 @@ interface BlueskyFailureDetail {
   resetSource?: RateLimitResetSource
   reason?: InvalidResponseReason
   errorName?: string
+  request?: {
+    host: string
+    ordinal: number
+  }
+  response?: {
+    bodyKind: HttpResponseBodyKind
+    contentType?: string
+    server?: string
+    retryAfter?: string
+    rateLimitRemaining?: string
+    rateLimitReset?: string
+    error?: string
+    message?: string
+    bodyMarker?: "cloudflare"
+  }
 }
 
 interface BlueskySearchResponse {
@@ -96,6 +112,100 @@ class BlueskyInvalidResponseError extends Error {
   constructor(readonly reason: InvalidResponseReason) {
     super(`Bluesky API returned an invalid response: ${reason}`)
     this.name = "BlueskyInvalidResponseError"
+  }
+}
+
+class BlueskyHttpResponseError extends HttpResponseError {
+  constructor(
+    status: number,
+    readonly request: NonNullable<BlueskyFailureDetail["request"]>,
+    readonly response: NonNullable<BlueskyFailureDetail["response"]>
+  ) {
+    super("Bluesky", status)
+    this.name = "BlueskyHttpResponseError"
+  }
+}
+
+function sanitizeDiagnosticText(value: string): string {
+  return value
+    .replace(/https?:\/\/[^\s"'<>)]*/gi, "[url]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 240)
+}
+
+function optionalHeader(headers: Headers, name: string): string | undefined {
+  return headers.get(name) ?? undefined
+}
+
+async function inspectHttpErrorResponse(
+  response: Response
+): Promise<NonNullable<BlueskyFailureDetail["response"]>> {
+  const contentType = optionalHeader(response.headers, "content-type")
+  const server = optionalHeader(response.headers, "server")
+  const retryAfter = optionalHeader(response.headers, "retry-after")
+  const rateLimitRemaining =
+    optionalHeader(response.headers, "ratelimit-remaining") ??
+    optionalHeader(response.headers, "x-ratelimit-remaining")
+  const rateLimitReset =
+    optionalHeader(response.headers, "ratelimit-reset") ??
+    optionalHeader(response.headers, "x-ratelimit-reset")
+
+  let bodyText: string
+  try {
+    bodyText = await response.text()
+  } catch {
+    return {
+      bodyKind: "unreadable",
+      ...(contentType === undefined ? {} : { contentType }),
+      ...(server === undefined ? {} : { server }),
+      ...(retryAfter === undefined ? {} : { retryAfter }),
+      ...(rateLimitRemaining === undefined ? {} : { rateLimitRemaining }),
+      ...(rateLimitReset === undefined ? {} : { rateLimitReset })
+    }
+  }
+
+  const trimmedBody = bodyText.trim()
+  let bodyKind: HttpResponseBodyKind = "text"
+  let error: string | undefined
+  let message: string | undefined
+  if (trimmedBody.length === 0) {
+    bodyKind = "empty"
+  } else if (contentType?.toLowerCase().includes("json") || trimmedBody.startsWith("{")) {
+    try {
+      const payload = JSON.parse(trimmedBody) as unknown
+      if (typeof payload === "object" && payload !== null && !Array.isArray(payload)) {
+        const record = payload as Record<string, unknown>
+        error = typeof record.error === "string" ? sanitizeDiagnosticText(record.error) : undefined
+        message =
+          typeof record.message === "string" ? sanitizeDiagnosticText(record.message) : undefined
+      }
+      bodyKind = "json"
+    } catch {
+      bodyKind = "text"
+      message = sanitizeDiagnosticText(trimmedBody)
+    }
+  } else if (contentType?.toLowerCase().includes("html") || trimmedBody.startsWith("<")) {
+    bodyKind = "html"
+  } else {
+    message = sanitizeDiagnosticText(trimmedBody)
+  }
+
+  const cloudflare =
+    response.headers.has("cf-ray") ||
+    server?.toLowerCase().includes("cloudflare") === true ||
+    trimmedBody.toLowerCase().includes("cloudflare")
+
+  return {
+    bodyKind,
+    ...(contentType === undefined ? {} : { contentType }),
+    ...(server === undefined ? {} : { server }),
+    ...(retryAfter === undefined ? {} : { retryAfter }),
+    ...(rateLimitRemaining === undefined ? {} : { rateLimitRemaining }),
+    ...(rateLimitReset === undefined ? {} : { rateLimitReset }),
+    ...(error === undefined ? {} : { error }),
+    ...(message === undefined ? {} : { message }),
+    ...(cloudflare ? { bodyMarker: "cloudflare" as const } : {})
   }
 }
 
@@ -166,6 +276,14 @@ function classifyFailure(error: unknown): BlueskyFailureDetail {
   if (error instanceof BlueskyCircuitOpenError) {
     return { kind: "circuit_open", retryAfterMs: error.retryAfterMs }
   }
+  if (error instanceof BlueskyHttpResponseError) {
+    return {
+      kind: "http_error",
+      status: error.status,
+      request: error.request,
+      response: error.response
+    }
+  }
   if (error instanceof HttpResponseError) {
     return { kind: "http_error", status: error.status }
   }
@@ -221,6 +339,7 @@ export function createBlueskyClient(options: BlueskyClientOptions = {}): Bluesky
   const now = options.now ?? Date.now
   const enqueue = createRequestQueue(MAX_CONCURRENT_REQUESTS)
   let blockedUntil = 0
+  let requestOrdinal = 0
 
   async function fetchSummary(normalizedUrl: string): Promise<BlueskySummary> {
     if (now() < blockedUntil) {
@@ -232,6 +351,8 @@ export function createBlueskyClient(options: BlueskyClientOptions = {}): Bluesky
     endpoint.searchParams.set("url", normalizedUrl)
     endpoint.searchParams.set("limit", "1")
     endpoint.searchParams.set("sort", "top")
+    requestOrdinal += 1
+    const currentRequestOrdinal = requestOrdinal
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), BLUESKY_REQUEST_TIMEOUT_MS)
@@ -252,7 +373,11 @@ export function createBlueskyClient(options: BlueskyClientOptions = {}): Bluesky
       throw new BlueskyRateLimitError(reset.delayMs, reset.source)
     }
     if (!response.ok) {
-      throw new HttpResponseError("Bluesky", response.status)
+      throw new BlueskyHttpResponseError(
+        response.status,
+        { host: new URL(normalizedUrl).hostname, ordinal: currentRequestOrdinal },
+        await inspectHttpErrorResponse(response)
+      )
     }
 
     let payload: BlueskySearchResponse
