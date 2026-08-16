@@ -47,13 +47,17 @@ export type ExtensionResponse<T> = Ok<T> | Err
 
 export type HnSummaryMap = HackerNewsSummaryMap
 export type BlueskySummaries = BlueskySummaryMap
+export type BlueskyResponseData = {
+  summaries: BlueskySummaries
+  retryAfterMs?: number
+}
 
 export type HatenaCountsResponse = ExtensionResponse<HatenaCountMap>
 export type HatenaEntryResponse = ExtensionResponse<HatenaBookmarkSummary[]> & {
   diagnostics?: EntryDiagnosticsResponse
 }
 export type HackerNewsResponse = ExtensionResponse<HnSummaryMap>
-export type BlueskyResponse = ExtensionResponse<BlueskySummaries>
+export type BlueskyResponse = ExtensionResponse<BlueskyResponseData>
 
 export function ok<T>(data: T): Ok<T> {
   return { ok: true, data }
@@ -148,6 +152,17 @@ export function isBlueskySummaryMap(value: unknown): value is BlueskySummaries {
           Number.isInteger(summary.hitsTotal) &&
           (summary.hitsTotal as number) >= 0)
     )
+  )
+}
+
+export function isBlueskyResponseData(value: unknown): value is BlueskyResponseData {
+  return (
+    isRecord(value) &&
+    isBlueskySummaryMap(value.summaries) &&
+    (value.retryAfterMs === undefined ||
+      (typeof value.retryAfterMs === "number" &&
+        Number.isFinite(value.retryAfterMs) &&
+        value.retryAfterMs >= 0))
   )
 }
 

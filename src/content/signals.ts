@@ -18,7 +18,11 @@ export interface SignalPipelineDeps {
   ) => void
   requestBlueskySummaries: (
     urls: string[],
-    apply: (url: string, summary: BlueskySummary | undefined) => void,
+    apply: (
+      url: string,
+      summary: BlueskySummary | undefined,
+      retryAfterMs?: number
+    ) => void,
     settle: (url: string) => void
   ) => void
   requestEntryBookmarks: (url: string) => Promise<HatenaBookmarkSummary[] | null>
@@ -48,6 +52,7 @@ export interface SignalPipeline {
 }
 
 type SignalState = "pending" | "positive" | "none" | "unknown"
+type SignalProvider = "hatena" | "hackerNews" | "bluesky"
 
 interface TargetSignalState {
   target: SearchResultTarget
@@ -65,58 +70,72 @@ interface ProviderPipelineState<T> {
 const UNKNOWN_SIGNAL_RETRY_DELAYS_MS = [2_000, 10_000, 50_000, 60_000] as const
 
 function createUnknownSignalRetryController(
-  targetStates: Map<HTMLElement, TargetSignalState>,
   isFilterEnabled: () => boolean,
-  retryUnknownTargets: () => void
+  retryUrls: (urls: readonly string[]) => void
 ) {
   let timer: ReturnType<typeof setTimeout> | undefined
-  let attempt = 0
+  const attempts = new Map<string, number>()
+  const dueAtByUrl = new Map<string, number>()
 
-  function hasUnresolvedConnectedTarget(): boolean {
-    return [...targetStates.values()].some(
-      (state) =>
-        state.target.container.isConnected &&
-        (state.hatena === "pending" ||
-          state.hatena === "unknown" ||
-          state.hackerNews === "pending" ||
-          state.hackerNews === "unknown" ||
-          state.bluesky === "pending" ||
-          state.bluesky === "unknown")
-    )
-  }
-
-  function schedule(): void {
-    if (
-      !isFilterEnabled() ||
-      timer !== undefined ||
-      attempt >= UNKNOWN_SIGNAL_RETRY_DELAYS_MS.length
-    ) {
+  function armTimer(): void {
+    if (timer !== undefined) {
+      clearTimeout(timer)
+      timer = undefined
+    }
+    if (!isFilterEnabled() || dueAtByUrl.size === 0) {
       return
     }
 
-    const delay = UNKNOWN_SIGNAL_RETRY_DELAYS_MS[attempt]
-    attempt += 1
+    const now = Date.now()
+    const nextDueAt = Math.min(...dueAtByUrl.values())
     timer = setTimeout(() => {
       timer = undefined
-      if (isFilterEnabled()) {
-        retryUnknownTargets()
+      const retryableUrls = [...dueAtByUrl.entries()]
+        .filter(([, dueAt]) => dueAt <= Date.now())
+        .map(([url]) => url)
+      retryableUrls.forEach((url) => dueAtByUrl.delete(url))
+      if (isFilterEnabled() && retryableUrls.length > 0) {
+        retryUrls(retryableUrls)
       }
-    }, delay)
+      armTimer()
+    }, Math.max(0, nextDueAt - now))
   }
 
-  function resetIfSettled(): void {
-    if (timer === undefined && !hasUnresolvedConnectedTarget()) {
-      attempt = 0
+  function schedule(url: string, retryAfterMs?: number): void {
+    if (!isFilterEnabled()) {
+      return
     }
+
+    let delay = retryAfterMs
+    if (delay === undefined) {
+      const attempt = attempts.get(url) ?? 0
+      if (attempt >= UNKNOWN_SIGNAL_RETRY_DELAYS_MS.length) {
+        return
+      }
+      delay = UNKNOWN_SIGNAL_RETRY_DELAYS_MS[attempt]
+      attempts.set(url, attempt + 1)
+    }
+    dueAtByUrl.set(url, Date.now() + Math.max(0, delay ?? 0))
+    armTimer()
   }
 
-  function resetForNewCycle(): void {
+  function clear(url: string): void {
+    attempts.delete(url)
+    dueAtByUrl.delete(url)
+    armTimer()
+  }
+
+  function reset(): void {
+    attempts.clear()
+    dueAtByUrl.clear()
     if (timer === undefined) {
-      attempt = 0
+      return
     }
+    clearTimeout(timer)
+    timer = undefined
   }
 
-  return { schedule, resetIfSettled, resetForNewCycle }
+  return { schedule, clear, reset }
 }
 
 function createProviderPipelineState<T>(): ProviderPipelineState<T> {
@@ -144,13 +163,18 @@ function queueProviderTarget<T>(
 
 function queueUnknownProviderTargets<T>(
   targetStates: Iterable<TargetSignalState>,
-  provider: "hatena" | "hackerNews" | "bluesky",
+  provider: SignalProvider,
   state: ProviderPipelineState<T>,
   render: (target: SearchResultTarget, value: T | undefined) => void,
-  urlsToRequest: string[]
+  urlsToRequest: string[],
+  allowedUrls?: ReadonlySet<string>
 ): void {
   for (const targetState of targetStates) {
-    if (!targetState.target.container.isConnected || targetState[provider] !== "unknown") {
+    if (
+      !targetState.target.container.isConnected ||
+      targetState[provider] !== "unknown" ||
+      (allowedUrls !== undefined && !allowedUrls.has(targetState.target.url))
+    ) {
       continue
     }
     targetState[provider] = "pending"
@@ -177,12 +201,14 @@ function applyProviderResult<T>(
 function createProviderResultApplier<T>(
   state: ProviderPipelineState<T>,
   render: (target: SearchResultTarget, value: T) => void,
-  scheduleUnknownRetry: () => void
-): (url: string, value: T) => void {
-  return (url, value) => {
+  unknownRetry: ReturnType<typeof createUnknownSignalRetryController>
+): (url: string, value: T, retryAfterMs?: number) => void {
+  return (url, value, retryAfterMs) => {
     applyProviderResult(url, value, state, render)
     if (value === undefined) {
-      scheduleUnknownRetry()
+      unknownRetry.schedule(url, retryAfterMs)
+    } else {
+      unknownRetry.clear(url)
     }
   }
 }
@@ -264,19 +290,22 @@ function createSignalResultAppliers(
   hatena: ProviderPipelineState<number | null | undefined>,
   hackerNews: ProviderPipelineState<HackerNewsSummary | null | undefined>,
   bluesky: ProviderPipelineState<BlueskySummary | undefined>,
-  scheduleUnknownRetry: () => void
+  unknownRetries: Record<
+    SignalProvider,
+    ReturnType<typeof createUnknownSignalRetryController>
+  >
 ) {
   return {
-    applyCount: createProviderResultApplier(hatena, renderer.renderCount, scheduleUnknownRetry),
+    applyCount: createProviderResultApplier(hatena, renderer.renderCount, unknownRetries.hatena),
     applyHnSummary: createProviderResultApplier(
       hackerNews,
       renderer.renderHnSummary,
-      scheduleUnknownRetry
+      unknownRetries.hackerNews
     ),
     applyBlueskySummary: createProviderResultApplier(
       bluesky,
       renderer.renderBlueskySummary,
-      scheduleUnknownRetry
+      unknownRetries.bluesky
     )
   }
 }
@@ -290,15 +319,21 @@ function createSignalRequestCoordinator(
   const hatena = createProviderPipelineState<number | null | undefined>()
   const hackerNews = createProviderPipelineState<HackerNewsSummary | null | undefined>()
   const bluesky = createProviderPipelineState<BlueskySummary | undefined>()
-  const unknownRetry = createUnknownSignalRetryController(
-    targetStates,
-    isFilterEnabled,
-    retryUnknownTargets
-  )
 
   function settleProvider<T>(url: string, provider: ProviderPipelineState<T>): void {
     provider.inflight.delete(url)
-    unknownRetry.resetIfSettled()
+  }
+
+  const unknownRetries = {
+    hatena: createUnknownSignalRetryController(isFilterEnabled, (urls) =>
+      retryUnknownTargets("hatena", urls)
+    ),
+    hackerNews: createUnknownSignalRetryController(isFilterEnabled, (urls) =>
+      retryUnknownTargets("hackerNews", urls)
+    ),
+    bluesky: createUnknownSignalRetryController(isFilterEnabled, (urls) =>
+      retryUnknownTargets("bluesky", urls)
+    )
   }
 
   const { applyCount, applyHnSummary, applyBlueskySummary } = createSignalResultAppliers(
@@ -306,7 +341,7 @@ function createSignalRequestCoordinator(
     hatena,
     hackerNews,
     bluesky,
-    unknownRetry.schedule
+    unknownRetries
   )
 
   function requestQueuedTargets(
@@ -329,40 +364,50 @@ function createSignalRequestCoordinator(
     }
   }
 
-  function retryUnknownTargets(): void {
+  function retryUnknownTargets(
+    onlyProvider?: SignalProvider,
+    onlyUrls?: readonly string[]
+  ): void {
     const urlsToRequest: string[] = []
     const hnUrlsToRequest: string[] = []
     const blueskyUrlsToRequest: string[] = []
+    const allowedUrls = onlyUrls === undefined ? undefined : new Set(onlyUrls)
 
-    queueUnknownProviderTargets<number | null | undefined>(
-      targetStates.values(),
-      "hatena",
-      hatena,
-      renderer.renderCount,
-      urlsToRequest
-    )
-    queueUnknownProviderTargets<HackerNewsSummary | null | undefined>(
-      targetStates.values(),
-      "hackerNews",
-      hackerNews,
-      renderer.renderHnSummary,
-      hnUrlsToRequest
-    )
-    queueUnknownProviderTargets<BlueskySummary | undefined>(
-      targetStates.values(),
-      "bluesky",
-      bluesky,
-      renderer.renderBlueskySummary,
-      blueskyUrlsToRequest
-    )
+    if (onlyProvider === undefined || onlyProvider === "hatena") {
+      queueUnknownProviderTargets<number | null | undefined>(
+        targetStates.values(),
+        "hatena",
+        hatena,
+        renderer.renderCount,
+        urlsToRequest,
+        allowedUrls
+      )
+    }
+    if (onlyProvider === undefined || onlyProvider === "hackerNews") {
+      queueUnknownProviderTargets<HackerNewsSummary | null | undefined>(
+        targetStates.values(),
+        "hackerNews",
+        hackerNews,
+        renderer.renderHnSummary,
+        hnUrlsToRequest,
+        allowedUrls
+      )
+    }
+    if (onlyProvider === undefined || onlyProvider === "bluesky") {
+      queueUnknownProviderTargets<BlueskySummary | undefined>(
+        targetStates.values(),
+        "bluesky",
+        bluesky,
+        renderer.renderBlueskySummary,
+        blueskyUrlsToRequest,
+        allowedUrls
+      )
+    }
 
     requestQueuedTargets(urlsToRequest, hnUrlsToRequest, blueskyUrlsToRequest)
   }
 
   function queueTargets(targets: SearchResultTarget[]): void {
-    if (targets.length > 0) {
-      unknownRetry.resetForNewCycle()
-    }
     const urlsToRequest: string[] = []
     const hnUrlsToRequest: string[] = []
     const blueskyUrlsToRequest: string[] = []
@@ -401,7 +446,7 @@ function createSignalRequestCoordinator(
     queueTargets,
     retryUnknownTargets: (resetBackoff = false): void => {
       if (resetBackoff) {
-        unknownRetry.resetForNewCycle()
+        Object.values(unknownRetries).forEach((retry) => retry.reset())
       }
       retryUnknownTargets()
     }

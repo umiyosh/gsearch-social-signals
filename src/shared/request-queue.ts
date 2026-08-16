@@ -51,7 +51,7 @@ export function createRequestQueue(maxConcurrent: number): RequestTaskQueue {
 
 function isTransientRequestError(error: unknown): boolean {
   if (error instanceof HttpResponseError) {
-    return error.status === 429 || error.status >= 500
+    return error.status >= 500
   }
   if (error instanceof TypeError) {
     return true

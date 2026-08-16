@@ -4,6 +4,7 @@ import {
   err,
   isBookmarkSummaryList,
   isBlueskyRequest,
+  isBlueskyResponseData,
   isBlueskySummaryMap,
   isCountMap,
   isExtensionResponse,
@@ -149,6 +150,20 @@ describe("payload validators", () => {
     expect(isBlueskySummaryMap({ "https://a": { hitsTotal: 1.5 } })).toBe(false)
     expect(isBlueskySummaryMap({ "https://a": null })).toBe(false)
     expect(isBlueskySummaryMap(null)).toBe(false)
+  })
+
+  it("isBlueskyResponseData validates summaries and an optional cooldown", () => {
+    expect(
+      isBlueskyResponseData({
+        summaries: { "https://a": BLUESKY_SUMMARY_UNAVAILABLE },
+        retryAfterMs: 300_000
+      })
+    ).toBe(true)
+    expect(isBlueskyResponseData({ summaries: {}, retryAfterMs: -1 })).toBe(false)
+    expect(isBlueskyResponseData({ summaries: {}, retryAfterMs: Number.POSITIVE_INFINITY })).toBe(
+      false
+    )
+    expect(isBlueskyResponseData({ "https://a": { hitsTotal: 1 } })).toBe(false)
   })
 })
 

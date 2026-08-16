@@ -212,7 +212,7 @@ Background は `isExtensionRequest` を通過しないメッセージを無視�
 - HN request は1メッセージ40 URLまで、background cache は200件までとする。
 - HN fetch は5秒で timeout する。
 - Bluesky request は1メッセージ40 URLまで、最大3並列、background cacheは200件、fetch timeoutは5秒とする。
-- Bluesky 429ではreset headerに従ってcircuit breakerを開き、header不在時は60秒停止する。400/403/429は再試行せず、5xx・timeout・一時的fetch errorだけ最大3回とする。
+- Bluesky 429ではreset headerに従ってcircuit breakerを開き、header不在時は60秒停止する。backgroundは残りcooldownをcontentへ返し、contentが解除後に対象URLをまとめて再取得する。400/403/429は即時再試行せず、5xx・timeout・一時的fetch errorだけ最大3回とする。
 - Hatena count request は最大500 URLまで受け付けるが、API呼び出し時は50件ごとに分割する。
 
 #### エラーハンドリング
@@ -306,9 +306,9 @@ DOM抽出ロジックは `src/content/searchResults.ts` に集約し、検索サ
 
 - Toolbar popup または Options page の `Show only results with social signals` で ON / OFF を切り替える。初期値は OFF とする。
 - 設定は `chrome.storage.sync` に boolean として保存し、content script は `chrome.storage.onChanged` で変更を反映する。
-- ON の場合、Hatena count、HN summary、Bluesky summaryの3つが正常に完了し、すべてに正のシグナルがない検索結果だけに拡張固有の非表示 class を付ける。
-- いずれかがpositive、または1つでも取得中（pending）の場合は表示を維持する。
-- API エラー・runtime error・不正 response により判定不能（unknown）となり、他providerにもpositiveがなければ非表示にする。filterがONの間はbounded backoffで自動再取得し、positiveに回復した結果は再表示する。pagination / infinite scrollで追加された検索結果も同じ対象とする。
+- ON の場合、Hatena count、HN summary、Bluesky summaryの3つがsettledとなり、すべてに正のシグナルがない検索結果だけに拡張固有の非表示 class を付ける。
+- いずれかがpositive、または初回取得中（pending）の場合は表示を維持する。unknownで非表示になった結果は自動再取得中も非表示を維持し、positiveに回復した時点で再表示する。
+- API エラー・runtime error・不正 response により判定不能（unknown）となり、他providerにもpositiveがなければ非表示にする。filterがONの間はURL・provider単位のbounded backoffで自動再取得する。pagination / infinite scrollで新しいURLが追加されても、過去URLの再試行上限はリセットしない。Bluesky 429はbackgroundが返すcooldownの解除後に再取得する。
 - OFF に戻した場合は拡張固有の非表示 class を外し、検索サービス側の表示状態は変更しない。
 - URL ごとの取得結果を page-local cache へ保持し、MutationObserver で追加された同一 URL の結果にも同じ判定を適用する。
 

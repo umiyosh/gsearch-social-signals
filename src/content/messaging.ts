@@ -1,6 +1,6 @@
 import {
   MESSAGE_TYPES,
-  isBlueskySummaryMap,
+  isBlueskyResponseData,
   isBookmarkSummaryList,
   isCountMap,
   isExtensionResponse,
@@ -172,10 +172,7 @@ export function requestHatenaCounts(
   sendQueuedRuntimeMessage<HatenaCountsResponse>(
     enqueueHatenaRuntimeMessage,
     request,
-    (response) =>
-      !isExtensionResponse(response, isCountMap) ||
-      !response.ok ||
-      Object.values(response.data).includes(HATENA_COUNT_UNAVAILABLE),
+    (response) => !isExtensionResponse(response, isCountMap) || !response.ok,
     ({ response, runtimeError, thrownError }) => {
       urls.forEach((url) => settle(url))
 
@@ -244,10 +241,7 @@ function requestHnSummaryBatch(
   sendQueuedRuntimeMessage<HackerNewsResponse>(
     enqueueHnRuntimeMessage,
     request,
-    (response) =>
-      !isExtensionResponse(response, isHnSummaryMap) ||
-      !response.ok ||
-      Object.values(response.data).includes(HACKER_NEWS_SUMMARY_UNAVAILABLE),
+    (response) => !isExtensionResponse(response, isHnSummaryMap) || !response.ok,
     ({ response, runtimeError, thrownError }) => {
       urls.forEach((url) => settle(url))
 
@@ -286,7 +280,7 @@ function requestHnSummaryBatch(
 
 export function requestBlueskySummaries(
   urls: string[],
-  apply: (url: string, summary: BlueskySummary | undefined) => void,
+  apply: (url: string, summary: BlueskySummary | undefined, retryAfterMs?: number) => void,
   settle: (url: string) => void
 ): void {
   if (!urls.length) {
@@ -309,14 +303,14 @@ export function requestBlueskySummaries(
 
 function requestBlueskySummaryBatch(
   urls: string[],
-  apply: (url: string, summary: BlueskySummary | undefined) => void,
+  apply: (url: string, summary: BlueskySummary | undefined, retryAfterMs?: number) => void,
   settle: (url: string) => void
 ): void {
   const request = { type: MESSAGE_TYPES.BLUESKY_REQUEST, urls }
   sendQueuedRuntimeMessage<BlueskyResponse>(
     enqueueBlueskyRuntimeMessage,
     request,
-    (response) => !isExtensionResponse(response, isBlueskySummaryMap) || !response.ok,
+    (response) => !isExtensionResponse(response, isBlueskyResponseData) || !response.ok,
     ({ response, runtimeError, thrownError }) => {
       urls.forEach((url) => settle(url))
 
@@ -332,7 +326,7 @@ function requestBlueskySummaryBatch(
         return
       }
 
-      if (!isExtensionResponse(response, isBlueskySummaryMap)) {
+      if (!isExtensionResponse(response, isBlueskyResponseData)) {
         console.warn("Unexpected Bluesky response", response)
         urls.forEach((url) => apply(url, undefined))
         return
@@ -347,15 +341,27 @@ function requestBlueskySummaryBatch(
       if (DIAGNOSTICS_ENABLED) {
         console.info("[GSPLUS_DIAGNOSTICS]", {
           event: "bluesky-summaries",
-          ...buildBlueskySummaryDiagnostics(urls, response.data)
+          ...buildBlueskySummaryDiagnostics(urls, response.data.summaries)
         })
       }
 
-      Object.entries(response.data).forEach(([url, summary]) => {
-        apply(url, summary === BLUESKY_SUMMARY_UNAVAILABLE ? undefined : summary)
+      Object.entries(response.data.summaries).forEach(([url, summary]) => {
+        if (summary !== BLUESKY_SUMMARY_UNAVAILABLE) {
+          apply(url, summary)
+        } else if (response.data.retryAfterMs === undefined) {
+          apply(url, undefined)
+        } else {
+          apply(url, undefined, response.data.retryAfterMs)
+        }
       })
 
-      urls.filter((url) => !(url in response.data)).forEach((url) => apply(url, undefined))
+      urls.filter((url) => !(url in response.data.summaries)).forEach((url) => {
+        if (response.data.retryAfterMs === undefined) {
+          apply(url, undefined)
+        } else {
+          apply(url, undefined, response.data.retryAfterMs)
+        }
+      })
     }
   )
 }

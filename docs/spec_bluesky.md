@@ -35,14 +35,14 @@ Bluesky does not publish a numeric request limit for the public AppView. The doc
 - HTTP 429 is not retried. `Retry-After`, `RateLimit-Reset`, or `X-RateLimit-Reset` opens a circuit until the indicated time. With no usable header, the circuit opens for 60 seconds.
 - HTTP 5xx, timeout, and transient fetch errors use the shared bounded retry helper for at most three attempts.
 - Invalid JSON, invalid response shape, and missing `hitsTotal` are unavailable and are not retried at the message layer.
-- Unavailable Bluesky data does not block Hatena or HN rendering. While the result filter is enabled, a settled unavailable result counts as no known positive signal and is retried automatically with bounded backoff.
+- Unavailable Bluesky data does not block Hatena or HN rendering. While the result filter is enabled, a settled unavailable result counts as no known positive signal and is retried automatically. Ordinary failures use URL-scoped bounded backoff; a rate-limit response is retried once its background-provided cooldown expires.
 - Automatic retries also apply to results added by pagination or infinite scroll. Pending results remain visible; a later positive response restores a previously filtered result.
 
 ## Filter Behavior
 
 - A positive signal from Hatena, Hacker News, or Bluesky keeps the result visible.
-- The filter hides a result only after all three providers have completed successfully with no positive signal.
-- Pending data from any provider keeps the result visible. Settled unavailable data does not count as a positive signal and remains eligible for automatic retry.
+- The filter hides a result after all three providers have settled, regardless of success or unavailability, when none has a positive signal.
+- Initial pending data from any provider keeps the result visible. A result hidden after an unavailable response remains hidden during automatic retry to avoid flicker; a later positive response restores it.
 - Turning the filter off restores results hidden by the extension.
 
 ## Diagnostics And Privacy

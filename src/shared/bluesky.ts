@@ -9,6 +9,11 @@ export const BLUESKY_SUMMARY_UNAVAILABLE = "unavailable" as const
 export type BlueskySummaryResult = BlueskySummary | typeof BLUESKY_SUMMARY_UNAVAILABLE
 export type BlueskySummaryMap = Record<string, BlueskySummaryResult>
 
+export interface BlueskyFetchResult {
+  summaries: BlueskySummaryMap
+  retryAfterMs?: number
+}
+
 export const BLUESKY_REQUEST_TIMEOUT_MS = 5_000
 export const BLUESKY_RATE_LIMIT_FALLBACK_MS = 60_000
 export const BLUESKY_REQUEST_BATCH_SIZE = 40
@@ -28,6 +33,7 @@ interface BlueskyClientOptions {
 
 export interface BlueskyClient {
   fetchSummaries: (urls: readonly string[]) => Promise<BlueskySummaryMap>
+  fetchSummariesWithRetryInfo: (urls: readonly string[]) => Promise<BlueskyFetchResult>
 }
 
 class BlueskyRateLimitError extends Error {
@@ -126,7 +132,9 @@ export function createBlueskyClient(options: BlueskyClientOptions = {}): Bluesky
     return parseSummary((await response.json()) as BlueskySearchResponse)
   }
 
-  async function fetchSummaries(urls: readonly string[]): Promise<BlueskySummaryMap> {
+  async function fetchSummariesWithRetryInfo(
+    urls: readonly string[]
+  ): Promise<BlueskyFetchResult> {
     const normalizedToOriginals = new Map<string, string[]>()
     urls.forEach((url) => {
       const normalized = normalizeRequestUrl(url)
@@ -138,6 +146,7 @@ export function createBlueskyClient(options: BlueskyClientOptions = {}): Bluesky
     const summaries: BlueskySummaryMap = {}
     let failedRequests = 0
     let firstError: unknown = null
+    let retryAfterMs: number | undefined
 
     await Promise.all(
       [...normalizedToOriginals.entries()].map(async ([normalized, originals]) => {
@@ -147,6 +156,9 @@ export function createBlueskyClient(options: BlueskyClientOptions = {}): Bluesky
         } catch (error) {
           failedRequests += 1
           firstError ??= error
+          if (error instanceof BlueskyRateLimitError || error instanceof BlueskyCircuitOpenError) {
+            retryAfterMs = Math.max(retryAfterMs ?? 0, Math.max(0, blockedUntil - now()))
+          }
           result = BLUESKY_SUMMARY_UNAVAILABLE
         }
         originals.forEach((url) => {
@@ -163,10 +175,14 @@ export function createBlueskyClient(options: BlueskyClientOptions = {}): Bluesky
       })
     }
 
-    return summaries
+    return retryAfterMs === undefined ? { summaries } : { summaries, retryAfterMs }
   }
 
-  return { fetchSummaries }
+  async function fetchSummaries(urls: readonly string[]): Promise<BlueskySummaryMap> {
+    return (await fetchSummariesWithRetryInfo(urls)).summaries
+  }
+
+  return { fetchSummaries, fetchSummariesWithRetryInfo }
 }
 
-export const fetchBlueskySummaries = createBlueskyClient().fetchSummaries
+export const fetchBlueskySummaries = createBlueskyClient().fetchSummariesWithRetryInfo

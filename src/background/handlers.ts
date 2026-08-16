@@ -8,6 +8,7 @@ import {
   BLUESKY_REQUEST_BATCH_SIZE,
   BLUESKY_SUMMARY_UNAVAILABLE,
   type BlueskySummary,
+  type BlueskyFetchResult,
   type BlueskySummaryMap
 } from "../shared/bluesky"
 import type { HatenaEntryFetchTiming } from "../shared/diagnostics"
@@ -33,7 +34,7 @@ export interface BackgroundDeps {
   ) => Promise<HatenaBookmarkSummary[]>
   fetchHackerNewsSummaries: (urls: readonly string[]) => Promise<HnSummaryMap>
   hnCache: Map<string, HackerNewsSummaryResult>
-  fetchBlueskySummaries: (urls: readonly string[]) => Promise<BlueskySummaryMap>
+  fetchBlueskySummaries: (urls: readonly string[]) => Promise<BlueskyFetchResult>
   blueskyCache: Map<string, BlueskySummary>
 }
 
@@ -168,8 +169,11 @@ async function handleBluesky(deps: BackgroundDeps, urls: string[]): Promise<Blue
       (url) => !deps.blueskyCache.has(url)
     )
     let fetched: BlueskySummaryMap = {}
+    let retryAfterMs: number | undefined
     if (uncached.length) {
-      fetched = await deps.fetchBlueskySummaries(uncached)
+      const result = await deps.fetchBlueskySummaries(uncached)
+      fetched = result.summaries
+      retryAfterMs = result.retryAfterMs
       Object.entries(fetched).forEach(([url, summary]) => {
         if (summary !== BLUESKY_SUMMARY_UNAVAILABLE) {
           deps.blueskyCache.set(url, summary)
@@ -185,7 +189,7 @@ async function handleBluesky(deps: BackgroundDeps, urls: string[]): Promise<Blue
         ? (deps.blueskyCache.get(normalized) ?? fetched[normalized] ?? BLUESKY_SUMMARY_UNAVAILABLE)
         : BLUESKY_SUMMARY_UNAVAILABLE
     })
-    return ok(summaries)
+    return ok(retryAfterMs === undefined ? { summaries } : { summaries, retryAfterMs })
   } catch (error: unknown) {
     console.error("Failed to fetch Bluesky summaries", error)
     return err(error)

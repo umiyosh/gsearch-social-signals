@@ -69,8 +69,10 @@ The summary uses:
 ## Error Handling
 
 - HTTP 400 from HN Algolia is treated as a missing summary for that URL.
+- HTTP 429 is not retried immediately. The content pipeline owns later URL-scoped retries so message and fetch retry layers do not multiply the same request.
 - Invalid JSON shape, empty hits, missing points, URL mismatch, timeout, and fetch failure result in no HN badge.
 - Failures are aggregated where possible so the extension does not flood the console with one error per URL.
+- Automatic retries are bounded per URL. Pagination or infinite scroll does not rearm an exhausted URL when a new result is added.
 
 ## Security And Privacy
 
