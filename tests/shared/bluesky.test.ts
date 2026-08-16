@@ -326,34 +326,36 @@ describe("Bluesky failure diagnostics", () => {
   it.each([
     {
       name: "HTTP status",
-      fetcher: vi.fn().mockResolvedValue(response({}, 403)),
+      createFetcher: () => vi.fn().mockResolvedValue(response({}, 403)),
       expectedFailure: { kind: "http_error", count: 1, status: 403 }
     },
     {
       name: "network failure",
-      fetcher: vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
+      createFetcher: () => vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
       expectedFailure: { kind: "network_error", count: 1 }
     },
     {
       name: "invalid JSON",
-      fetcher: vi.fn().mockResolvedValue({
-        ...response({}),
-        json: () => Promise.reject(new SyntaxError("invalid JSON"))
-      } as Response),
+      createFetcher: () =>
+        vi.fn().mockResolvedValue({
+          ...response({}),
+          json: () => Promise.reject(new SyntaxError("invalid JSON"))
+        } as Response),
       expectedFailure: { kind: "invalid_json", count: 1 }
     },
     {
       name: "invalid response",
-      fetcher: vi.fn().mockResolvedValue(response({ posts: [], hitsTotal: -1 })),
+      createFetcher: () =>
+        vi.fn().mockResolvedValue(response({ posts: [], hitsTotal: -1 })),
       expectedFailure: {
         kind: "invalid_response",
         count: 1,
         reason: "invalid_hits_total"
       }
     }
-  ])("logs $name without a raw URL", async ({ fetcher, expectedFailure }) => {
+  ])("logs $name without a raw URL", async ({ createFetcher, expectedFailure }) => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
-    const client = createBlueskyClient({ fetcher })
+    const client = createBlueskyClient({ fetcher: createFetcher() })
 
     await client.fetchSummariesWithRetryInfo(["https://example.com/private-path?secret=value"])
 
