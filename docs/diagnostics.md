@@ -37,8 +37,6 @@ Google 検索結果の DevTools Console で `[GSPLUS_DIAGNOSTICS]` をfilterし�
 - `fetch.responseHeaders.xAmzCfPop`: 応答したCloudFront edge location。
 - `runtimeDeliveryMs`: background処理以外にかかったruntime message配送・response cloneの概算。
 
-Bluesky取得が完了したbatchでは `event: "bluesky-summaries"` を1行出力します。記録するのは `requestedUrls`、`positive`、`zero`、`unavailable` の件数だけです。429によるcircuit breaker、timeout、HTTP error、invalid responseは `unavailable` に集約され、生の検索結果URLやBluesky queryは記録しません。
-
 response headerは上記3項目だけを許可リストで取得します。`target`はoriginとpathnameだけです。Google検索語、URL query/hash、コメント本文、Hatenaユーザー名は出力しません。
 
 ## 終了

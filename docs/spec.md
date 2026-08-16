@@ -2,7 +2,7 @@
 
 ## 1. 概要
 
-本ドキュメントは、「Google と DuckDuckGo のWeb検索結果ページに、各結果URLの Hatena Bookmark 件数（`X users`）、Hacker News 最大スコア（`HN X pts`）、Bluesky URL mention count（`🦋 X`）を表示する」Chrome拡張の現行仕様である。
+本ドキュメントは、「Google と DuckDuckGo のWeb検索結果ページに、各結果URLの Hatena Bookmark 件数（`X users`）と Hacker News 最大スコア（`HN X pts`）を表示する」Chrome拡張の現行仕様である。
 公開前の source of truth として、技術スタック、アーキテクチャ、権限、データフロー、公開時の注意点を記録する。
 
 ---
@@ -13,12 +13,10 @@
 
 - Google と DuckDuckGo のWeb検索結果ページ上で、各検索結果に対応するURLの Hatena Bookmark 件数を表示する。
 - Hacker News Search API / Algolia から、各検索結果URLに対応するstory群の最大 positive points を表示する。
-- Bluesky public AppView API から、各検索結果URLを含む投稿の `hitsTotal` を表示する。
-- Hatena 件数は `X users`、HN は `HN X pts`、Bluesky は一般的なUnicode蝶絵文字と件数を `🦋 X` として表示する。
+- Hatena 件数は `X users`、HN は `HN X pts` として表示する。
 - 0件または positive score がないURLについては、UI上に何も追加しない（＝0は非表示）。
 - Hatena Bookmarkの**公開APIのみ**を使用し、認証（OAuth等）は不要とする。
 - Hacker News は公開 Search API のみを使用し、認証は不要とする。
-- Bluesky は公開 AppView API のみを使用し、認証、アカウント、API tokenは不要とする。
 - Manifest V3 + TypeScript + Node.js + npm を前提とした、再利用性の高い構成とする。
 
 ### 2.2 非ゴール
@@ -37,8 +35,8 @@
 ## 3. ユースケース
 
 - ユーザーが Chrome で Google または DuckDuckGo のWeb検索を行う。
-- 検索結果一覧が表示されると、各結果のタイトル付近に `123 users`、`HN 456 pts`、`🦋 12` のようなバッジが表示される。
-- ユーザーは、Hatena Bookmark 件数、HN score、BlueskyでのURL mention countを補助シグナルとして参照できる。
+- 検索結果一覧が表示されると、各結果のタイトル付近に `123 users` や `HN 456 pts` のようなバッジが表示される。
+- ユーザーは、国内技術コミュニティの Hatena Bookmark 件数と国際技術コミュニティの HN score を補助シグナルとして参照できる。
 
 ---
 
@@ -64,17 +62,12 @@
    - `hits[].points` の最大 positive value を `maxPoints` として扱う。
    - Algolia 側の検索属性制限や points filter には依存せず、URL一致と positive points 判定はローカルで行う。
 
-5. **Bluesky URL mention count の取得**
-   - 列挙したURLに対して、Bluesky public AppViewの `app.bsky.feed.searchPosts` を URL ごとに検索する。
-   - optionalな `hitsTotal` が整数として得られた場合だけ正式な件数として扱い、`posts.length` は総数に使わない。
-   - `hitsTotal` はlikes、reposts、repliesの合計ではなく、丸め・切り捨てられる可能性のあるURL mention countとする。
-
-6. **UI表示**
-   - 各検索結果のタイトル等の近くに `X users`、`HN X pts`、`🦋 X` を表示する。
+5. **UI表示**
+   - 各検索結果のタイトル等の近くに `X users` と `HN X pts` というテキストを表示する。
    - 件数またはscoreが0の場合は、UI表示を行わない。
    - UIは最小限の装飾（小さめの灰色テキスト、適度なマージン）に留める。
 
-7. **動的変化への追従**
+6. **動的変化への追従**
    - Google / DuckDuckGo の継続スクロールによる追加結果表示にも、MutationObserver による再スキャンで対応する。
 
 ### 4.2 非機能要件
@@ -84,7 +77,7 @@
   - ページ描画の体感速度に大きな影響を与えないこと。
 
 - **安定性**
-  - いずれかの外部APIがエラーや取得不能になっても、他のバッジと検索結果表示自体に影響を与えないこと。
+  - Hatena APIエラー時は静かに失敗し、検索結果表示自体に影響を与えないこと。
 
 - **可読性・保守性**
   - TypeScript で型安全に実装する。
@@ -114,24 +107,23 @@
    - 権限・コンテンツスクリプト・バックグラウンドサービスワーカーを定義。
 
 2. **Background Service Worker**
-   - 役割: Hatena API / Hacker News Search API / Bluesky public AppView API への通信、入力再検証、Content Script とのメッセージ仲介。
+   - 役割: Hatena API / Hacker News Search API への通信、入力再検証、Content Script とのメッセージ仲介。
 
 3. **Content Script (対応検索サービス用)**
    - 役割: Google / DuckDuckGo 検索結果ページのDOMからURLを抽出し、Backgroundに問い合わせ、結果をUIとして描画する。外部APIは直接 fetch しない。
 
 4. **共通モジュール（任意）**
-   - メッセージ型定義、URL正規化、各外部APIクライアント等を共通化。
+   - メッセージ型定義、URL正規化、Hatena APIクライアント、Hacker News APIクライアント等を共通化。
 
 ### 6.2 データフロー (概要)
 
 1. Content Script がページロード後に起動。
 2. Content Script が検索結果DOMを解析し、URLリストを作成。
-3. Content Script が Background に `COUNT_REQUEST`、`HN_REQUEST`、`BLUESKY_REQUEST` を送信。
+3. Content Script が Background に `COUNT_REQUEST` と `HN_REQUEST` を送信。
 4. Background が Hatena API に対してバッチリクエストを送信する。
 5. Content Script は HN 対象を40 URLごとに分割し、Background が HN Algolia API に対して URL ごとの検索リクエストを送信する。HN は最大4並列、1メッセージ40 URLまで。
-6. Content Script は Bluesky 対象を40 URLごとに分割し、Background が AppView API に対して正規化・重複排除した URL ごとの検索リクエストを送信する。Bluesky は最大3並列、1メッセージ40 URLまで。
-7. Background が response envelope を Content Script に返信する。
-8. Content Script が各検索結果要素に各サービスのpositiveなバッジを挿入する。
+6. Background が response envelope を Content Script に返信する。
+7. Content Script が各検索結果要素に対して `X users` / `HN X pts` の表示を挿入する。
 
 ---
 
@@ -159,7 +151,6 @@
     - `https://bookmark.hatenaapis.com/*`: Hatena Bookmark件数取得。
     - `https://b.hatena.ne.jp/*`: Hatena entry / コメント情報取得とエントリーページリンク。
     - `https://hn.algolia.com/*`: Hacker News Search API によるURL言及・score取得。
-    - `https://api.bsky.app/*`: Bluesky public AppView API によるURL mention count取得。
   - `https://news.ycombinator.com/*` は fetch しないため宣言しない。HN story はユーザークリック時の通常遷移先として扱う。
   - `"permissions"` はフィルター設定の永続化に必要な `storage` のみを宣言し、不要な `tabs` / `activeTab` / `scripting` は追加しない。
   - `"action.default_popup"` で同梱の `popup.html` を指定し、ツールバーアイコンからフィルター設定を切り替えられるようにする。
@@ -168,7 +159,6 @@
 - **アイコン**
   - extension icon と action icon は 16 / 32 / 48 / 128px を指定する。
   - Hatena / HN badge icon は拡張パッケージに同梱し、`chrome.runtime.getURL()` で参照する。
-  - Bluesky badge はプラットフォームのUnicode `🦋` を使い、Bluesky公式ロゴ画像は同梱しない。
 
 ---
 
@@ -176,9 +166,9 @@
 
 ### 8.1 責務
 
-- Content Script からの「件数取得リクエスト」「Hatena entry リクエスト」「HN summary リクエスト」「Bluesky summary リクエスト」を受け付ける。
+- Content Script からの「件数取得リクエスト」「Hatena entry リクエスト」「HN summary リクエスト」を受け付ける。
 - Content Script 由来の入力を再検証し、http(s) URL のみに絞る。
-- Hatena API のカウントエンドポイント、Hatena entry API、Hacker News Search API、Bluesky public AppView API を呼び出す。
+- Hatena API のカウントエンドポイント、Hatena entry API、Hacker News Search API を呼び出す。
 - 結果を Content Script に返信する。
 - クロスオリジン通信を一元管理する。
 
@@ -189,7 +179,6 @@ Background と Content Script 間のメッセージ型は `src/shared/messages.t
 - `MESSAGE_TYPES.COUNT_REQUEST`: `{ type, urls: string[] }`
 - `MESSAGE_TYPES.ENTRY_REQUEST`: `{ type, url: string }`
 - `MESSAGE_TYPES.HN_REQUEST`: `{ type, urls: string[] }`
-- `MESSAGE_TYPES.BLUESKY_REQUEST`: `{ type, urls: string[] }`
 - Response envelope: `{ ok: true, data } | { ok: false, error }`
 
 Background は `isExtensionRequest` を通過しないメッセージを無視する。Content は `isExtensionResponse` と data guard で response envelope を検証する。
@@ -208,11 +197,9 @@ Background は `isExtensionRequest` を通過しないメッセージを無視�
 - APIが返すレスポンス形式を確認した上で、`url → count` のマップを生成する。
 - `fetch` を用いてリクエストを送信し、`res.ok` を確認後にレスポンスをパースする。
 - Hacker News Search API は URL ごとに検索するため、同時実行数を最大4本に制限する。
-- 1回のSERPスキャンで処理する検索結果は上位40件までとし、過剰な外部API呼び出しを避ける。
-- HN request は1メッセージ40 URLまで、background cache は200件までとする。
+- Content Script はHNの取得対象と再試行対象を40 URLごとに分割し、Backgroundは40 URLを超えるメッセージを拒否する。
+- HNのbackground cache は200件までとする。
 - HN fetch は5秒で timeout する。
-- Bluesky request は1メッセージ40 URLまで、最大3並列、background cacheは200件、fetch timeoutは5秒とする。
-- Bluesky 429ではreset headerに従ってcircuit breakerを開き、header不在時は60秒停止する。backgroundは残りcooldownをcontentへ返し、contentが解除後に対象URLをまとめて再取得する。400/403/429は即時再試行せず、5xx・timeout・一時的fetch errorだけ最大3回とする。
 - Hatena count request は最大500 URLまで受け付けるが、API呼び出し時は50件ごとに分割する。
 
 #### エラーハンドリング
@@ -266,16 +253,16 @@ DOM抽出ロジックは `src/content/searchResults.ts` に集約し、検索サ
 
 ### 9.3 UI挿入戦略
 
-- 各結果ごとに、既存DOMに social signal container を追加し、positiveな `X users`、`HN X pts`、`🦋 X` を入れる。
+- 各結果ごとに、既存DOMに social signal container を追加し、`X users` と `HN X pts` を入れる。
 - 挿入位置の候補:
   - タイトルリンク (`<a>`) の直後
   - タイトルを囲むコンテナの末尾
   - スニペット（説明文）やURL表示の近く
 
 - UI要素:
-  - HTMLタグ: `<a>`。クリックで Hatena entry page、HN item/search、または Bluesky search に遷移する。
-  - クラス名: `gsplus-hatebu-count` / `gsplus-hn-count` / `gsplus-bluesky-count` など `gsplus-` prefix の固有クラス名を付与する。
-  - Hatena / HN のアイコンは同梱アセットを `chrome.runtime.getURL()` で参照し、Bluesky はUnicode `🦋` をテキストとして表示する。
+  - HTMLタグ: `<a>`。クリックで Hatena entry page、HN item、または HN Algolia search に遷移する。
+  - クラス名: `gsplus-hatebu-count` / `gsplus-hn-count` など `gsplus-` prefix の固有クラス名を付与する。
+  - アイコンは同梱アセットを `chrome.runtime.getURL()` で参照する。
 
 - スタイル:
   - フォントサイズは周辺文字よりやや小さめ（例: 90%）
@@ -291,7 +278,7 @@ DOM抽出ロジックは `src/content/searchResults.ts` に集約し、検索サ
 ### 9.4 メッセージ送受信
 
 - DOM抽出後、URL一覧をBackgroundに送信する。
-- Backgroundから戻った `url → count` / `url → HnSummary` / `url → BlueskySummary` マップを利用して、対応するDOM要素へUI挿入する。
+- Backgroundから戻った `url → count` / `url → HnSummary` マップを利用して、対応するDOM要素へUI挿入する。
 - URL文字列の扱いに注意:
   - Googleが結果リンクにリダイレクトURL（問合せパラメータ付きのGoogle内部URL）を使っている場合、実際のターゲットURLを抽出・正規化することが望ましい。
   - 可能なら `href` をそのまま使うのではなく、`a.href`が返す絶対URLを使い、余計なトラッキングパラメータは除去する設計も検討する（必須ではないが、ハッシュキーの安定性向上に寄与）。
@@ -306,9 +293,9 @@ DOM抽出ロジックは `src/content/searchResults.ts` に集約し、検索サ
 
 - Toolbar popup または Options page の `Show only results with social signals` で ON / OFF を切り替える。初期値は OFF とする。
 - 設定は `chrome.storage.sync` に boolean として保存し、content script は `chrome.storage.onChanged` で変更を反映する。
-- ON の場合、Hatena count、HN summary、Bluesky summaryの3つがsettledとなり、すべてに正のシグナルがない検索結果だけに拡張固有の非表示 class を付ける。
-- いずれかがpositive、または初回取得中（pending）の場合は表示を維持する。unknownで非表示になった結果は自動再取得中も非表示を維持し、positiveに回復した時点で再表示する。
-- API エラー・runtime error・不正 response により判定不能（unknown）となり、他providerにもpositiveがなければ非表示にする。filterがONの間はURL・provider単位のbounded backoffで自動再取得する。pagination / infinite scrollで新しいURLが追加されても、過去URLの再試行上限はリセットしない。Bluesky 429はbackgroundが返すcooldownの解除後に再取得する。
+- ON の場合、Hatena count と HN summary の両方が settled となり、どちらにも正のシグナルがない検索結果だけに拡張固有の非表示 class を付ける。
+- 片方でも positive、または初回取得中（pending）の場合は表示を維持する。unknown で非表示になった結果は自動再取得中も非表示を維持し、positive に回復した時点で再表示する。
+- API エラー・runtime error・不正 response により判定不能（unknown）となり、他 provider にも positive がなければ非表示にする。filter が ON の間は URL・provider 単位の bounded backoff で自動再取得する。pagination / infinite scroll で新しい URL が追加されても、過去 URL の再試行上限はリセットしない。
 - OFF に戻した場合は拡張固有の非表示 class を外し、検索サービス側の表示状態は変更しない。
 - URL ごとの取得結果を page-local cache へ保持し、MutationObserver で追加された同一 URL の結果にも同じ判定を適用する。
 
@@ -343,7 +330,7 @@ Hatena API 連携は以下の方針に従う。
 
 ## 11. セキュリティ・権限
 
-- 必要最低限の `host_permissions` のみを宣言する（`bookmark.hatenaapis.com`, `b.hatena.ne.jp`, `hn.algolia.com`, `api.bsky.app`）。
+- 必要最低限の `host_permissions` のみを宣言する（`bookmark.hatenaapis.com`, `b.hatena.ne.jp`, `hn.algolia.com`）。
 - `news.ycombinator.com` はユーザークリック時の遷移先だけに使い、host permission は要求しない。
 - 外部favicon取得をやめる場合は、公式faviconの同梱可否を確認したうえで拡張内アセット化し、`chrome.runtime.getURL()` と必要最小限の `web_accessible_resources` で参照する。
 - コンテンツスクリプトからは外部ドメインへ直接通信せず、必ず Background を通す。
@@ -357,7 +344,7 @@ Hatena API 連携は以下の方針に従う。
 
 - 表示テキストは `X users` の形で英語固定でもよいが、必要に応じてロケールごとに変更しやすい構造にしておく（i18n対応は必須ではない）。
 - スクリーンリーダー対応として、`aria-label` を付与することも検討可（例: 「Hatena Bookmark: X users」）。
-- Hatena badge は `Hatena Bookmark: X users`、HN badge は `Hacker News: X points`、Bluesky badge は `Bluesky: X posts mentioning this URL` の `aria-label` を付与する。
+- Hatena badge は `Hatena Bookmark: X users`、HN badge は `Hacker News: X points` の `aria-label` を付与する。
 - UI要素は検索結果本文と視認性のバランスを保つよう、過度に目立たせない。
 - hover overlay はライトモードとダークモードの両方で本文とコメントが読める配色にする。
 - `title` tooltip は詳細なAPIレスポンスを並べず、リンク先の意味が分かる最小限の内容にする。
@@ -369,7 +356,7 @@ Hatena API 連携は以下の方針に従う。
 以下の観点で動作確認を行う。
 
 1. **基本シナリオ**
-   - 通常の Google / DuckDuckGo Web検索（PC版）でページを開き、正のシグナルがある各検索結果に対応する3サービスのバッジが表示されること。
+   - 通常の Google / DuckDuckGo Web検索（PC版）でページを開き、正のシグナルがある各検索結果に `X users` / `HN X pts` が表示されること。
    - ブックマーク数が多いURLで、実際のHatenaページと件数が整合していること。
 
 2. **0件のシナリオ**
@@ -385,7 +372,7 @@ Hatena API 連携は以下の方針に従う。
    - 大量の検索結果（継続スクロールで増やした場合）でもブラウザが重くならないこと。
 
 6. **フィルター**
-   - 初期値 OFF、各サービスのみpositive、3サービスすべてnone、各サービスの取得失敗を検証する。
+   - 初期値 OFF、Hatena のみ正、HN のみ正、両方正、両方なし、片方の取得失敗を検証する。
    - ON / OFF の即時反映、保存後の再読み込み、MutationObserver で追加された結果への適用を検証する。
 
 ---

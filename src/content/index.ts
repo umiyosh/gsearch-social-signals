@@ -1,12 +1,7 @@
 import { discoverSearchResults } from "./searchResults"
 import { ensureStyles } from "./styles"
-import { insertBadge, insertBlueskyBadge, insertHnBadge } from "./badges"
-import {
-  requestBlueskySummaries,
-  requestEntryBookmarks,
-  requestHatenaCounts,
-  requestHnSummaries
-} from "./messaging"
+import { insertBadge, insertHnBadge } from "./badges"
+import { requestEntryBookmarks, requestHatenaCounts, requestHnSummaries } from "./messaging"
 import {
   beginOverlaySession,
   cancelOverlayHide,
@@ -19,11 +14,9 @@ import { loadSettings, watchSettings, type ExtensionSettings } from "../shared/s
 const queueTargets = createSignalPipeline({
   requestHatenaCounts,
   requestHnSummaries,
-  requestBlueskySummaries,
   requestEntryBookmarks,
   insertBadge,
   insertHnBadge,
-  insertBlueskyBadge,
   beginOverlaySession,
   presentOverlay,
   scheduleOverlayHide,

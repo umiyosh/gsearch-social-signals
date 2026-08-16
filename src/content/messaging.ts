@@ -1,12 +1,10 @@
 import {
   MESSAGE_TYPES,
-  isBlueskyResponseData,
   isBookmarkSummaryList,
   isCountMap,
   isExtensionResponse,
   isHnSummaryMap,
   type HackerNewsResponse,
-  type BlueskyResponse,
   type HatenaCountsResponse,
   type HatenaEntryResponse
 } from "../shared/messages"
@@ -17,12 +15,6 @@ import {
   HN_REQUEST_BATCH_SIZE,
   type HackerNewsSummary
 } from "../shared/hackerNews"
-import {
-  BLUESKY_REQUEST_BATCH_SIZE,
-  BLUESKY_SUMMARY_UNAVAILABLE,
-  type BlueskySummary,
-  type BlueskySummaryMap
-} from "../shared/bluesky"
 import {
   BUILD_COMMIT_SHA,
   DIAGNOSTICS_ENABLED,
@@ -45,7 +37,6 @@ const RUNTIME_MESSAGE_MAX_ATTEMPTS = 3
 const RUNTIME_MESSAGE_RETRY_BASE_DELAY_MS = 250
 const enqueueHatenaRuntimeMessage = createRuntimeMessageQueue(2)
 const enqueueHnRuntimeMessage = createRuntimeMessageQueue(4)
-const enqueueBlueskyRuntimeMessage = createRuntimeMessageQueue(3)
 
 function createRuntimeMessageQueue(maxConcurrent: number): RuntimeMessageQueue {
   const pending: Array<(release: () => void) => void> = []
@@ -128,26 +119,6 @@ function sendQueuedRuntimeMessage<T>(
 
 function runtimeAvailable(): boolean {
   return Boolean(chrome.runtime?.id)
-}
-
-export function buildBlueskySummaryDiagnostics(
-  urls: readonly string[],
-  data: BlueskySummaryMap
-): { requestedUrls: number; positive: number; zero: number; unavailable: number } {
-  let positive = 0
-  let zero = 0
-  let unavailable = 0
-  urls.forEach((url) => {
-    const summary = data[url]
-    if (summary === undefined || summary === BLUESKY_SUMMARY_UNAVAILABLE) {
-      unavailable += 1
-    } else if (summary.hitsTotal > 0) {
-      positive += 1
-    } else {
-      zero += 1
-    }
-  })
-  return { requestedUrls: urls.length, positive, zero, unavailable }
 }
 
 export function requestHatenaCounts(
@@ -274,96 +245,6 @@ function requestHnSummaryBatch(
       })
 
       urls.filter((url) => !(url in response.data)).forEach((url) => apply(url, null))
-    }
-  )
-}
-
-export function requestBlueskySummaries(
-  urls: string[],
-  apply: (url: string, summary: BlueskySummary | undefined, retryAfterMs?: number) => void,
-  settle: (url: string) => void
-): void {
-  if (!urls.length) {
-    return
-  }
-
-  if (!runtimeAvailable()) {
-    console.debug("Bluesky summaries skipped: runtime unavailable")
-    urls.forEach((url) => {
-      settle(url)
-      apply(url, undefined)
-    })
-    return
-  }
-
-  for (let index = 0; index < urls.length; index += BLUESKY_REQUEST_BATCH_SIZE) {
-    requestBlueskySummaryBatch(urls.slice(index, index + BLUESKY_REQUEST_BATCH_SIZE), apply, settle)
-  }
-}
-
-function requestBlueskySummaryBatch(
-  urls: string[],
-  apply: (url: string, summary: BlueskySummary | undefined, retryAfterMs?: number) => void,
-  settle: (url: string) => void
-): void {
-  const request = { type: MESSAGE_TYPES.BLUESKY_REQUEST, urls }
-  sendQueuedRuntimeMessage<BlueskyResponse>(
-    enqueueBlueskyRuntimeMessage,
-    request,
-    (response) => !isExtensionResponse(response, isBlueskyResponseData) || !response.ok,
-    ({ response, runtimeError, thrownError }) => {
-      urls.forEach((url) => settle(url))
-
-      if (runtimeError) {
-        console.error("Failed to retrieve Bluesky summaries", runtimeError)
-        urls.forEach((url) => apply(url, undefined))
-        return
-      }
-
-      if (thrownError !== undefined) {
-        console.error("Unhandled error while requesting Bluesky summaries", thrownError)
-        urls.forEach((url) => apply(url, undefined))
-        return
-      }
-
-      if (!isExtensionResponse(response, isBlueskyResponseData)) {
-        console.warn("Unexpected Bluesky response", response)
-        urls.forEach((url) => apply(url, undefined))
-        return
-      }
-
-      if (!response.ok) {
-        console.error("Bluesky summaries fetch failed", response.error)
-        urls.forEach((url) => apply(url, undefined))
-        return
-      }
-
-      if (DIAGNOSTICS_ENABLED) {
-        console.info("[GSPLUS_DIAGNOSTICS]", {
-          event: "bluesky-summaries",
-          ...buildBlueskySummaryDiagnostics(urls, response.data.summaries)
-        })
-      }
-
-      Object.entries(response.data.summaries).forEach(([url, summary]) => {
-        if (summary !== BLUESKY_SUMMARY_UNAVAILABLE) {
-          apply(url, summary)
-        } else if (response.data.retryAfterMs === undefined) {
-          apply(url, undefined)
-        } else {
-          apply(url, undefined, response.data.retryAfterMs)
-        }
-      })
-
-      urls
-        .filter((url) => !(url in response.data.summaries))
-        .forEach((url) => {
-          if (response.data.retryAfterMs === undefined) {
-            apply(url, undefined)
-          } else {
-            apply(url, undefined, response.data.retryAfterMs)
-          }
-        })
     }
   )
 }

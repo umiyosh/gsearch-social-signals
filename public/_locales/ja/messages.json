@@ -1,10 +1,10 @@
 {
   "appName": {
-    "message": "はてなブックマーク・HN・Blueskyを検索結果に表示 - GSearch",
+    "message": "はてなブックマーク・HNスコアを検索結果に表示 - GSearch",
     "description": "Chrome と Chrome Web Store に表示する拡張機能名。"
   },
   "appDescription": {
-    "message": "GoogleとDuckDuckGoの検索結果にはてな、Hacker News、Blueskyのシグナルを表示します。",
+    "message": "GoogleとDuckDuckGoの検索結果にはてなブックマーク数とHacker Newsポイントを表示します。",
     "description": "Chrome と Chrome Web Store に表示する短い説明。"
   },
   "actionDefaultTitle": {
@@ -28,7 +28,7 @@
     "description": "検索結果の絞り込み設定のタイトル。"
   },
   "optionsFilterDescription": {
-    "message": "はてな、Hacker News、Blueskyのいずれにもシグナルがない結果を非表示にします。取得中は表示を維持し、取得失敗は自動再試行します。",
+    "message": "はてなブックマークとHacker Newsのいずれにもシグナルがない結果を非表示にします。取得中は表示を維持し、取得失敗は自動再試行します。",
     "description": "検索結果の絞り込み設定の説明。"
   },
   "optionsSaving": {

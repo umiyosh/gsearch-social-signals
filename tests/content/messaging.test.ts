@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
-  buildBlueskySummaryDiagnostics,
-  requestBlueskySummaries,
   requestEntryBookmarks,
   requestHatenaCounts,
   requestHnSummaries
@@ -9,7 +7,6 @@ import {
 import { MESSAGE_TYPES, err, isHatenaEntryRequest, ok } from "../../src/shared/messages"
 import { HATENA_COUNT_UNAVAILABLE } from "../../src/shared/hatena"
 import { HACKER_NEWS_SUMMARY_UNAVAILABLE } from "../../src/shared/hackerNews"
-import { BLUESKY_SUMMARY_UNAVAILABLE } from "../../src/shared/bluesky"
 
 type ChromeStub = {
   runtime?: {
@@ -303,115 +300,6 @@ describe("requestHnSummaries", () => {
       await vi.runAllTimersAsync()
       expect(applied).toEqual([["https://a", undefined]])
     }
-  })
-})
-
-describe("requestBlueskySummaries", () => {
-  it("splits large result sets into requests accepted by the background worker", () => {
-    const urls = Array.from({ length: 81 }, (_, index) => `https://example.com/${index}`)
-    const sentBatches: string[][] = []
-    stubChrome({
-      id: "ext",
-      respondWith: (message) => {
-        const batch = (message as { urls: string[] }).urls
-        sentBatches.push(batch)
-        return ok({
-          summaries: Object.fromEntries(batch.map((url) => [url, { hitsTotal: 1 }]))
-        })
-      }
-    })
-    const apply = vi.fn()
-    const settle = vi.fn()
-
-    requestBlueskySummaries(urls, apply, settle)
-
-    expect(sentBatches.map((batch) => batch.length)).toEqual([40, 40, 1])
-    expect(sentBatches.flat()).toEqual(urls)
-    expect(apply).toHaveBeenCalledTimes(urls.length)
-    expect(settle).toHaveBeenCalledTimes(urls.length)
-  })
-
-  it("summarizes diagnostics without exposing requested URLs", () => {
-    const sensitiveUrl = "https://example.com/private?diagnosis=hidden"
-    const diagnostics = buildBlueskySummaryDiagnostics(
-      [sensitiveUrl, "https://example.com/zero", "https://example.com/missing"],
-      {
-        [sensitiveUrl]: { hitsTotal: 2 },
-        "https://example.com/zero": { hitsTotal: 0 }
-      }
-    )
-
-    expect(diagnostics).toEqual({ requestedUrls: 3, positive: 1, zero: 1, unavailable: 1 })
-    expect(JSON.stringify(diagnostics)).not.toContain("diagnosis")
-    expect(JSON.stringify(diagnostics)).not.toContain("example.com")
-  })
-
-  it("applies validated summaries and marks missing keys unknown", () => {
-    stubChrome({
-      id: "ext",
-      respond: ok({ summaries: { "https://a": { hitsTotal: 4 } } })
-    })
-    const applied: Array<[string, unknown]> = []
-
-    requestBlueskySummaries(
-      ["https://a", "https://b"],
-      (url, summary) => applied.push([url, summary]),
-      vi.fn()
-    )
-
-    expect(applied).toEqual([
-      ["https://a", { hitsTotal: 4 }],
-      ["https://b", undefined]
-    ])
-  })
-
-  it("maps unavailable results to unknown without repeating network-level retries", () => {
-    const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
-      callback(ok({ summaries: { "https://a": BLUESKY_SUMMARY_UNAVAILABLE } }))
-    })
-    stubChrome({ id: "ext", sendMessage })
-    const apply = vi.fn()
-
-    requestBlueskySummaries(["https://a"], apply, vi.fn())
-    expect(sendMessage).toHaveBeenCalledTimes(1)
-    expect(apply).toHaveBeenCalledWith("https://a", undefined)
-  })
-
-  it("passes the background cooldown hint to unavailable results", () => {
-    stubChrome({
-      id: "ext",
-      respond: ok({
-        summaries: { "https://a": BLUESKY_SUMMARY_UNAVAILABLE },
-        retryAfterMs: 300_000
-      })
-    })
-    const apply = vi.fn()
-
-    requestBlueskySummaries(["https://a"], apply, vi.fn())
-
-    expect(apply).toHaveBeenCalledWith("https://a", undefined, 300_000)
-  })
-
-  it("limits simultaneous runtime messages to three", () => {
-    const callbacks: Array<(response: unknown) => void> = []
-    const startedUrls: string[] = []
-    const sendMessage = vi.fn((message: unknown, callback: (response: unknown) => void) => {
-      startedUrls.push((message as { urls: string[] }).urls[0] ?? "")
-      callbacks.push(callback)
-    })
-    stubChrome({ id: "ext", sendMessage })
-    const urls = Array.from({ length: 5 }, (_, index) => `https://example.com/${index + 1}`)
-
-    urls.forEach((url) => requestBlueskySummaries([url], vi.fn(), vi.fn()))
-
-    expect(startedUrls).toEqual(urls.slice(0, 3))
-    callbacks.shift()?.(ok({ summaries: { [urls[0]!]: { hitsTotal: 0 } } }))
-    expect(startedUrls).toEqual(urls.slice(0, 4))
-    callbacks.shift()?.(ok({ summaries: { [urls[1]!]: { hitsTotal: 0 } } }))
-    expect(startedUrls).toEqual(urls)
-    callbacks.splice(0).forEach((callback, index) => {
-      callback(ok({ summaries: { [urls[index + 2]!]: { hitsTotal: 0 } } }))
-    })
   })
 })
 

@@ -27,8 +27,7 @@ const colors = {
   line: "#dadce0",
   bg: "#ffffff",
   hatena: "#00a4de",
-  hn: "#ff6600",
-  bluesky: "#0560c9"
+  hn: "#ff6600"
 }
 
 function escapeXml(value) {
@@ -44,8 +43,7 @@ function text(x, y, value, options = {}) {
   const weight = options.weight ?? 400
   const fill = options.fill ?? colors.text
   const anchor = options.anchor ?? "start"
-  const family = options.family ?? "Arial, Helvetica, sans-serif"
-  return `<text x="${x}" y="${y}" font-family="${escapeXml(family)}" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}">${escapeXml(value)}</text>`
+  return `<text x="${x}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}">${escapeXml(value)}</text>`
 }
 
 function rect(x, y, width, height, options = {}) {
@@ -82,20 +80,6 @@ function hnBadge(x, y, label = "HN 128 pts") {
     </g>`
 }
 
-function blueskyBadge(x, y, label = "12") {
-  return `
-    <g transform="translate(${x} ${y})">
-      ${rect(0, 0, 70, 26, { fill: "#eef5ff", stroke: "#b9d7ff", radius: 13 })}
-      ${text(18, 19, "🦋", {
-        size: 15,
-        family: ".Apple Color Emoji UI, Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji",
-        fill: colors.bluesky,
-        anchor: "middle"
-      })}
-      ${text(32, 18, label, { size: 14, weight: 700, fill: colors.bluesky })}
-    </g>`
-}
-
 function promoSmall() {
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
@@ -107,7 +91,6 @@ function promoSmall() {
       ${text(74, 149, "public web research", { size: 15, fill: colors.muted })}
       ${hatenaBadge(64, 184, "24 users")}
       ${hnBadge(185, 184, "HN 128 pts")}
-      ${blueskyBadge(311, 184)}
     </svg>`
 }
 
@@ -117,12 +100,11 @@ function promoMarquee() {
       ${rect(0, 0, 1400, 560, { fill: "#ffffff" })}
       ${rect(80, 70, 1240, 420, { fill: "#f8fafd", stroke: "#dfe3ea", radius: 28 })}
       ${text(150, 173, "GSearch With Social Signals", { size: 48, weight: 700 })}
-      ${text(154, 230, "Hatena, Hacker News, and Bluesky signals on search results", { size: 25, fill: colors.muted })}
+      ${text(154, 230, "Hatena Bookmark counts and Hacker News points on Google Search results", { size: 25, fill: colors.muted })}
       ${rect(154, 285, 680, 70, { fill: "#ffffff", stroke: "#dadce0", radius: 35 })}
       ${text(196, 329, "browser extension social signals", { size: 24, fill: colors.muted })}
       ${hatenaBadge(890, 278, "24 users")}
       ${hnBadge(1024, 278, "HN 128 pts")}
-      ${blueskyBadge(1150, 278)}
       ${rect(154, 390, 850, 36, { fill: "#ffffff", stroke: "#e8eaed", radius: 8 })}
       ${text(178, 414, "Understanding social signals in search results", { size: 22, fill: "#1a0dab" })}
     </svg>`

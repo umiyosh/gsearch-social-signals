@@ -2,7 +2,7 @@
   <img src="public/icons/icon128.png" width="32" height="32" alt=""> GSearch With Social Signals
 </h1>
 
-**Google と DuckDuckGo の検索結果に、Hatena Bookmark件数、Hacker News スコア、Bluesky URL mention countを表示する Chrome 拡張です。**
+**Google と DuckDuckGo の検索結果に、Hatena Bookmark件数と Hacker News スコアを表示する Chrome 拡張です。**
 
 リンクを開く前に、そのページが日本語圏・英語圏の技術コミュニティでどれくらい参照されているかを確認できます。
 
@@ -20,10 +20,9 @@
 
 - Google / DuckDuckGo の検索結果リンク付近に Hatena Bookmark 件数を `123 users` のように表示します。
 - Hacker News で話題になったURLには、最も高い story score を `HN 456 pts` のように表示します。
-- Bluesky で対象URLを含む投稿が見つかった場合、URL mention countを `🦋 12` のように表示します。
 - Hatena バッジにマウスを重ねる、またはキーボードフォーカスすると、コメント付きブックマークのプレビューを表示します。
 - 0件、または正のスコアがない結果にはバッジを表示しません。
-- オプションを有効にすると、Hatena、HN、Bluesky のすべてに正のシグナルがない検索結果を非表示にできます。初期値は OFF です。
+- オプションを有効にすると、Hatena と HN のどちらにも正のシグナルがない検索結果を非表示にできます。初期値は OFF です。
 - 検索サービス側の順位、タイトル、スニペット、広告枠は変更しません。
 
 ## こんなときに便利です
@@ -36,16 +35,16 @@
 
 1. [Chrome Web Store](https://chromewebstore.google.com/detail/gsearch-with-social-signa/kfllkjdhkdlffnibokeeajcmdkidcfng) から拡張をインストールします。
 2. 対応している Google または DuckDuckGo のWeb検索ページで検索します。
-3. 検索結果の近くに表示される Hatena / HN / Bluesky バッジを確認します。
-4. 詳細を見たい場合は、バッジをクリックして各サービスのページを開きます。
+3. 検索結果の近くに表示される Hatena / HN バッジを確認します。
+4. 詳細を見たい場合は、バッジをクリックして Hatena Bookmark または Hacker News のページを開きます。
 
 Chrome Web Store 公開前に手動で試す場合は、このREADME下部の「手動で試す場合」を参照してください。
 
 ### ソーシャルシグナルがある結果だけを表示する
 
-Chrome ツールバーの GSearch With Social Signals アイコンをクリックし、`Show only results with social signals` を有効にします。拡張機能メニューの「オプション」からも同じ設定を変更できます。Hatena Bookmark 件数、HN スコア、Bluesky URL mention count のいずれかが正の検索結果だけが残ります。
+Chrome ツールバーの GSearch With Social Signals アイコンをクリックし、`Show only results with social signals` を有効にします。拡張機能メニューの「オプション」からも同じ設定を変更できます。Hatena Bookmark 件数または HN スコアが正の検索結果だけが残ります。
 
-3サービスすべての API から正のシグナルがないと確認できた結果だけを非表示にします。API エラーなどで1サービスでも判定できない結果は表示したままにし、オプションを OFF に戻すと拡張機能が非表示にした結果を再表示します。
+両方の API から正のシグナルがないと確認できた結果だけを非表示にします。API エラーなどで判定できない結果は表示したままにし、オプションを OFF に戻すと拡張機能が非表示にした結果を再表示します。
 
 ## 表示されるバッジ
 
@@ -64,14 +63,6 @@ Chrome ツールバーの GSearch With Social Signals アイコンをクリッ�
 - Hacker News Search / Algolia で一致した story のうち、最も高い score を表示します。
 - クリックすると、該当する Hacker News story または検索結果を開きます。
 - 正の score が見つからない場合は表示しません。
-
-### Bluesky
-
-Unicodeの蝶絵文字と件数を `🦋 12` のように表示します。Blueskyの公式ロゴ画像は使用しません。
-
-- 公開 AppView API が返す `hitsTotal` を、対象URLを含む投稿数の目安として表示します。likes、reposts、replies の合計ではありません。
-- クリックすると、対象URLをqueryにしたBlueskyの検索結果を開きます。
-- `hitsTotal` が0または取得不能の場合はバッジを表示しません。絞り込みON時は取得中だけ表示を維持し、取得不能は正のシグナルなしとして扱いつつ自動再取得します。再取得で正のシグナルを確認できた結果は再表示します。
 
 ## 対応している検索
 
@@ -100,7 +91,6 @@ DuckDuckGo の画像・動画・ニュースなどWeb以外の検索タブは対
 
 - Hatena Bookmark API
 - Hacker News Search / Algolia API
-- Bluesky public AppView API
 
 開発者は独自のサーバーを運用せず、検索結果URL、検索語、閲覧履歴、検索サービスのアカウント情報を保存しません。拡張の処理に使う一時的なキャッシュはブラウザ内のメモリ上に置かれ、ページ遷移やブラウザの状態に応じて破棄されます。フィルターの ON / OFF 設定だけを `chrome.storage.sync` に保存します。
 
@@ -108,7 +98,7 @@ DuckDuckGo の画像・動画・ニュースなどWeb以外の検索タブは対
 
 ## 非公式拡張です
 
-GSearch With Social Signals は非公式のプロジェクトです。Google、DuckDuckGo、Hatena、Hacker News、Y Combinator、Algolia、Bluesky によって提供・承認・保証されているものではありません。
+GSearch With Social Signals は非公式のプロジェクトです。Google、DuckDuckGo、Hatena、Hacker News、Y Combinator、Algolia によって提供・承認・保証されているものではありません。
 
 Google Search is a trademark of Google LLC. DuckDuckGo および各サービス名、ロゴ、商標はそれぞれの権利者に帰属します。
 
@@ -155,7 +145,6 @@ make package
 - [実装仕様](docs/spec.md)
 - [診断ビルド](docs/diagnostics.md)
 - [Hacker News 連携仕様](docs/spec_hn.md)
-- [Bluesky 連携仕様](docs/spec_bluesky.md)
 - [リリース管理](docs/release-management.md)
 - [Support and FAQ](docs/support.md)
 - [運用手順](docs/operations.md)

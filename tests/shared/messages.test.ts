@@ -3,9 +3,6 @@ import {
   MESSAGE_TYPES,
   err,
   isBookmarkSummaryList,
-  isBlueskyRequest,
-  isBlueskyResponseData,
-  isBlueskySummaryMap,
   isCountMap,
   isExtensionResponse,
   isHackerNewsRequest,
@@ -16,7 +13,6 @@ import {
 } from "../../src/shared/messages"
 import { HATENA_COUNT_UNAVAILABLE } from "../../src/shared/hatena"
 import { HACKER_NEWS_SUMMARY_UNAVAILABLE } from "../../src/shared/hackerNews"
-import { BLUESKY_SUMMARY_UNAVAILABLE } from "../../src/shared/bluesky"
 
 describe("isHatenaCountsRequest", () => {
   it("accepts a well-formed counts request", () => {
@@ -88,18 +84,6 @@ describe("isHackerNewsRequest", () => {
   })
 })
 
-describe("isBlueskyRequest", () => {
-  it("accepts a well-formed Bluesky request", () => {
-    expect(isBlueskyRequest({ type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: [] })).toBe(true)
-  })
-
-  it("rejects non-string-array urls and wrong types", () => {
-    expect(isBlueskyRequest({ type: MESSAGE_TYPES.BLUESKY_REQUEST, urls: [1] })).toBe(false)
-    expect(isBlueskyRequest({ type: MESSAGE_TYPES.HN_REQUEST, urls: [] })).toBe(false)
-    expect(isBlueskyRequest(null)).toBe(false)
-  })
-})
-
 describe("payload validators", () => {
   it("isCountMap accepts numeric, null, or unavailable values only", () => {
     expect(
@@ -136,34 +120,6 @@ describe("payload validators", () => {
     ).toBe(true)
     expect(isHnSummaryMap({ "https://a": { points: 3 } })).toBe(false)
     expect(isHnSummaryMap(null)).toBe(false)
-  })
-
-  it("isBlueskySummaryMap accepts non-negative integer totals or unavailable only", () => {
-    expect(
-      isBlueskySummaryMap({
-        "https://a": { hitsTotal: 0 },
-        "https://b": { hitsTotal: 12 },
-        "https://c": BLUESKY_SUMMARY_UNAVAILABLE
-      })
-    ).toBe(true)
-    expect(isBlueskySummaryMap({ "https://a": { hitsTotal: -1 } })).toBe(false)
-    expect(isBlueskySummaryMap({ "https://a": { hitsTotal: 1.5 } })).toBe(false)
-    expect(isBlueskySummaryMap({ "https://a": null })).toBe(false)
-    expect(isBlueskySummaryMap(null)).toBe(false)
-  })
-
-  it("isBlueskyResponseData validates summaries and an optional cooldown", () => {
-    expect(
-      isBlueskyResponseData({
-        summaries: { "https://a": BLUESKY_SUMMARY_UNAVAILABLE },
-        retryAfterMs: 300_000
-      })
-    ).toBe(true)
-    expect(isBlueskyResponseData({ summaries: {}, retryAfterMs: -1 })).toBe(false)
-    expect(isBlueskyResponseData({ summaries: {}, retryAfterMs: Number.POSITIVE_INFINITY })).toBe(
-      false
-    )
-    expect(isBlueskyResponseData({ "https://a": { hitsTotal: 1 } })).toBe(false)
   })
 })
 
