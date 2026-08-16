@@ -128,7 +128,7 @@
 2. Content Script が検索結果DOMを解析し、URLリストを作成。
 3. Content Script が Background に `COUNT_REQUEST`、`HN_REQUEST`、`BLUESKY_REQUEST` を送信。
 4. Background が Hatena API に対してバッチリクエストを送信する。
-5. Background が HN Algolia API に対して URL ごとの検索リクエストを送信する。HN は最大4並列、1メッセージ40 URLまで。
+5. Content Script は HN 対象を40 URLごとに分割し、Background が HN Algolia API に対して URL ごとの検索リクエストを送信する。HN は最大4並列、1メッセージ40 URLまで。
 6. Content Script は Bluesky 対象を40 URLごとに分割し、Background が AppView API に対して正規化・重複排除した URL ごとの検索リクエストを送信する。Bluesky は最大3並列、1メッセージ40 URLまで。
 7. Background が response envelope を Content Script に返信する。
 8. Content Script が各検索結果要素に各サービスのpositiveなバッジを挿入する。

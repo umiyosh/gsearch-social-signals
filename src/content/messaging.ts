@@ -12,7 +12,11 @@ import {
 } from "../shared/messages"
 import type { HatenaBookmarkSummary } from "../shared/hatena"
 import { HATENA_COUNT_UNAVAILABLE } from "../shared/hatena"
-import { HACKER_NEWS_SUMMARY_UNAVAILABLE, type HackerNewsSummary } from "../shared/hackerNews"
+import {
+  HACKER_NEWS_SUMMARY_UNAVAILABLE,
+  HN_REQUEST_BATCH_SIZE,
+  type HackerNewsSummary
+} from "../shared/hackerNews"
 import {
   BLUESKY_REQUEST_BATCH_SIZE,
   BLUESKY_SUMMARY_UNAVAILABLE,
@@ -226,6 +230,16 @@ export function requestHnSummaries(
     return
   }
 
+  for (let index = 0; index < urls.length; index += HN_REQUEST_BATCH_SIZE) {
+    requestHnSummaryBatch(urls.slice(index, index + HN_REQUEST_BATCH_SIZE), apply, settle)
+  }
+}
+
+function requestHnSummaryBatch(
+  urls: string[],
+  apply: (url: string, summary: HackerNewsSummary | null | undefined) => void,
+  settle: (url: string) => void
+): void {
   const request = { type: MESSAGE_TYPES.HN_REQUEST, urls }
   sendQueuedRuntimeMessage<HackerNewsResponse>(
     enqueueHnRuntimeMessage,

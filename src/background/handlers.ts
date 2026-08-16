@@ -1,5 +1,9 @@
 import type { HatenaBookmarkSummary, HatenaCountMap } from "../shared/hatena"
-import { HACKER_NEWS_SUMMARY_UNAVAILABLE, type HackerNewsSummaryResult } from "../shared/hackerNews"
+import {
+  HACKER_NEWS_SUMMARY_UNAVAILABLE,
+  HN_REQUEST_BATCH_SIZE,
+  type HackerNewsSummaryResult
+} from "../shared/hackerNews"
 import {
   BLUESKY_REQUEST_BATCH_SIZE,
   BLUESKY_SUMMARY_UNAVAILABLE,
@@ -36,7 +40,7 @@ export interface BackgroundDeps {
 // content script からの入力はページ DOM 由来で攻撃者の影響を受けうる。
 // fetch に渡す前に http(s) の実 URL のみへ絞り、異常な量は処理しない。
 export const MAX_URLS_PER_REQUEST = 500
-export const MAX_HN_URLS_PER_REQUEST = 40
+export const MAX_HN_URLS_PER_REQUEST = HN_REQUEST_BATCH_SIZE
 export const MAX_HN_CACHE_ENTRIES = 200
 export const MAX_BLUESKY_URLS_PER_REQUEST = BLUESKY_REQUEST_BATCH_SIZE
 export const MAX_BLUESKY_CACHE_ENTRIES = 200

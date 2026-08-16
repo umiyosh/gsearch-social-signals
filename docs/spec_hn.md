@@ -53,7 +53,8 @@ The summary uses:
 - HN uses one Algolia fetch per unique URL.
 - `src/shared/hackerNews.ts` limits concurrent HN fetches to 4.
 - Each HN fetch has a 5 second timeout.
-- `src/background/handlers.ts` caps HN requests at 40 URLs per message.
+- The content script splits large HN result and retry sets into messages of at most 40 URLs.
+- `src/background/handlers.ts` rejects HN messages above the shared 40 URL limit.
 - The background HN cache is capped at 200 entries.
 - The content script also keeps page-local caches and inflight sets so MutationObserver re-scans do not repeatedly fetch the same URL.
 
