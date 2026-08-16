@@ -376,6 +376,41 @@ describe("Bluesky HTTP failure diagnostics", () => {
       ]
     })
   })
+
+  it("logs a sanitized HTML error title and message", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const htmlResponse = {
+      ...response({}, 403, { "Content-Type": "text/html" }),
+      text: () =>
+        Promise.resolve(
+          "<!doctype html><html><head><title>Access Denied</title></head>" +
+            "<body><h1>Rate limit exceeded</h1><p>Blocked https://example.com/private</p></body></html>"
+        )
+    } as Response
+    const client = createBlueskyClient({ fetcher: vi.fn().mockResolvedValue(htmlResponse) })
+
+    await client.fetchSummariesWithRetryInfo(["https://example.com/private?secret=value"])
+
+    expect(parseFailureDiagnostic(error.mock.calls.at(-1))).toEqual({
+      event: "bluesky_fetch_failed",
+      requestedCount: 1,
+      failedCount: 1,
+      failures: [
+        {
+          kind: "http_error",
+          count: 1,
+          status: 403,
+          request: { host: "example.com", ordinal: 1 },
+          response: {
+            bodyKind: "html",
+            contentType: "text/html",
+            title: "Access Denied",
+            message: "Access Denied Rate limit exceeded Blocked [url]"
+          }
+        }
+      ]
+    })
+  })
 })
 
 describe("Bluesky other failure diagnostics", () => {
