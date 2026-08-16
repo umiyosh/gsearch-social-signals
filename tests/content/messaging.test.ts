@@ -183,6 +183,28 @@ describe("requestHatenaCounts", () => {
 })
 
 describe("requestHnSummaries", () => {
+  it("splits large result sets into requests accepted by the background worker", () => {
+    const urls = Array.from({ length: 81 }, (_, index) => `https://example.com/${index}`)
+    const sentBatches: string[][] = []
+    stubChrome({
+      id: "ext",
+      respondWith: (message) => {
+        const batch = (message as { urls: string[] }).urls
+        sentBatches.push(batch)
+        return ok(Object.fromEntries(batch.map((url) => [url, { nbHits: 1 }])))
+      }
+    })
+    const apply = vi.fn()
+    const settle = vi.fn()
+
+    requestHnSummaries(urls, apply, settle)
+
+    expect(sentBatches.map((batch) => batch.length)).toEqual([40, 40, 1])
+    expect(sentBatches.flat()).toEqual(urls)
+    expect(apply).toHaveBeenCalledTimes(urls.length)
+    expect(settle).toHaveBeenCalledTimes(urls.length)
+  })
+
   it("applies summaries from an ok envelope", () => {
     stubChrome({ id: "ext", respond: ok({ "https://a": { nbHits: 4 }, "https://b": null }) })
     const applied: Array<[string, unknown]> = []
